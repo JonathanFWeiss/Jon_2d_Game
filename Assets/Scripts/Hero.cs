@@ -62,6 +62,8 @@ public partial class Hero : MonoBehaviour
     public GameObject IdlePose;
     public float attackOffsetX = 0.5f; // tweak this in Inspector
 
+    [SerializeField] private Animator animator;
+
     //float jumpRefillTimer = 0f;
     //bool waitingForRefill = false;
 
@@ -72,7 +74,7 @@ public partial class Hero : MonoBehaviour
     // public GameObject MarkerGroundedCoyote;
     // public Text TextJumpsAvailable;
 
-  
+
 
 
     Rigidbody2D rb2d;
@@ -188,6 +190,8 @@ public partial class Hero : MonoBehaviour
             if (GroundedTimer <= 0)
             {
                 jumpCounter = 0;
+                //if (rb2d.linearVelocity.y == 0)
+                //animator.SetBool("isJumping", false);
             }
         }
 
@@ -197,7 +201,7 @@ public partial class Hero : MonoBehaviour
 
             if (preJumpIntent <= 0)
             {
-               
+
             }
         }
         if (dashCooldownTimer > 0)
@@ -209,6 +213,7 @@ public partial class Hero : MonoBehaviour
             if (dashTimer <= 0f)
             {
                 isDashing = false;
+                animator.SetBool("isDashing", false);
             }
         }
 
@@ -230,11 +235,13 @@ public partial class Hero : MonoBehaviour
         {
             jumpIntent = true;
             preJumpIntent = PreLandingJumpTime;
+            Debug.Log("Jump intent! preJumpIntent timer set to " + preJumpIntent);
         }
 
         if (dashAction.WasPressedThisFrame() && airDashAvailable && !isDashing)
         {
             isDashing = true;
+            animator.SetBool("isDashing", true);
             dashTimer = dashDuration;
             airDashAvailable = false;
 
@@ -251,14 +258,14 @@ public partial class Hero : MonoBehaviour
     bool PrevActualGrounded;
     bool ActualGrounded;
 
-    
+
     void DoGroundChecks()
     {
         ActualGrounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, GroundMask) != null;
 
         if (ActualGrounded && !PrevActualGrounded)
         {
-            
+
 
             airDashAvailable = true;
         }
@@ -266,6 +273,7 @@ public partial class Hero : MonoBehaviour
         if (ActualGrounded)
         {
             GroundedTimer = OffLedgeStillJumpTime;
+
         }
 
         PrevActualGrounded = ActualGrounded;
@@ -273,28 +281,32 @@ public partial class Hero : MonoBehaviour
 
     void ProcessJumping()
     {
-        if (ActualGrounded || (jumpCounter < TotalJumpCount - 1))
+        //Debug.Log("Can jump! Grounded: " + ActualGrounded + " JumpCounter: " + jumpCounter);
         {
-            if (CombinedJumpIntent)
-            {
-                if (ActualGrounded || (jumpCounter < TotalJumpCount - 1))
+            if (ActualGrounded || (jumpCounter < TotalJumpCount - 1))
+                if (CombinedJumpIntent)
                 {
-                    preJumpIntent = 0;
-                    GroundedTimer = 0;
-                    ActualGrounded = false;   // important
-                    PrevActualGrounded = false;
+                    if (ActualGrounded || (jumpCounter < TotalJumpCount - 1))
+                    {
+                        preJumpIntent = 0;
+                        GroundedTimer = 0;
+                        ActualGrounded = false;   // important
+                        PrevActualGrounded = false;
 
-                  
 
-                    jumpCounter++;
-                    Debug.Log(jumpCounter);
 
-                    var vel = rb2d.linearVelocity;
-                    if (vel.y < 0) vel.y = 0;
-                    vel.y += JumpVerticalSpeed;
-                    rb2d.linearVelocity = vel;
+                        jumpCounter++;
+                        Debug.Log(jumpCounter);
+
+                        var vel = rb2d.linearVelocity;
+                        if (vel.y < 0) vel.y = 0;
+                        vel.y += JumpVerticalSpeed;
+                        rb2d.linearVelocity = vel;
+
+                        animator.SetBool("isJumping", true);
+                        Debug.Log("Jumping! JumpCounter: " + jumpCounter);
+                    }
                 }
-            }
         }
 
         jumpIntent = false;
@@ -332,37 +344,48 @@ public partial class Hero : MonoBehaviour
         UpdateAdjustTimers();
         UpdateGatherInputs();
         bool isAttacking = attackAction.IsPressed();
+        animator.SetBool("isAttacking", isAttacking);
         if (facingDirection == 1)
         {
-            RightSlash.SetActive(isAttacking);
-            LeftSlash.SetActive(false);
+            if (RightSlash != null || LeftSlash != null)
+            {
+                RightSlash.SetActive(isAttacking);
+                LeftSlash.SetActive(false);
+            }
         }
-        if (facingDirection == -1)
+        if (RightSlash != null || LeftSlash != null)
         {
-            LeftSlash.SetActive(isAttacking);
-            RightSlash.SetActive(false);
+            if (facingDirection == -1)
+            {
+                LeftSlash.SetActive(isAttacking);
+                RightSlash.SetActive(false);
+            }
         }
-        bool isDashing = dashAction.IsPressed();
-        if (facingDirection == 1)
-        {
-            RightDash.SetActive(isDashing);
-            LeftDash.SetActive(false);
-        }
-        if (facingDirection == -1)
-        {
-            LeftDash.SetActive(isDashing);
-            RightDash.SetActive(false);
-        }
+        // bool isDashing = dashAction.IsPressed();
+        // if (facingDirection == 1)
+        // {
+        //     RightDash.SetActive(isDashing);
+        //     LeftDash.SetActive(false);
+        // }
+        // if (facingDirection == -1)
+        // {
+        //     LeftDash.SetActive(isDashing);
+        //     RightDash.SetActive(false);
+        // }
         //RightSlash.flipX = true;
-        IdlePose.SetActive(!isAttacking && !isDashing);
+        //IdlePose.SetActive(!isAttacking && !isDashing);
         // Flip slash based on facing direction
 
-        Vector3 idlescale = IdlePose.transform.localScale;
-        idlescale.x = Mathf.Abs(idlescale.x) * facingDirection * -1;//to reverse left right
-        IdlePose.transform.localScale = idlescale;
+        if (IdlePose != null)
+        {
+
+            Vector3 idlescale = IdlePose.transform.localScale;
+            idlescale.x = Mathf.Abs(idlescale.x) * facingDirection * -1;//to reverse left right
+            IdlePose.transform.localScale = idlescale;
+        }
 
 
-        
+
     }
 
     void FixedUpdate()
@@ -371,6 +394,8 @@ public partial class Hero : MonoBehaviour
         DoGroundChecks();
         ProcessJumping();
         ProcessLeftRightMovement();
+        if (rb2d.linearVelocity.y == 0)
+            animator.SetBool("isJumping", false);
 
     }
 
