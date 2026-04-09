@@ -47,6 +47,8 @@ public partial class Hero : MonoBehaviour
     float dashTimer;
     float dashCooldownTimer;
     float facingDirection = 1f;
+    public bool isAttacking;
+    public bool isPogoing;
 
 
 
@@ -99,6 +101,7 @@ public partial class Hero : MonoBehaviour
     private InputAction jumpAction;
     private InputAction dashAction;
     private InputAction attackAction;
+    private InputAction downAction;
     public UIDocument uiDocument;
     private Label UICountersText;
     void Awake()
@@ -131,6 +134,13 @@ public partial class Hero : MonoBehaviour
         attackAction = new InputAction("Attack", InputActionType.Button);
         attackAction.AddBinding("<Gamepad>/buttonEast");
 
+        downAction = new InputAction("Down", InputActionType.Button);
+        downAction.AddBinding("<Keyboard>/downArrow");
+        downAction.AddBinding("<Keyboard>/s");
+        downAction.AddCompositeBinding("1DAxis")
+            .With("negative", "<Gamepad>/leftStick/y")
+            .With("positive", "<Gamepad>/dpad/down");
+
 
     }
 
@@ -140,6 +150,7 @@ public partial class Hero : MonoBehaviour
         jumpAction.Enable();
         dashAction.Enable();
         attackAction.Enable();
+        downAction.Enable();
     }
 
     void OnDisable()
@@ -148,6 +159,7 @@ public partial class Hero : MonoBehaviour
         jumpAction.Disable();
         dashAction.Disable();
         attackAction.Disable();
+        downAction.Disable();
     }
 
     void OnDestroy()
@@ -156,6 +168,7 @@ public partial class Hero : MonoBehaviour
         jumpAction.Dispose();
         dashAction.Dispose();
         attackAction.Dispose();
+        downAction.Dispose();
     }
 
     void Start()
@@ -356,50 +369,16 @@ public partial class Hero : MonoBehaviour
     {
         UpdateAdjustTimers();
         UpdateGatherInputs();
-        bool isAttacking = attackAction.IsPressed();
+        isAttacking = attackAction.IsPressed();
+        bool isDown = downAction.IsPressed();
+        isPogoing = isAttacking && isDown;
         animator.SetBool("isAttacking", isAttacking);
+        animator.SetBool("isPogoing", isPogoing);
         if (attackCollider != null)
         {
             attackCollider.enabled = isAttacking;
         }
-        // if (facingDirection == 1)
-        // {
-        //     if (RightSlash != null || LeftSlash != null)
-        //     {
-        //         RightSlash.SetActive(isAttacking);
-        //         LeftSlash.SetActive(false);
-        //     }
-        // }
-        // if (RightSlash != null || LeftSlash != null)
-        // {
-        //     if (facingDirection == -1)
-        //     {
-        //         LeftSlash.SetActive(isAttacking);
-        //         RightSlash.SetActive(false);
-        //     }
-        // }
-        // bool isDashing = dashAction.IsPressed();
-        // if (facingDirection == 1)
-        // {
-        //     RightDash.SetActive(isDashing);
-        //     LeftDash.SetActive(false);
-        // }
-        // if (facingDirection == -1)
-        // {
-        //     LeftDash.SetActive(isDashing);
-        //     RightDash.SetActive(false);
-        // }
-        //RightSlash.flipX = true;
-        //IdlePose.SetActive(!isAttacking && !isDashing);
-        // Flip slash based on facing direction
-
-        // if (IdlePose != null)
-        // {
-
-        //     Vector3 idlescale = IdlePose.transform.localScale;
-        //     idlescale.x = Mathf.Abs(idlescale.x) * facingDirection * -1;//to reverse left right
-        //     IdlePose.transform.localScale = idlescale;
-        // }
+        
         Vector3 currentScale = transform.localScale;
         currentScale.x = Mathf.Abs(currentScale.x) * facingDirection;// * -1;
         transform.localScale = currentScale;

@@ -3301,7 +3301,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 1.1
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -3385,6 +3385,8 @@ MonoBehaviour:
   dashSpeed: 12
   dashDuration: 0.15
   dashCooldown: 0.5
+  isAttacking: 0
+  isPogoing: 0
   jumpRefillCooldown: 0.1
   animator: {fileID: 1477276669}
   attackCollider: {fileID: 1477276675}
@@ -4888,6 +4890,8 @@ MonoBehaviour:
   dashSpeed: 12
   dashDuration: 0.15
   dashCooldown: 0.5
+  isAttacking: 0
+  isPogoing: 0
   jumpRefillCooldown: 0.5
   animator: {fileID: 7053382331144869408}
   attackCollider: {fileID: 0}

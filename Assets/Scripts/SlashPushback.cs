@@ -15,10 +15,12 @@ public class SlashPushback : MonoBehaviour
     public int damage = 1;
 
     Rigidbody2D ownerRigidbody;
+    Hero ownerHero;
 
     void Awake()
     {
         ownerRigidbody = GetComponentInParent<Rigidbody2D>();
+        ownerHero = GetComponentInParent<Hero>();
         Debug.Log("SlashPushback initialized. Owner Rigidbody: " + (ownerRigidbody != null ? ownerRigidbody.name : "None"));
     }
 
@@ -37,6 +39,9 @@ public class SlashPushback : MonoBehaviour
     void TryPush(Rigidbody2D otherRb, GameObject otherObject)
     {
         if (otherRb == null || otherRb == ownerRigidbody || otherRb.bodyType == RigidbodyType2D.Kinematic)
+            return;
+
+        if (ownerHero != null && !ownerHero.isAttacking && !ownerHero.isPogoing)
             return;
 
         GameObject targetObject = otherRb.gameObject;
@@ -62,6 +67,13 @@ public class SlashPushback : MonoBehaviour
 
             direction.Normalize();
             otherRb.AddForce(direction * pushForce, ForceMode2D.Impulse);
+
+            if (ownerHero != null && ownerHero.isPogoing && ownerRigidbody != null)
+            {
+                var heroVel = ownerRigidbody.linearVelocity;
+                heroVel.y = ownerHero.JumpVerticalSpeed;
+                ownerRigidbody.linearVelocity = heroVel;
+            }
         }
     }
 
