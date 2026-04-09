@@ -10,11 +10,11 @@ public class CoinPickup : MonoBehaviour
     public LayerMask playerLayer;
 
     [Tooltip("Time in seconds before the coin can be picked up after spawning.")]
-    public float pickupDelay = 10.5f;
+    public float pickupDelay = 5f;
 
     private float currentPickupDelay;
 
-    void Start()
+    void Awake()
     {
         currentPickupDelay = pickupDelay;
         Debug.Log("Coin " + gameObject.name + " pickup delay: " + currentPickupDelay.ToString("F2") + " seconds");
@@ -27,7 +27,7 @@ public class CoinPickup : MonoBehaviour
         {
             currentPickupDelay -= Time.deltaTime;
         }
-        Debug.Log("Coin " + gameObject.name + " pickup delay: " + currentPickupDelay.ToString("F2") + " seconds");
+        //Debug.Log("Coin " + gameObject.name + " pickup delay: " + currentPickupDelay.ToString("F2") + " seconds");
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -41,8 +41,8 @@ public class CoinPickup : MonoBehaviour
         if ((playerLayer.value & (1 << other.layer)) != 0)
         {
             PlayerData.AddCoins(coinValue);
-            Debug.Log("Coin collected! Total coins: " + PlayerData.Coins);
-
+            //Debug.Log("Coin collected! Total coins: " + PlayerData.Coins);
+            //Debug.Log("currentPickupDelay: " + currentPickupDelay.ToString("F2") + " seconds");
             Destroy(gameObject);
         }
 

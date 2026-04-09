@@ -407,7 +407,7 @@ public partial class Hero : MonoBehaviour
         if (UICountersText != null)
         {
             UICountersText.text = "Coins: " + PlayerData.Coins;
-            Debug.Log("UICountersText updated: " + UICountersText.text);
+            //Debug.Log("UICountersText updated: " + UICountersText.text);
         }
 
 

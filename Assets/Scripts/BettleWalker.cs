@@ -42,7 +42,7 @@ public class BettleWalker : MonoBehaviour
     void Update()
     {
         if (hp <= 0)
-        {Destroy(gameObject);
+        {{Destroy(gameObject);
             if (coinPrefab != null)
             {
                 for (int i = 0; i < 3; i++)
@@ -50,7 +50,7 @@ public class BettleWalker : MonoBehaviour
                     Instantiate(coinPrefab, transform.position, Quaternion.identity);
                 }
             }
-        }
+        }}
     }
 
     void OnCollisionEnter2D(Collision2D collision)
