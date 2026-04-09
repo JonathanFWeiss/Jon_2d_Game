@@ -1486,7 +1486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Camera
   dampTime: 0.15
-  target: {fileID: 7053382331144869402}
+  target: {fileID: 1477276670}
 --- !u!4 &543729480 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 783134919143749735, guid: be50ca981e84541469608ec413ad515c, type: 3}
@@ -1861,6 +1861,61 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1901172094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &784421309
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 784421311}
+  - component: {fileID: 784421310}
+  m_Layer: 5
+  m_Name: GameUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &784421310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 784421309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: f9903c9ee45905e42839b9fd414bfca4, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: c8b74c195c429a445b0fa1f88391dee3, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!4 &784421311
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 784421309}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &821034802
 GameObject:
@@ -2631,7 +2686,7 @@ Transform:
   m_GameObject: {fileID: 1223281801}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.73, y: -0.77, z: 0}
+  m_LocalPosition: {x: -0.02, y: -0.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3068,13 +3123,15 @@ GameObject:
   - component: {fileID: 1477276672}
   - component: {fileID: 1477276671}
   - component: {fileID: 1477276673}
+  - component: {fileID: 1477276674}
+  - component: {fileID: 1477276675}
   m_Layer: 6
   m_Name: Lace2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!212 &1477276668
 SpriteRenderer:
   serializedVersion: 2
@@ -3233,7 +3290,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.4, y: 0}
+  m_Offset: {x: -0.3, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -3243,7 +3300,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.5, y: 1.98}
+  m_Size: {x: 0.8, y: 1.98}
   m_EdgeRadius: 0
 --- !u!114 &1477276673
 MonoBehaviour:
@@ -3272,13 +3329,60 @@ MonoBehaviour:
   dashDuration: 0.15
   dashCooldown: 0.5
   jumpRefillCooldown: 0.1
-  RightSlash: {fileID: 0}
-  LeftSlash: {fileID: 0}
-  RightDash: {fileID: 0}
-  LeftDash: {fileID: 0}
-  IdlePose: {fileID: 1477276667}
-  attackOffsetX: 0.5
   animator: {fileID: 1477276669}
+  attackCollider: {fileID: 1477276675}
+  uiDocument: {fileID: 784421310}
+--- !u!114 &1477276674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477276667}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fc9beebc64eb564ba977e41139417f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlashPushback
+  pushForce: 20
+  horizontalOnly: 1
+  damage: 1
+--- !u!58 &1477276675
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477276667}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 1
+  m_CompositeOrder: 0
+  m_Offset: {x: 1.7129824, y: 0.10811418}
+  m_Radius: 1.5255082
 --- !u!4 &1504930227 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 783134919143749735, guid: be50ca981e84541469608ec413ad515c, type: 3}
@@ -4580,7 +4684,9 @@ PrefabInstance:
       propertyPath: m_Name
       value: Coin
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 0}
+    - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -4675,7 +4781,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 908732145625754291, guid: 54c9bff13d8ed354fb219a6907e07f5e, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1493206241428112159, guid: 54c9bff13d8ed354fb219a6907e07f5e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4796,13 +4902,9 @@ MonoBehaviour:
   dashDuration: 0.15
   dashCooldown: 0.5
   jumpRefillCooldown: 0.5
-  RightSlash: {fileID: 1223281801}
-  LeftSlash: {fileID: 1252426874}
-  RightDash: {fileID: 221079762}
-  LeftDash: {fileID: 1798208944}
-  IdlePose: {fileID: 1808279775}
-  attackOffsetX: 0.5
   animator: {fileID: 7053382331144869408}
+  attackCollider: {fileID: 0}
+  uiDocument: {fileID: 0}
 --- !u!4 &7053382331144869402 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1493206241428112159, guid: 54c9bff13d8ed354fb219a6907e07f5e, type: 3}
@@ -5009,3 +5111,4 @@ SceneRoots:
   - {fileID: 109801328}
   - {fileID: 1295542813067347850}
   - {fileID: 1477276670}
+  - {fileID: 784421311}

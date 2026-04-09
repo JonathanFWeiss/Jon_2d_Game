@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 
 // from this forum post, just curious about this coyote jump stuff and acme anvils.
@@ -54,18 +55,20 @@ public partial class Hero : MonoBehaviour
 
     [Tooltip("Delay before jumps refill after landing.")]
     public float jumpRefillCooldown = 0.1f;
-    public GameObject RightSlash;
-    public GameObject LeftSlash;
+    //public GameObject RightSlash;
+    //public GameObject LeftSlash;
 
-    public GameObject RightDash;
-    public GameObject LeftDash;
-    public GameObject IdlePose;
-    public float attackOffsetX = 0.5f; // tweak this in Inspector
+    //public GameObject RightDash;
+    //public GameObject LeftDash;
+    /// <summary>
+    /// public GameObject IdlePose;
+    /// </summary>
+    //public float attackOffsetX = 0.5f; // tweak this in Inspector
 
     [SerializeField] private Animator animator;
 
-    //float jumpRefillTimer = 0f;
-    //bool waitingForRefill = false;
+    [Tooltip("The circular collider to enable during attacks.")]
+    public CircleCollider2D attackCollider;
 
 
 
@@ -96,7 +99,8 @@ public partial class Hero : MonoBehaviour
     private InputAction jumpAction;
     private InputAction dashAction;
     private InputAction attackAction;
-
+    public UIDocument uiDocument;
+    private Label UICountersText;
     void Awake()
     {
         moveAction = new InputAction("Move", InputActionType.Value);
@@ -159,15 +163,24 @@ public partial class Hero : MonoBehaviour
         rb2d = GetComponent<Rigidbody2D>();
         rb2d.freezeRotation = true;
 
-        if (RightSlash != null && RightSlash.GetComponent<SlashPushback>() == null)
-            RightSlash.AddComponent<SlashPushback>();
-        if (LeftSlash != null && LeftSlash.GetComponent<SlashPushback>() == null)
-            LeftSlash.AddComponent<SlashPushback>();
+        // if (RightSlash != null && RightSlash.GetComponent<SlashPushback>() == null)
+        //     RightSlash.AddComponent<SlashPushback>();
+        // if (LeftSlash != null && LeftSlash.GetComponent<SlashPushback>() == null)
+        //     LeftSlash.AddComponent<SlashPushback>();
 
         jumpCounter = TotalJumpCount; // use them up initially
         airDashAvailable = true;
-
-
+        Debug.Log(uiDocument.name);
+        //Debug.Log(UICountersText);
+        if (uiDocument != null)
+        {
+            UICountersText = uiDocument.rootVisualElement.Q<Label>("Counters");
+        }
+        // Log the found element
+        // if (UICountersText == null)
+        // {
+        //     Debug.LogError("UICountersText not found. Check UI Document setup.");
+        // }
     }
 
     bool leftIntent, rightIntent;
@@ -294,7 +307,7 @@ public partial class Hero : MonoBehaviour
                         PrevActualGrounded = false;
 
 
-
+                        animator.SetBool("isJumping", true);
                         jumpCounter++;
                         Debug.Log(jumpCounter);
 
@@ -303,7 +316,7 @@ public partial class Hero : MonoBehaviour
                         vel.y += JumpVerticalSpeed;
                         rb2d.linearVelocity = vel;
 
-                        animator.SetBool("isJumping", true);
+
                         Debug.Log("Jumping! JumpCounter: " + jumpCounter);
                     }
                 }
@@ -345,22 +358,26 @@ public partial class Hero : MonoBehaviour
         UpdateGatherInputs();
         bool isAttacking = attackAction.IsPressed();
         animator.SetBool("isAttacking", isAttacking);
-        if (facingDirection == 1)
+        if (attackCollider != null)
         {
-            if (RightSlash != null || LeftSlash != null)
-            {
-                RightSlash.SetActive(isAttacking);
-                LeftSlash.SetActive(false);
-            }
+            attackCollider.enabled = isAttacking;
         }
-        if (RightSlash != null || LeftSlash != null)
-        {
-            if (facingDirection == -1)
-            {
-                LeftSlash.SetActive(isAttacking);
-                RightSlash.SetActive(false);
-            }
-        }
+        // if (facingDirection == 1)
+        // {
+        //     if (RightSlash != null || LeftSlash != null)
+        //     {
+        //         RightSlash.SetActive(isAttacking);
+        //         LeftSlash.SetActive(false);
+        //     }
+        // }
+        // if (RightSlash != null || LeftSlash != null)
+        // {
+        //     if (facingDirection == -1)
+        //     {
+        //         LeftSlash.SetActive(isAttacking);
+        //         RightSlash.SetActive(false);
+        //     }
+        // }
         // bool isDashing = dashAction.IsPressed();
         // if (facingDirection == 1)
         // {
@@ -376,13 +393,24 @@ public partial class Hero : MonoBehaviour
         //IdlePose.SetActive(!isAttacking && !isDashing);
         // Flip slash based on facing direction
 
-        if (IdlePose != null)
-        {
+        // if (IdlePose != null)
+        // {
 
-            Vector3 idlescale = IdlePose.transform.localScale;
-            idlescale.x = Mathf.Abs(idlescale.x) * facingDirection * -1;//to reverse left right
-            IdlePose.transform.localScale = idlescale;
+        //     Vector3 idlescale = IdlePose.transform.localScale;
+        //     idlescale.x = Mathf.Abs(idlescale.x) * facingDirection * -1;//to reverse left right
+        //     IdlePose.transform.localScale = idlescale;
+        // }
+        Vector3 currentScale = transform.localScale;
+        currentScale.x = Mathf.Abs(currentScale.x) * facingDirection;// * -1;
+        transform.localScale = currentScale;
+
+        if (UICountersText != null)
+        {
+            UICountersText.text = "Coins: " + PlayerData.Coins;
+            Debug.Log("UICountersText updated: " + UICountersText.text);
         }
+
+
 
 
 

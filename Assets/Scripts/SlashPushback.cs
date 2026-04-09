@@ -19,6 +19,7 @@ public class SlashPushback : MonoBehaviour
     void Awake()
     {
         ownerRigidbody = GetComponentInParent<Rigidbody2D>();
+        Debug.Log("SlashPushback initialized. Owner Rigidbody: " + (ownerRigidbody != null ? ownerRigidbody.name : "None"));
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -28,37 +29,41 @@ public class SlashPushback : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        TryPush(collision.rigidbody, collision.gameObject);
+        
+            TryPush(collision.rigidbody, collision.gameObject);
+        
     }
 
-void TryPush(Rigidbody2D otherRb, GameObject otherObject)
-{
-    if (otherRb == null || otherRb == ownerRigidbody || otherRb.bodyType == RigidbodyType2D.Kinematic)
-        return;
-
-    GameObject targetObject = otherRb.gameObject;
-    Debug.Log("Hit: " + targetObject.name);
-
-    bool isNpc = IsNpcSortingLayer(targetObject);
-    Debug.Log("Is NPC sorting layer: " + isNpc);
-
-    if (isNpc)
-        TryRemoveHp(targetObject);
-
-    Vector2 direction = otherRb.position - (Vector2)transform.position;
-    if (horizontalOnly)
-        direction.y = 0;
-
-    if (direction.sqrMagnitude < 0.001f)
+    void TryPush(Rigidbody2D otherRb, GameObject otherObject)
     {
-        direction = Vector2.right * Mathf.Sign(transform.lossyScale.x);
-        if (direction.x == 0)
-            direction = Vector2.right;
-    }
+        if (otherRb == null || otherRb == ownerRigidbody || otherRb.bodyType == RigidbodyType2D.Kinematic)
+            return;
 
-    direction.Normalize();
-    otherRb.AddForce(direction * pushForce, ForceMode2D.Impulse);
-}
+        GameObject targetObject = otherRb.gameObject;
+        Debug.Log("Hit: " + targetObject.name);
+
+        bool isNpc = IsNpcSortingLayer(targetObject);
+        Debug.Log("Is NPC sorting layer: " + isNpc);
+
+        if (isNpc)
+        {
+            TryRemoveHp(targetObject);
+
+            Vector2 direction = otherRb.position - (Vector2)transform.position;
+            if (horizontalOnly)
+                direction.y = 0;
+
+            if (direction.sqrMagnitude < 0.001f)
+            {
+                direction = Vector2.right * Mathf.Sign(transform.lossyScale.x);
+                if (direction.x == 0)
+                    direction = Vector2.right;
+            }
+
+            direction.Normalize();
+            otherRb.AddForce(direction * pushForce, ForceMode2D.Impulse);
+        }
+    }
 
     bool IsNpcSortingLayer(GameObject obj)
     {
@@ -66,8 +71,9 @@ void TryPush(Rigidbody2D otherRb, GameObject otherObject)
         return renderer != null && string.Equals(renderer.sortingLayerName, "NPCs", StringComparison.OrdinalIgnoreCase);
     }
 
-    void TryRemoveHp(GameObject obj) 
-    {Debug.Log("Trying to remove HP from: " + obj.name);
+    void TryRemoveHp(GameObject obj)
+    {
+        Debug.Log("Trying to remove HP from: " + obj.name);
         foreach (var component in obj.GetComponents<Component>())
         {
             if (component == null)

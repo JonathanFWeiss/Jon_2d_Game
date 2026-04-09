@@ -36,6 +36,11 @@ public class BettleWalker : MonoBehaviour
         Vector2 velocity = rb2d.linearVelocity;
         velocity.x = facingDirection * walkSpeed;
         rb2d.linearVelocity = velocity;
+
+    }
+
+    void Update()
+    {
         if (hp <= 0)
         {Destroy(gameObject);
             if (coinPrefab != null)
@@ -45,7 +50,6 @@ public class BettleWalker : MonoBehaviour
                     Instantiate(coinPrefab, transform.position, Quaternion.identity);
                 }
             }
-            
         }
     }
 
