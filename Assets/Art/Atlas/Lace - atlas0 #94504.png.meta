@@ -1456,7 +1456,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Lace - atlas0 #94504_23
+      name: test
       rect:
         serializedVersion: 2
         x: 0
@@ -5157,7 +5157,7 @@ TextureImporter:
         serializedVersion: 2
         x: 1074
         y: 1328
-        width: 118
+        width: 112
         height: 266
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
@@ -7756,7 +7756,7 @@ TextureImporter:
         width: 102
         height: 21
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -7930,7 +7930,6 @@ TextureImporter:
       Lace - atlas0 #94504_227: -4651577989929255581
       Lace - atlas0 #94504_228: -3138055514856581566
       Lace - atlas0 #94504_229: -5991568108567386295
-      Lace - atlas0 #94504_23: 5602463339507176108
       Lace - atlas0 #94504_230: 8725818263139170833
       Lace - atlas0 #94504_231: -4429373125501303562
       Lace - atlas0 #94504_232: -2411316006447787383
@@ -8095,6 +8094,7 @@ TextureImporter:
       Lace Dash Right: 5272733985362153323
       Lace Jump: 8017485277553153835
       Lace Pogo: 5404533504143607823
+      test: 5602463339507176108
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -72,6 +72,8 @@ public partial class Hero : MonoBehaviour
     [Tooltip("The circular collider to enable during attacks.")]
     public CircleCollider2D attackCollider;
 
+    [SerializeField] private SpriteRenderer spriteRenderer;
+
 
 
     // [Header("Onscreen debugging:")]
@@ -176,6 +178,9 @@ public partial class Hero : MonoBehaviour
         rb2d = GetComponent<Rigidbody2D>();
         rb2d.freezeRotation = true;
 
+        if (groundCheck == null)
+            groundCheck = transform;
+
         // if (RightSlash != null && RightSlash.GetComponent<SlashPushback>() == null)
         //     RightSlash.AddComponent<SlashPushback>();
         // if (LeftSlash != null && LeftSlash.GetComponent<SlashPushback>() == null)
@@ -183,7 +188,10 @@ public partial class Hero : MonoBehaviour
 
         jumpCounter = TotalJumpCount; // use them up initially
         airDashAvailable = true;
-        Debug.Log(uiDocument.name);
+        if (uiDocument != null)
+        {
+            Debug.Log(uiDocument.name);
+        }
         //Debug.Log(UICountersText);
         if (uiDocument != null)
         {
@@ -239,7 +247,10 @@ public partial class Hero : MonoBehaviour
             if (dashTimer <= 0f)
             {
                 isDashing = false;
-                animator.SetBool("isDashing", false);
+                if (animator != null)
+                {
+                    animator.SetBool("isDashing", false);
+                }
             }
         }
 
@@ -267,7 +278,10 @@ public partial class Hero : MonoBehaviour
         if (dashAction.WasPressedThisFrame() && airDashAvailable && !isDashing)
         {
             isDashing = true;
-            animator.SetBool("isDashing", true);
+            if (animator != null)
+            {
+                animator.SetBool("isDashing", true);
+            }
             dashTimer = dashDuration;
             airDashAvailable = false;
 
@@ -319,8 +333,10 @@ public partial class Hero : MonoBehaviour
                         ActualGrounded = false;   // important
                         PrevActualGrounded = false;
 
-
-                        animator.SetBool("isJumping", true);
+                        if (animator != null)
+                        {
+                            animator.SetBool("isJumping", true);
+                        }
                         jumpCounter++;
                         Debug.Log(jumpCounter);
 
@@ -372,16 +388,46 @@ public partial class Hero : MonoBehaviour
         isAttacking = attackAction.IsPressed();
         bool isDown = downAction.IsPressed();
         isPogoing = isAttacking && isDown;
-        animator.SetBool("isAttacking", isAttacking);
-        animator.SetBool("isPogoing", isPogoing);
+        if (animator != null)
+        {
+            animator.SetBool("isAttacking", isAttacking);
+            animator.SetBool("isPogoing", isPogoing);
+        }
         if (attackCollider != null)
         {
             attackCollider.enabled = isAttacking;
+            Vector2 offset = attackCollider.offset;
+            if (facingDirection < 0)
+            {
+                offset.x = -2f;
+            }
+            else
+            {
+                offset.x = 2f;
+            }
+            if (isPogoing)
+            {
+                offset.y = -1.5f;
+                offset.x = 0f;
+            }
+            else { offset.y = .24f; }
+
+
+            //offset.x = offset.x * facingDirection *-1;
+            attackCollider.offset = offset;
+            //Debug.Log("Attack Collider flipped: " + attackCollider.offset + attackCollider);
+
+
         }
-        
-        Vector3 currentScale = transform.localScale;
-        currentScale.x = Mathf.Abs(currentScale.x) * facingDirection;// * -1;
-        transform.localScale = currentScale;
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.flipX = facingDirection < 0;
+            
+
+
+            ;
+        }
 
         if (UICountersText != null)
         {
@@ -402,7 +448,10 @@ public partial class Hero : MonoBehaviour
         ProcessJumping();
         ProcessLeftRightMovement();
         if (rb2d.linearVelocity.y == 0)
-            animator.SetBool("isJumping", false);
+            if (animator != null)
+            {
+                animator.SetBool("isJumping", false);
+            }
 
     }
 

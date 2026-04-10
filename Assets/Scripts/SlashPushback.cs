@@ -102,7 +102,7 @@ public class SlashPushback : MonoBehaviour
                     int beforeHp = (int)field.GetValue(component);
                     int afterHp = beforeHp - damage;
                     field.SetValue(component, afterHp);
-                    Debug.Log($"Hit object ID={obj.GetInstanceID()} hp before={beforeHp} hp after={afterHp}");
+                    Debug.Log($"Hit object ID={obj.GetEntityId()} hp before={beforeHp} hp after={afterHp}");
                     return;
                 }
                 if (field.FieldType == typeof(float))
@@ -110,7 +110,7 @@ public class SlashPushback : MonoBehaviour
                     float beforeHp = (float)field.GetValue(component);
                     float afterHp = beforeHp - damage;
                     field.SetValue(component, afterHp);
-                    Debug.Log($"Hit object ID={obj.GetInstanceID()} hp before={beforeHp} hp after={afterHp}");
+                    Debug.Log($"Hit object ID={obj.GetEntityId()} hp before={beforeHp} hp after={afterHp}");
                     return;
                 }
             }
@@ -123,7 +123,7 @@ public class SlashPushback : MonoBehaviour
                     int beforeHp = (int)property.GetValue(component);
                     int afterHp = beforeHp - damage;
                     property.SetValue(component, afterHp);
-                    Debug.Log($"Hit object ID={obj.GetInstanceID()} hp before={beforeHp} hp after={afterHp}");
+                    Debug.Log($"Hit object ID={obj.GetEntityId()} hp before={beforeHp} hp after={afterHp}");
                     return;
                 }
                 if (property.PropertyType == typeof(float))
@@ -131,7 +131,7 @@ public class SlashPushback : MonoBehaviour
                     float beforeHp = (float)property.GetValue(component);
                     float afterHp = beforeHp - damage;
                     property.SetValue(component, afterHp);
-                    Debug.Log($"Hit object ID={obj.GetInstanceID()} hp before={beforeHp} hp after={afterHp}");
+                    Debug.Log($"Hit object ID={obj.GetEntityId()} hp before={beforeHp} hp after={afterHp}");
                     return;
                 }
             }
