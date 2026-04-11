@@ -53,7 +53,7 @@ public partial class Hero : MonoBehaviour
 
 
     bool airDashAvailable;
-    float dashDirection = 1f;
+    //float dashDirection = 1f;
 
     [Tooltip("Delay before jumps refill after landing.")]
     public float jumpRefillCooldown = 0.1f;
@@ -106,6 +106,11 @@ public partial class Hero : MonoBehaviour
     private InputAction downAction;
     public UIDocument uiDocument;
     private Label UICountersText;
+
+    public float AttackCooldown = 1.5f;
+    public float AttackLength = .5f;
+    float timetofire = 0f;
+    float timetoStopAttack = 0f;
     void Awake()
     {
         moveAction = new InputAction("Move", InputActionType.Value);
@@ -192,16 +197,25 @@ public partial class Hero : MonoBehaviour
         {
             Debug.Log(uiDocument.name);
         }
+
         //Debug.Log(UICountersText);
         if (uiDocument != null)
         {
+            Debug.Log("UIDocument found: " + uiDocument.name);
             UICountersText = uiDocument.rootVisualElement.Q<Label>("Counters");
+            if (UICountersText != null)
+            {
+                Debug.Log("UICountersText label found successfully!");
+            }
+            else
+            {
+                Debug.LogError("UICountersText 'Counters' label not found in UIDocument. Check the label name in UI Toolkit.");
+            }
         }
-        // Log the found element
-        // if (UICountersText == null)
-        // {
-        //     Debug.LogError("UICountersText not found. Check UI Document setup.");
-        // }
+        else
+        {
+            Debug.LogError("UIDocument is not assigned in the Inspector!");
+        }
     }
 
     bool leftIntent, rightIntent;
@@ -272,7 +286,7 @@ public partial class Hero : MonoBehaviour
         {
             jumpIntent = true;
             preJumpIntent = PreLandingJumpTime;
-            Debug.Log("Jump intent! preJumpIntent timer set to " + preJumpIntent);
+            //Debug.Log("Jump intent! preJumpIntent timer set to " + preJumpIntent);
         }
 
         if (dashAction.WasPressedThisFrame() && airDashAvailable && !isDashing)
@@ -285,9 +299,9 @@ public partial class Hero : MonoBehaviour
             dashTimer = dashDuration;
             airDashAvailable = false;
 
-            if (rightIntent) dashDirection = 1f;
-            else if (leftIntent) dashDirection = -1f;
-            else dashDirection = transform.localScale.x >= 0 ? 1f : -1f;
+            //if (rightIntent) dashDirection = 1f;
+            //else if (leftIntent) dashDirection = -1f;
+            //else dashDirection = transform.localScale.x >= 0 ? 1f : -1f;
         }
         if (rightIntent) facingDirection = 1f;
         if (leftIntent) facingDirection = -1f;
@@ -385,9 +399,31 @@ public partial class Hero : MonoBehaviour
     {
         UpdateAdjustTimers();
         UpdateGatherInputs();
-        isAttacking = attackAction.IsPressed();
-        bool isDown = downAction.IsPressed();
-        isPogoing = isAttacking && isDown;
+        //Debug.Log("Time "+ Time.time +" TimetoFire "+timetofire);
+
+        if (attackAction.WasPressedThisFrame() && Time.time >= timetofire)
+        {
+            timetofire = Time.time + AttackCooldown;
+            timetoStopAttack = Time.time + AttackLength;
+            isAttacking = attackAction.IsPressed();
+            bool isDown = downAction.IsPressed();
+            isPogoing = isAttacking && isDown;
+            //Debug.Log("Time to next attack: " + (Time.time - timetofire) + " seconds. isAttacking: " + isAttacking + " isPogoing: " + isPogoing);
+        }
+
+        if (Time.time >= timetoStopAttack)
+        {
+            isAttacking = false;
+            isPogoing = false;
+            //Debug.Log("Attack cooldown ended. isAttacking: " +(Time.time - timetofire).ToString("F2")+ isAttacking + " isPogoing: " + isPogoing);
+        }
+        // else
+        //{
+        //isAttacking = false;
+        //isPogoing = false;
+        //}
+
+
         if (animator != null)
         {
             animator.SetBool("isAttacking", isAttacking);
@@ -410,7 +446,7 @@ public partial class Hero : MonoBehaviour
                 offset.y = -1.5f;
                 offset.x = 0f;
             }
-            else { offset.y = .24f; }
+            else { offset.y = .34f; }
 
 
             //offset.x = offset.x * facingDirection *-1;
@@ -422,8 +458,11 @@ public partial class Hero : MonoBehaviour
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.flipX = facingDirection < 0;
-            
+            if (Time.time >= timetofire)
+            {
+                spriteRenderer.flipX = facingDirection < 0;
+            }
+
 
 
             ;
@@ -432,7 +471,11 @@ public partial class Hero : MonoBehaviour
         if (UICountersText != null)
         {
             UICountersText.text = "Coins: " + PlayerData.Coins;
-            //Debug.Log("UICountersText updated: " + UICountersText.text);
+            UICountersText.style.display = DisplayStyle.Flex; // Ensure it's visible
+        }
+        else
+        {
+            Debug.LogWarning("UICountersText is null - UI element not found or not initialized");
         }
 
 
