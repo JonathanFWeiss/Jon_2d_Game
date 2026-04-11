@@ -57,7 +57,7 @@ public class CrowController : MonoBehaviour
     bool isDashing;
     float dashTimer;
     float facingDirection = 1f;
-    public int CoinsToDrop = 3;
+    //public int CoinsToDrop = 3;
 
     void Awake()
     {

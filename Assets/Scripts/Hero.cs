@@ -470,7 +470,7 @@ public partial class Hero : MonoBehaviour
 
         if (UICountersText != null)
         {
-            UICountersText.text = "Coins: " + PlayerData.Coins;
+            UICountersText.text = "Coins: " + PlayerData.Coins + " HP: " + PlayerData.HP;
             UICountersText.style.display = DisplayStyle.Flex; // Ensure it's visible
         }
         else

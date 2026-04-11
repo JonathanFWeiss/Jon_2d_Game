@@ -4992,26 +4992,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5077929626280993258, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
-      propertyPath: m_Points.m_Paths.Array.data[0].Array.data[3].x
-      value: -0.8059705
-      objectReference: {fileID: 0}
-    - target: {fileID: 5077929626280993258, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
-      propertyPath: m_Points.m_Paths.Array.data[0].Array.data[3].y
-      value: -0.7104432
-      objectReference: {fileID: 0}
-    - target: {fileID: 5077929626280993258, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
-      propertyPath: m_Points.m_Paths.Array.data[0].Array.data[4].x
-      value: 0.8119405
-      objectReference: {fileID: 0}
-    - target: {fileID: 5077929626280993258, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
-      propertyPath: m_Points.m_Paths.Array.data[0].Array.data[4].y
-      value: -0.71044356
-      objectReference: {fileID: 0}
-    - target: {fileID: 5285178755098245367, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
-      propertyPath: m_BodyType
-      value: 2
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5572,6 +5552,10 @@ PrefabInstance:
     - target: {fileID: 2067240541707956927, guid: e32e09141e45a4b4689d7aaf29a3dee9, type: 3}
       propertyPath: m_Name
       value: Lace2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2067240541707956927, guid: e32e09141e45a4b4689d7aaf29a3dee9, type: 3}
+      propertyPath: m_TagString
+      value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 3787898337365413839, guid: e32e09141e45a4b4689d7aaf29a3dee9, type: 3}
       propertyPath: uiDocument
