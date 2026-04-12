@@ -18,16 +18,27 @@ public class PlayerMovement : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-		horizontalMove = Input.GetAxisRaw("Horizontal") * runSpeed;
+		// Get input from keyboard or controller (D-Pad / Left Stick for movement)
+		float horizontalInput = Input.GetAxisRaw("Horizontal");
+		
+		// Controller support for left stick and D-Pad
+		if (Mathf.Abs(Input.GetAxis("Horizontal")) > 0)
+		{
+			horizontalInput = Input.GetAxisRaw("Horizontal");
+		}
+		
+		horizontalMove = horizontalInput * runSpeed;
 
 		animator.SetFloat("Speed", Mathf.Abs(horizontalMove));
 
-		if (Input.GetKeyDown(KeyCode.Z))
+		// Jump: Z key or South Button / A Button (Gamepad)
+		if (Input.GetKeyDown(KeyCode.Z) || Input.GetButtonDown("Jump"))
 		{
 			jump = true;
 		}
 
-		if (Input.GetKeyDown(KeyCode.C))
+		// Dash: C key or East Button / B Button (Gamepad)
+		if (Input.GetKeyDown(KeyCode.C) || Input.GetButtonDown("Submit"))
 		{
 			dash = true;
 		}
