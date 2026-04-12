@@ -214,7 +214,7 @@ public partial class Hero : MonoBehaviour
         }
         else
         {
-            Debug.LogError("UIDocument is not assigned in the Inspector!");
+            Debug.Log("UIDocument is not assigned in the Inspector!");
         }
     }
 
