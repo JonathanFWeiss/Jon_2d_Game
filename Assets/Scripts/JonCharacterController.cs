@@ -119,7 +119,7 @@ public class JonCharacterController : MonoBehaviour
     private void doGroundCheck()
     {
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
-        Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
+        //Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
         if (groundCollider) isGrounded = true;
         else isGrounded = false;
     }
