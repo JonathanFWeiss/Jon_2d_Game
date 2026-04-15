@@ -67,9 +67,9 @@ public class JonCharacterController : MonoBehaviour
             
         }
 
-        if (jumpcutRequested && rb.velocity.y > 0)
+        if (jumpcutRequested && rb.linearVelocity.y > 0)
             {
-                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
                 jumpcutRequested = false;
                 Debug.Log("Jump cut applied");
             }
@@ -87,8 +87,10 @@ public class JonCharacterController : MonoBehaviour
             StartCoroutine(DashCoroutine(dashDuration));
             dashRequested = false;
         }
+        if(Mathf.Abs(movementVector.x) > 0.1f)
+        {
         localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
-        transform.localScale = localScale;
+        transform.localScale = localScale;}
 
     }
 
