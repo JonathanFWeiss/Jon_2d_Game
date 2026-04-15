@@ -7,7 +7,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     private JonCharacterController characterController;
 
-    private InputAction moveAction, jumpAction, dashAction, attackAction;
+    private InputAction moveAction, jumpAction, dashAction, attackAction, jumpcutAction;
 
 
     void Awake()
@@ -18,10 +18,12 @@ public class PlayerInputHandler : MonoBehaviour
         jumpAction = InputSystem.actions.FindAction("Jump");
         dashAction = InputSystem.actions.FindAction("Dash");
         attackAction = InputSystem.actions.FindAction("Attack");
+        jumpcutAction = InputSystem.actions.FindAction("JumpCut");
 
         jumpAction.performed += Jump;
         dashAction.performed += Dash;
         attackAction.performed += Attack;
+        jumpcutAction.performed += JumpCut;
 
     }
 
@@ -65,6 +67,15 @@ public class PlayerInputHandler : MonoBehaviour
             Debug.Log("Attack action triggered from input system");
         }
         characterController.Attack();
+    }
+
+    public void JumpCut(InputAction.CallbackContext context)
+    {
+        if (jumpcutAction.triggered)
+        {
+            Debug.Log("JumpCut action triggered from input system");
+        }
+        characterController.JumpCut();
     }
 
 

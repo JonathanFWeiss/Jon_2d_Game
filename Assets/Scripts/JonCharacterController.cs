@@ -9,6 +9,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float jumpForce = 5f;
     [SerializeField] private float dashSpeed = 10f;
     [SerializeField] private float dashDuration = 0.2f;
+    [SerializeField] private float jumpCutMultiplier = .5f;
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
 
@@ -16,8 +17,9 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private Transform groundCheckTransform;
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
-    private bool jumpRequested, dashRequested, attackRequested, isDashing = false;
+    private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested;
     private float dashDirection = 1f;
+    private Vector3 localScale;
 
 
     private Vector2 movementVector;
@@ -59,9 +61,19 @@ public class JonCharacterController : MonoBehaviour
 
         if (jumpRequested && isGrounded)
         {
+
             rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
             jumpRequested = false;
+            
         }
+
+        if (jumpcutRequested && rb.velocity.y > 0)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
+                jumpcutRequested = false;
+                Debug.Log("Jump cut applied");
+            }
+
 
         if (dashRequested)
         {
@@ -75,6 +87,8 @@ public class JonCharacterController : MonoBehaviour
             StartCoroutine(DashCoroutine(dashDuration));
             dashRequested = false;
         }
+        localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+        transform.localScale = localScale;
 
     }
 
@@ -85,6 +99,7 @@ public class JonCharacterController : MonoBehaviour
 
         jumpRequested = true;
         Debug.Log("Jump action triggered");
+        jumpcutRequested = false; // Reset jump cut request when a new jump is initiated
     }
 
     public void Dash()
@@ -116,11 +131,27 @@ public class JonCharacterController : MonoBehaviour
 
     }
 
+    public void JumpCut()
+    {
+        jumpcutRequested = true;
+        Debug.Log("JumpCut action triggered");
+    }
+
     private void doGroundCheck()
     {
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
-        //Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
+        Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
         if (groundCollider) isGrounded = true;
         else isGrounded = false;
+    }
+
+
+    private void OnDrawGizmosSelected()
+    {
+        if (groundCheckTransform != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
+        }
     }
 }
