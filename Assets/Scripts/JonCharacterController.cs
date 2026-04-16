@@ -12,6 +12,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
+    private bool airDashAvailable = true; // Tracks if the player can still air dash
     [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
@@ -62,7 +63,10 @@ public class JonCharacterController : MonoBehaviour
     {
         doGroundCheck();
         if (isGrounded)
-        { doubleJumpAvailable = canDoubleJump; } // Reset double jump availability when jump cut is applied
+        {
+            doubleJumpAvailable = canDoubleJump;
+            airDashAvailable = true;
+        }
         // Don't apply normal movement during dash
         if (!isDashing)
         {
@@ -142,10 +146,22 @@ public class JonCharacterController : MonoBehaviour
 
     public void Dash()
     {
-        if (!isDashing && Time.time >= nextDashTime)
+        if (isDashing || Time.time < nextDashTime)
         {
-            dashRequested = true;
-            nextDashTime = Time.time + dashCooldown;
+            return;
+        }
+
+        if (!isGrounded && !airDashAvailable)
+        {
+            return;
+        }
+
+        dashRequested = true;
+        nextDashTime = Time.time + dashCooldown;
+
+        if (!isGrounded)
+        {
+            airDashAvailable = false;
         }
 
         Debug.Log("Dash action triggered");
