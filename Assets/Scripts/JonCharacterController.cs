@@ -44,7 +44,7 @@ public class JonCharacterController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-animator = GetComponent<Animator>();
+        animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -111,10 +111,14 @@ animator = GetComponent<Animator>();
             StartCoroutine(DashCoroutine(dashDuration));
             dashRequested = false;
         }
-        if (Mathf.Abs(movementVector.x) > 0.1f)
+
+        if (!isDashing)
         {
-            localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
-            transform.localScale = localScale;
+            if (Mathf.Abs(movementVector.x) > 0.1f)
+            {
+                localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+                transform.localScale = localScale;
+            }
         }
 
     }
@@ -135,7 +139,10 @@ animator = GetComponent<Animator>();
 
     public void Dash()
     {
-        dashRequested = true;
+        if (!isDashing)
+        {
+            dashRequested = true;
+        }
 
         Debug.Log("Dash action triggered");
 
