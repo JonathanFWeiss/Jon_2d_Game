@@ -49,6 +49,8 @@ public class GroundWalkerEnemy : EnemyBase
         base.FixedUpdate();
     }
 
+   
+
     protected virtual void OnCollisionEnter2D(Collision2D collision)
     {
         if (!turnAtWalls || isDead) return;
@@ -95,7 +97,10 @@ public class GroundWalkerEnemy : EnemyBase
     protected virtual void EnsureLedgeCheckExists()
     {
         if (ledgeCheck != null)
+        {
+            
             return;
+        }
 
         Transform existing = transform.Find("LedgeCheck");
         if (existing != null)
@@ -105,18 +110,35 @@ public class GroundWalkerEnemy : EnemyBase
         }
 
         GameObject ledgeCheckObject = new GameObject("LedgeCheck");
-        ledgeCheckObject.transform.SetParent(transform);
-        ledgeCheckObject.transform.localRotation = Quaternion.identity;
+        ledgeCheckObject.transform.SetParent(transform, true);
         ledgeCheckObject.transform.localScale = Vector3.one;
         ledgeCheck = ledgeCheckObject.transform;
+
+        
     }
+
+
 
     protected virtual void UpdateLedgeCheckPosition()
     {
         if (ledgeCheck == null)
             return;
 
-        ledgeCheck.localPosition = new Vector3(
+        Vector3 localOffset = new Vector3(
+            Mathf.Abs(ledgeCheckX),
+            ledgeCheckY,
+            0f
+        );
+
+        if (ledgeCheck.parent == transform)
+        {
+            // The enemy already flips by changing its own X scale, so the child
+            // should keep a positive local X and let the parent mirror it.
+            ledgeCheck.localPosition = localOffset;
+            return;
+        }
+
+        ledgeCheck.position = transform.position + new Vector3(
             Mathf.Abs(ledgeCheckX) * facingDirection,
             ledgeCheckY,
             0f
