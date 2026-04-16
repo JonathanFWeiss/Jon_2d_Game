@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 9010471984446561173}
   - component: {fileID: 9148537120222421094}
   m_Layer: 8
-  m_Name: Beetle_0
+  m_Name: Beetle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -199,13 +199,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 5633202637089659613}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0815962a69cd69a42aec0f643bc355e5, type: 3}
+  m_Script: {fileID: 11500000, guid: e5c3ee34d9668424fa47f66899af52bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BettleWalker
-  walkSpeed: 2
+  hp: 3
+  moveSpeed: 2
+  startFacingRight: 1
+  coinPrefab: {fileID: 0}
+  coinDropCount: 0
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 4294967295
-  startFacingRight: 1
-  hp: 3
-  coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
+    m_Bits: 0
+  ledgeCheck: {fileID: 0}
+  ledgeCheckX: 1
+  ledgeCheckY: -0.5
+  ledgeCheckRadius: 0.1
+  turnAtLedges: 1
+  turnAtWalls: 1
