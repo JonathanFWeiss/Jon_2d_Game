@@ -51,6 +51,7 @@ public class JonCharacterController : MonoBehaviour
     void Update()
     {
         animator.SetFloat("xSpeedABS", Mathf.Abs(movementVector.x));
+        animator.SetFloat("ySpeed", rb.linearVelocity.y);
         animator.SetBool("isGrounded", isGrounded);
 
     }

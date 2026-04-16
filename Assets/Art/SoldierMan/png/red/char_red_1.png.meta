@@ -860,7 +860,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_24
+      name: jumpup1
       rect:
         serializedVersion: 2
         x: 112
@@ -882,7 +882,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_25
+      name: jumpup2
       rect:
         serializedVersion: 2
         x: 168
@@ -904,7 +904,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_26
+      name: jumpup3
       rect:
         serializedVersion: 2
         x: 224
@@ -926,7 +926,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_27
+      name: jumpup4
       rect:
         serializedVersion: 2
         x: 280
@@ -948,7 +948,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_28
+      name: jump_stall1
       rect:
         serializedVersion: 2
         x: 336
@@ -970,7 +970,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_29
+      name: jump_stall2
       rect:
         serializedVersion: 2
         x: 392
@@ -992,7 +992,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_30
+      name: jump_stall3
       rect:
         serializedVersion: 2
         x: 0
@@ -1014,7 +1014,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_31
+      name: jumpdown1
       rect:
         serializedVersion: 2
         x: 56
@@ -1036,7 +1036,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_32
+      name: jumpdown2
       rect:
         serializedVersion: 2
         x: 112
@@ -1058,7 +1058,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_33
+      name: jumpdown3
       rect:
         serializedVersion: 2
         x: 168
@@ -1080,7 +1080,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_34
+      name: jumpdown4
       rect:
         serializedVersion: 2
         x: 224
@@ -1849,17 +1849,6 @@ TextureImporter:
       char_red_1_13: -6312034077454042477
       char_red_1_22: -5733490603385329181
       char_red_1_23: 3772673848274277106
-      char_red_1_24: -8575065764991065817
-      char_red_1_25: -4604358662360642575
-      char_red_1_26: -2802415011709790172
-      char_red_1_27: -6861057493685956754
-      char_red_1_28: 7472924511786515125
-      char_red_1_29: -2732913400913910654
-      char_red_1_30: 6469339768274973492
-      char_red_1_31: -8961949100412300064
-      char_red_1_32: -1830279235309367552
-      char_red_1_33: 8080222634084728556
-      char_red_1_34: 6126819361752307376
       char_red_1_35: 109170590052363270
       char_red_1_36: 4148430928412355243
       char_red_1_37: 2229452728156350442
@@ -1903,6 +1892,17 @@ TextureImporter:
       idle4: -6757121255034886283
       idle5: -4413928816354851123
       idle6: -7474451970298883000
+      jump_stall1: 7472924511786515125
+      jump_stall2: -2732913400913910654
+      jump_stall3: 6469339768274973492
+      jumpdown1: -8961949100412300064
+      jumpdown2: -1830279235309367552
+      jumpdown3: 8080222634084728556
+      jumpdown4: 6126819361752307376
+      jumpup1: -8575065764991065817
+      jumpup2: -4604358662360642575
+      jumpup3: -2802415011709790172
+      jumpup4: -6861057493685956754
       run1: -225966595508206530
       run2: 4717277635560744258
       run3: 6165039813375018982
