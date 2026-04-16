@@ -9,6 +9,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float jumpForce = 5f;
     [SerializeField] private float dashSpeed = 10f;
     [SerializeField] private float dashDuration = 0.2f;
+    [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
     [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
@@ -21,6 +22,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested;
     private float dashDirection = 1f;
+    private float nextDashTime;
     private Vector3 localScale;
 
 
@@ -140,9 +142,10 @@ public class JonCharacterController : MonoBehaviour
 
     public void Dash()
     {
-        if (!isDashing)
+        if (!isDashing && Time.time >= nextDashTime)
         {
             dashRequested = true;
+            nextDashTime = Time.time + dashCooldown;
         }
 
         Debug.Log("Dash action triggered");
