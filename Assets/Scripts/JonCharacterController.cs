@@ -26,6 +26,8 @@ public class JonCharacterController : MonoBehaviour
 
     private Vector2 movementVector;
 
+    public Animator animator;
+
 
     private void Awake()
     {
@@ -42,12 +44,14 @@ public class JonCharacterController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-
+animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        animator.SetFloat("xSpeedABS", Mathf.Abs(movementVector.x));
+        animator.SetBool("isGrounded", isGrounded);
 
     }
 
