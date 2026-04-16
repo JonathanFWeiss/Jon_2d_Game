@@ -10,6 +10,8 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashSpeed = 10f;
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float jumpCutMultiplier = .5f;
+    private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
+    [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
 
@@ -52,6 +54,8 @@ public class JonCharacterController : MonoBehaviour
     void FixedUpdate()
     {
         doGroundCheck();
+        if (isGrounded)
+        { doubleJumpAvailable = canDoubleJump; } // Reset double jump availability when jump cut is applied
         // Don't apply normal movement during dash
         if (!isDashing)
         {
@@ -59,20 +63,32 @@ public class JonCharacterController : MonoBehaviour
         }
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
-        if (jumpRequested && isGrounded)
+        if (jumpRequested && (isGrounded || doubleJumpAvailable))
         {
-
+            Debug.Log("Processing jump request. Jumprequested: " + jumpRequested + ", isGrounded: " + isGrounded + ", doubleJumpAvailable: " + doubleJumpAvailable);
+            if (rb.linearVelocity.y < 0)
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset downward velocity for consistent jumps
+                Debug.Log("Resetting downward velocity for consistent jump height");
+            }
             rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
             jumpRequested = false;
-            
+
+            if (!isGrounded && doubleJumpAvailable)
+            {
+                doubleJumpAvailable = false; // Consume double jump
+                Debug.Log("Double jump used");
+            }
+
         }
 
         if (jumpcutRequested && rb.linearVelocity.y > 0)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
-                jumpcutRequested = false;
-                Debug.Log("Jump cut applied");
-            }
+        {
+
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
+            jumpcutRequested = false;
+            Debug.Log("Jump cut applied");
+        }
 
 
         if (dashRequested)
@@ -82,22 +98,31 @@ public class JonCharacterController : MonoBehaviour
             {
                 dashDirection = Mathf.Sign(movementVector.x);
             }
+            else if (movementVector.x == 0f)
+            {
+                dashDirection = Mathf.Sign(transform.localScale.x); // Default to facing direction if no input
+            }
             // Implement dash logic here
             //rb.AddForce(new Vector2(dashForce, 0), ForceMode2D.Impulse);
             StartCoroutine(DashCoroutine(dashDuration));
             dashRequested = false;
         }
-        if(Mathf.Abs(movementVector.x) > 0.1f)
+        if (Mathf.Abs(movementVector.x) > 0.1f)
         {
-        localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
-        transform.localScale = localScale;}
+            localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+            transform.localScale = localScale;
+        }
 
     }
 
     public void Jump()
     {
-        if (!isGrounded || jumpRequested || isDashing)
+        if (jumpRequested || isDashing || (!doubleJumpAvailable && !isGrounded))
+        {
+            Debug.Log("Jump conditions not met, all must be false: jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !isGrounded) " + (!doubleJumpAvailable && !isGrounded));
             return;
+        }
+        Debug.Log("Jump conditions met, processing jump jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !isGrounded) " + (!doubleJumpAvailable && !isGrounded));
 
         jumpRequested = true;
         Debug.Log("Jump action triggered");
