@@ -10,6 +10,13 @@ public class GameMaster : MonoBehaviour
     [Tooltip("Optional respawn point. If left empty, the player's starting position is used.")]
     public Transform respawnPoint;
 
+    [Header("Fall Damage")]
+    [Tooltip("If the player falls below this Y position, GameMaster applies fatal damage.")]
+    public float fallDeathY = -50f;
+
+    [Tooltip("Damage applied when the player falls below the kill plane.")]
+    public int fallDamage = 5000;
+
     [Header("UI")]
     [Tooltip("UI Toolkit document that contains the Counters label.")]
     public UIDocument uiDocument;
@@ -39,6 +46,7 @@ public class GameMaster : MonoBehaviour
     private void Update()
     {
         ResolvePlayer();
+        TryApplyFallDamage();
 
         if (!isRespawningPlayer && PlayerData.HP <= 0)
         {
@@ -138,6 +146,20 @@ public class GameMaster : MonoBehaviour
 
         uiCountersText.text = $"Coins: {PlayerData.Coins} HP: {PlayerData.HP}";
         uiCountersText.style.display = DisplayStyle.Flex;
+    }
+
+    private void TryApplyFallDamage()
+    {
+        if (isRespawningPlayer || playerTransform == null || fallDamage <= 0)
+            return;
+
+        if (PlayerData.HP <= 0)
+            return;
+
+        if (playerTransform.position.y < fallDeathY)
+        {
+            PlayerData.RemoveHP(fallDamage);
+        }
     }
 
     private void RespawnPlayer()
