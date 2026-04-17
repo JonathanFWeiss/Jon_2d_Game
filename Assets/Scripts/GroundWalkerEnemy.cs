@@ -51,8 +51,10 @@ public class GroundWalkerEnemy : EnemyBase
 
    
 
-    protected virtual void OnCollisionEnter2D(Collision2D collision)
+    protected override void OnCollisionEnter2D(Collision2D collision)
     {
+        base.OnCollisionEnter2D(collision);
+
         if (!turnAtWalls || isDead) return;
 
         if (IsObstacle(collision.gameObject) && HasHorizontalContact(collision))
@@ -61,8 +63,10 @@ public class GroundWalkerEnemy : EnemyBase
         }
     }
 
-    protected virtual void OnTriggerEnter2D(Collider2D other)
+    protected override void OnTriggerEnter2D(Collider2D other)
     {
+        base.OnTriggerEnter2D(other);
+
         if (!turnAtWalls || isDead) return;
 
         if (IsObstacle(other.gameObject))

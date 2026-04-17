@@ -12,6 +12,19 @@ public class EnemyBase : MonoBehaviour
     public float moveAcceleration = 20f;
     public bool startFacingRight = true;
 
+    [Header("Contact Damage")]
+    [Tooltip("How much HP the player loses when touching this enemy.")]
+    public int contactDamage = 1;
+
+    [Tooltip("Cooldown between repeated contact-damage hits.")]
+    public float contactDamageCooldown = 1f;
+
+    [Tooltip("Which layers count as the player for contact damage. Defaults to the Player layer.")]
+    public LayerMask playerLayerMask = 0;
+
+    [Tooltip("Impulse applied to the player when this enemy deals contact damage.")]
+    public Vector2 contactPushbackImpulse = new Vector2(4f, 1.5f);
+
     [Header("Drops")]
     [Tooltip("Prefab to spawn on death.")]
     public GameObject coinPrefab;
@@ -22,11 +35,17 @@ public class EnemyBase : MonoBehaviour
     protected Rigidbody2D rb2d;
     protected float facingDirection = 1f;
     protected bool isDead = false;
+    protected float lastContactDamageTime = -Mathf.Infinity;
 
     protected virtual void Awake()
     {
         rb2d = GetComponent<Rigidbody2D>();
         rb2d.freezeRotation = true;
+
+        if (playerLayerMask == 0)
+        {
+            playerLayerMask = LayerMask.GetMask("Player");
+        }
 
         facingDirection = startFacingRight ? 1f : -1f;
         UpdateSpriteDirection();
@@ -71,6 +90,26 @@ public class EnemyBase : MonoBehaviour
         Debug.Log($"{gameObject.name} lost {amount} hp, remaining {hp}");
     }
 
+    protected virtual void OnCollisionEnter2D(Collision2D collision)
+    {
+        TryDamagePlayer(collision.gameObject);
+    }
+
+    protected virtual void OnCollisionStay2D(Collision2D collision)
+    {
+        TryDamagePlayer(collision.gameObject);
+    }
+
+    protected virtual void OnTriggerEnter2D(Collider2D other)
+    {
+        TryDamagePlayer(other.gameObject);
+    }
+
+    protected virtual void OnTriggerStay2D(Collider2D other)
+    {
+        TryDamagePlayer(other.gameObject);
+    }
+
     protected virtual void Die()
     {
         if (isDead) return;
@@ -95,6 +134,83 @@ public class EnemyBase : MonoBehaviour
     {
         facingDirection *= -1f;
         UpdateSpriteDirection();
+    }
+
+    protected virtual void TryDamagePlayer(GameObject hitObject)
+    {
+        if (isDead || contactDamage <= 0 || hitObject == null)
+            return;
+
+        if (Time.time < lastContactDamageTime + contactDamageCooldown)
+            return;
+
+        GameObject rootObject = hitObject.transform.root.gameObject;
+
+        if (!IsPlayerObject(rootObject))
+            return;
+
+        lastContactDamageTime = Time.time;
+        PlayerData.RemoveHP(contactDamage);
+        ApplyContactPushback(hitObject, rootObject);
+    }
+
+    protected virtual bool IsPlayerObject(GameObject obj)
+    {
+        if (obj == null)
+            return false;
+
+        if (obj.CompareTag("Player"))
+            return true;
+
+        return ((1 << obj.layer) & playerLayerMask.value) != 0;
+    }
+
+    protected virtual void ApplyContactPushback(GameObject hitObject, GameObject playerObject)
+    {
+        if (hitObject == null && playerObject == null)
+            return;
+
+        Rigidbody2D playerRb = null;
+
+        if (hitObject != null)
+        {
+            playerRb = hitObject.GetComponentInParent<Rigidbody2D>();
+        }
+
+        if (playerRb == null)
+        {
+            playerRb = playerObject.GetComponent<Rigidbody2D>();
+        }
+
+        if (playerRb == null)
+            return;
+
+        Vector2 direction = playerRb.worldCenterOfMass - rb2d.worldCenterOfMass;
+        float horizontalDirection = Mathf.Sign(direction.x);
+
+        if (horizontalDirection == 0f)
+        {
+            horizontalDirection = facingDirection == 0f ? 1f : facingDirection;
+        }
+
+        Vector2 impulse = new Vector2(
+            horizontalDirection * contactPushbackImpulse.x,
+            contactPushbackImpulse.y
+        );
+
+        playerRb.AddForce(impulse, ForceMode2D.Impulse);
+        JonCharacterController playerController = playerRb.GetComponent<JonCharacterController>();
+        if (playerController == null)
+        {
+            playerController = playerRb.GetComponentInParent<JonCharacterController>();
+        }
+
+        if (playerController != null)
+        {
+            playerController.StartGettingHit();
+        }
+
+        Debug.Log($"Applying pushback impulse {impulse} to player from {gameObject.name}");
     }
 
     protected virtual void UpdateSpriteDirection()

@@ -29,6 +29,9 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float attackDuration = 1f;
     [SerializeField] private float attackHitDelay = 0.5f;
 
+    [Header("Hit State")]
+    [SerializeField] private float gettingHitDuration = 1f;
+
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheckTransform;
     [SerializeField] private float groundCheckRadius = 0.2f;
@@ -42,6 +45,8 @@ public class JonCharacterController : MonoBehaviour
     private Vector2 movementVector;
     private bool isAttacking;
     private bool isAttackHitActive;
+    public bool isGettingHit { get; private set; }
+    private Coroutine gettingHitCoroutine;
 
     public Animator animator;
 
@@ -83,6 +88,7 @@ public class JonCharacterController : MonoBehaviour
         animator.SetFloat("ySpeed", rb.linearVelocity.y);
         animator.SetBool("isGrounded", isGrounded);
         animator.SetBool("isAttacking", isAttacking);
+        animator.SetBool("isGettingHit", isGettingHit);
 
     }
 
@@ -100,7 +106,7 @@ public class JonCharacterController : MonoBehaviour
             airDashAvailable = canDash;
         }
         // Don't apply normal movement during dash or attack
-        if (!isDashing || isAttacking)
+        if (!isDashing && !isAttacking && !isGettingHit)
         {
             rb.linearVelocityX = movementVector.x * movementSpeed;
         }
@@ -151,7 +157,7 @@ public class JonCharacterController : MonoBehaviour
             dashRequested = false;
         }
 
-        if (!isDashing)
+        if (!isDashing && !isAttacking && !isGettingHit)
         {
             if (Mathf.Abs(movementVector.x) > 0.1f)
             {
@@ -230,6 +236,16 @@ public class JonCharacterController : MonoBehaviour
         Debug.Log("JumpCut action triggered");
     }
 
+    public void StartGettingHit()
+    {
+        if (gettingHitCoroutine != null)
+        {
+            StopCoroutine(gettingHitCoroutine);
+        }
+
+        gettingHitCoroutine = StartCoroutine(GettingHitCoroutine(gettingHitDuration));
+    }
+
     private void doGroundCheck()
     {
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
@@ -244,6 +260,7 @@ public class JonCharacterController : MonoBehaviour
         if (isAttacking) yield break;
 
         isAttacking = true;
+        rb.linearVelocityX = 0; // Stop horizontal movement during attack 
         float clampedHitDelay = Mathf.Max(0f, attackHitDelay);
 
         if (clampedHitDelay > 0f)
@@ -264,6 +281,14 @@ public class JonCharacterController : MonoBehaviour
 
         isAttacking = false;
         isAttackHitActive = false;
+    }
+
+    IEnumerator GettingHitCoroutine(float seconds)
+    {
+        isGettingHit = true;
+        yield return new WaitForSeconds(seconds);
+        isGettingHit = false;
+        gettingHitCoroutine = null;
     }
 
     private void PerformAttackHit()
