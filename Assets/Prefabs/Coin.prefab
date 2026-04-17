@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 8837335713362775760}
   - component: {fileID: 8967433757143002167}
   - component: {fileID: -4203480419087088486}
-  - component: {fileID: -4753759624699746464}
   m_Layer: 8
   m_Name: Coin
   m_TagString: Untagged
@@ -176,18 +175,3 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   pickupDelay: 0.5
---- !u!114 &-4753759624699746464
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4870944765083343985}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fc9beebc64eb564ba977e41139417f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SlashPushback
-  pushForce: 0
-  horizontalOnly: 1
-  damage: 0

@@ -299,7 +299,7 @@ public class JonCharacterController : MonoBehaviour
         HashSet<Rigidbody2D> processedBodies = new HashSet<Rigidbody2D>();
 
         foreach (Collider2D hit in hits)
-        {
+        {Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
             if (hit == null)
                 continue;
 
@@ -315,6 +315,7 @@ public class JonCharacterController : MonoBehaviour
 
             if (!TryDealDamage(hitRigidbody.gameObject))
                 continue;
+                Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
 
             ApplyPushback(hitRigidbody, attackCenter);
         }
@@ -357,7 +358,8 @@ public class JonCharacterController : MonoBehaviour
 
             takeDamageMethod.Invoke(component, new object[] { attackDamage });
             return true;
-        }
+            }
+            
 
         return false;
     }

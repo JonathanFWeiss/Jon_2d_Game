@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3799531513539823149}
   - component: {fileID: 859820713618283268}
   - component: {fileID: 5532839171923976371}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Crow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -170,18 +170,34 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8186b59885ee6954eb7e80333afdb572, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CrowController
+  m_EditorClassIdentifier: Assembly-CSharp::GroundCrow
+  hp: 3
+  moveSpeed: 2
+  moveAcceleration: 20
+  startFacingRight: 1
+  contactDamage: 1
+  contactDamageCooldown: 1
+  playerLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  contactPushbackImpulse: {x: 4, y: 1.5}
+  coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
+  coinDropCount: 0
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 127
+  ledgeCheck: {fileID: 0}
+  ledgeCheckX: 1
+  ledgeCheckY: -0.5
+  ledgeCheckRadius: 0.1
+  turnAtLedges: 1
+  turnAtWalls: 1
   hopSpeed: 2
   hopForce: 3.5
   hopIntervalRange: {x: 0.5, y: 1.2}
   dashChance: 0.2
   dashSpeed: 6
   dashDuration: 0.25
-  startFacingRight: 1
-  hp: 3
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 127
   groundMask:
     serializedVersion: 2
     m_Bits: 383
@@ -190,7 +206,6 @@ MonoBehaviour:
   edgeCheckForward: 0.2
   edgeCheckDistance: 0.25
   groundCheckRadius: 0.1
-  coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
   CoinsToDrop: 3
 --- !u!1 &6874440608426114588
 GameObject:
@@ -202,7 +217,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1602584319498772286}
   - component: {fileID: 8503186596944449834}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Crow Feet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
