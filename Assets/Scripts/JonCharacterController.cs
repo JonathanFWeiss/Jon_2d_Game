@@ -288,6 +288,7 @@ public class JonCharacterController : MonoBehaviour
         isGettingHit = true;
         yield return new WaitForSeconds(seconds);
         isGettingHit = false;
+        Debug.Log("Finished getting hit state");
         gettingHitCoroutine = null;
     }
 

@@ -2,8 +2,10 @@ using UnityEngine;
 
 public static class PlayerData
 {
+    public const int DefaultHP = 3;
+
     public static int Coins { get; private set; }
-    public static int HP { get; private set; } = 3;
+    public static int HP { get; private set; } = DefaultHP;
 
     public static void AddCoins(int amount = 1)
     {
@@ -17,9 +19,15 @@ public static class PlayerData
         Debug.Log("Player HP: " + HP);
     }
 
+    public static void RestoreFullHP()
+    {
+        HP = DefaultHP;
+        Debug.Log("Player HP restored to: " + HP);
+    }
+
     public static void Reset()
     {
         Coins = 0;
-        HP = 3;
+        HP = DefaultHP;
     }
 }

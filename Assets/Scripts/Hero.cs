@@ -2,8 +2,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 
 // from this forum post, just curious about this coyote jump stuff and acme anvils.
@@ -104,8 +102,6 @@ public partial class Hero : MonoBehaviour
     private InputAction dashAction;
     private InputAction attackAction;
     private InputAction downAction;
-    public UIDocument uiDocument;
-    private Label UICountersText;
 
     public float AttackCooldown = 1.5f;
     public float AttackLength = .5f;
@@ -193,29 +189,6 @@ public partial class Hero : MonoBehaviour
 
         jumpCounter = TotalJumpCount; // use them up initially
         airDashAvailable = true;
-        if (uiDocument != null)
-        {
-            Debug.Log(uiDocument.name);
-        }
-
-        //Debug.Log(UICountersText);
-        if (uiDocument != null)
-        {
-            Debug.Log("UIDocument found: " + uiDocument.name);
-            UICountersText = uiDocument.rootVisualElement.Q<Label>("Counters");
-            if (UICountersText != null)
-            {
-                Debug.Log("UICountersText label found successfully!");
-            }
-            else
-            {
-                Debug.LogError("UICountersText 'Counters' label not found in UIDocument. Check the label name in UI Toolkit.");
-            }
-        }
-        else
-        {
-            Debug.Log("UIDocument is not assigned in the Inspector!");
-        }
     }
 
     bool leftIntent, rightIntent;
@@ -467,21 +440,6 @@ public partial class Hero : MonoBehaviour
 
             ;
         }
-
-        if (UICountersText != null)
-        {
-            UICountersText.text = "Coins: " + PlayerData.Coins + " HP: " + PlayerData.HP;
-            UICountersText.style.display = DisplayStyle.Flex; // Ensure it's visible
-        }
-        else
-        {
-            Debug.LogWarning("UICountersText is null - UI element not found or not initialized");
-        }
-
-
-
-
-
     }
 
     void FixedUpdate()

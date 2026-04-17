@@ -41,7 +41,7 @@ public class CoinPickup : MonoBehaviour
         if ((playerLayer.value & (1 << other.layer)) != 0)
         {
             PlayerData.AddCoins(coinValue);
-            //Debug.Log("Coin collected! Total coins: " + PlayerData.Coins);
+            Debug.Log("Coin collected! Total coins: " + PlayerData.Coins);
             //Debug.Log("currentPickupDelay: " + currentPickupDelay.ToString("F2") + " seconds");
             Destroy(gameObject);
         }

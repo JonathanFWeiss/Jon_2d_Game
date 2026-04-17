@@ -1168,7 +1168,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_38
+      name: TakingDamage1
       rect:
         serializedVersion: 2
         x: 0
@@ -1190,7 +1190,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_39
+      name: TakingDamage2
       rect:
         serializedVersion: 2
         x: 56
@@ -1212,7 +1212,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_40
+      name: TakingDamage3
       rect:
         serializedVersion: 2
         x: 112
@@ -1234,7 +1234,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_41
+      name: TakingDamage4
       rect:
         serializedVersion: 2
         x: 168
@@ -1843,6 +1843,10 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":56.0,"y":56.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
+      TakingDamage1: -3755140422821127210
+      TakingDamage2: -7160385399383459470
+      TakingDamage3: -451219392569925514
+      TakingDamage4: -8513323062242401148
       attack1: -42276737052414112
       attack2: 7194181026904205713
       attack3: 8812414287886770779
@@ -1856,10 +1860,6 @@ TextureImporter:
       char_red_1_35: 109170590052363270
       char_red_1_36: 4148430928412355243
       char_red_1_37: 2229452728156350442
-      char_red_1_38: -3755140422821127210
-      char_red_1_39: -7160385399383459470
-      char_red_1_40: -451219392569925514
-      char_red_1_41: -8513323062242401148
       char_red_1_42: -4010610446114769769
       char_red_1_43: -885702635809259931
       char_red_1_44: -598101099211396344
