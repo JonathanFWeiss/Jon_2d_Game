@@ -187,8 +187,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 127
   ledgeCheck: {fileID: 0}
-  ledgeCheckX: 1
-  ledgeCheckY: -0.5
+  ledgeCheckX: 2
+  ledgeCheckY: -1
   ledgeCheckRadius: 0.1
   turnAtLedges: 1
   turnAtWalls: 1

@@ -7,7 +7,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     private JonCharacterController characterController;
 
-    private InputAction moveAction, jumpAction, dashAction, attackAction, jumpcutAction;
+    private InputAction moveAction, jumpAction, dashAction, attackAction, jumpcutAction, PogoAction;
 
 
     void Awake()
@@ -19,11 +19,13 @@ public class PlayerInputHandler : MonoBehaviour
         dashAction = InputSystem.actions.FindAction("Dash");
         attackAction = InputSystem.actions.FindAction("Attack");
         jumpcutAction = InputSystem.actions.FindAction("JumpCut");
+        PogoAction = InputSystem.actions.FindAction("Pogo");
 
         jumpAction.performed += Jump;
         dashAction.performed += Dash;
         attackAction.performed += Attack;
         jumpcutAction.performed += JumpCut;
+        PogoAction.performed += Pogo;
 
     }
 
@@ -76,6 +78,15 @@ public class PlayerInputHandler : MonoBehaviour
             Debug.Log("JumpCut action triggered from input system");
         }
         characterController.JumpCut();
+    }
+
+    public void Pogo(InputAction.CallbackContext context)
+    {
+        if (PogoAction.triggered)
+        {
+            Debug.Log("Pogo action triggered from input system");
+        }
+        characterController.Pogo();
     }
 
 

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -32,10 +33,21 @@ public class EnemyBase : MonoBehaviour
     [Tooltip("How many coins this enemy drops.")]
     public int coinDropCount = 0;
 
+    [Header("Hit Flash")]
+    [Tooltip("How long enemies flash white after taking damage.")]
+    public float hitFlashDuration = 0.08f;
+
+    [Tooltip("Tint applied while the enemy is flashing from damage.")]
+    public Color hitFlashColor = Color.red;
+
     protected Rigidbody2D rb2d;
     protected float facingDirection = 1f;
     protected bool isDead = false;
     protected float lastContactDamageTime = -Mathf.Infinity;
+    protected SpriteRenderer[] hitFlashRenderers;
+    protected Color[] hitFlashOriginalColors;
+    protected Coroutine hitFlashCoroutine;
+    protected float hitFlashEndTime = -Mathf.Infinity;
 
     protected virtual void Awake()
     {
@@ -49,6 +61,7 @@ public class EnemyBase : MonoBehaviour
 
         facingDirection = startFacingRight ? 1f : -1f;
         UpdateSpriteDirection();
+        CacheHitFlashRenderers();
 
         Debug.Log($"{gameObject.name} remaining {hp}");
     }
@@ -62,6 +75,7 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Update()
     {
+        
         if (!isDead && hp <= 0)
         {
             Die();
@@ -87,6 +101,12 @@ public class EnemyBase : MonoBehaviour
         if (isDead) return;
 
         hp -= amount;
+
+        if (amount > 0)
+        {
+            TriggerHitFlash();
+        }
+
         Debug.Log($"{gameObject.name} lost {amount} hp, remaining {hp}");
     }
 
@@ -115,6 +135,13 @@ public class EnemyBase : MonoBehaviour
         if (isDead) return;
 
         isDead = true;
+
+        if (hitFlashCoroutine != null)
+        {
+            StopCoroutine(hitFlashCoroutine);
+            hitFlashCoroutine = null;
+        }
+
         DropCoins();
         Destroy(gameObject);
     }
@@ -218,5 +245,88 @@ public class EnemyBase : MonoBehaviour
         Vector3 scale = transform.localScale;
         scale.x = Mathf.Abs(scale.x) * facingDirection;
         transform.localScale = scale;
+    }
+
+    protected virtual void CacheHitFlashRenderers()
+    {
+        hitFlashRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+    }
+
+    protected virtual void TriggerHitFlash()
+    {
+        if (hitFlashDuration <= 0f)
+            return;
+
+        if (hitFlashRenderers == null || hitFlashRenderers.Length == 0)
+        {
+            CacheHitFlashRenderers();
+        }
+
+        if (hitFlashRenderers == null || hitFlashRenderers.Length == 0)
+            return;
+
+        hitFlashEndTime = Time.time + hitFlashDuration;
+
+        if (hitFlashCoroutine == null)
+        {
+            CacheHitFlashOriginalColors();
+            hitFlashCoroutine = StartCoroutine(HitFlashRoutine());
+            return;
+        }
+
+        SetHitFlashColor();
+    }
+
+    protected virtual void CacheHitFlashOriginalColors()
+    {
+        hitFlashOriginalColors = new Color[hitFlashRenderers.Length];
+
+        for (int i = 0; i < hitFlashRenderers.Length; i++)
+        {
+            SpriteRenderer spriteRenderer = hitFlashRenderers[i];
+            hitFlashOriginalColors[i] = spriteRenderer != null ? spriteRenderer.color : Color.white;
+        }
+    }
+
+    protected virtual IEnumerator HitFlashRoutine()
+    {
+        SetHitFlashColor();
+
+        while (Time.time < hitFlashEndTime)
+        {
+            yield return null;
+        }
+
+        RestoreHitFlashColors();
+        hitFlashCoroutine = null;
+    }
+
+    protected virtual void SetHitFlashColor()
+    {
+        foreach (SpriteRenderer spriteRenderer in hitFlashRenderers)
+        {
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = hitFlashColor;
+                Debug.Log($"Setting hit flash color {hitFlashColor} on {spriteRenderer.gameObject.name} for {gameObject.name}");
+            }
+        }
+    }
+
+    protected virtual void RestoreHitFlashColors()
+    {
+        if (hitFlashRenderers == null || hitFlashOriginalColors == null)
+            return;
+
+        for (int i = 0; i < hitFlashRenderers.Length; i++)
+        {
+            SpriteRenderer spriteRenderer = hitFlashRenderers[i];
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = hitFlashOriginalColors[i];
+            }
+        }
+
+        hitFlashOriginalColors = null;
     }
 }

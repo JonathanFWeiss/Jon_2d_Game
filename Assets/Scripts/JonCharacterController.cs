@@ -14,7 +14,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
-    private bool airDashAvailable   = true; // Tracks if the player can still air dash
+    private bool airDashAvailable = true; // Tracks if the player can still air dash
     [SerializeField] private bool canDash = true; // For if the player can air dash or not, set in inspector
     [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
     private Rigidbody2D rb;
@@ -23,11 +23,18 @@ public class JonCharacterController : MonoBehaviour
     [Header("Melee Attack")]
     [SerializeField] private Vector2 attackBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 attackBoxOffset = new Vector2(0.9f, 0f);
+
     [SerializeField] private LayerMask attackLayerMask;
     [SerializeField] private int attackDamage = 1;
     [SerializeField] private Vector2 attackPushbackImpulse = new Vector2(4f, 1.5f);
     [SerializeField] private float attackDuration = 1f;
     [SerializeField] private float attackHitDelay = 0.5f;
+    [Header("Pogo Parameters")]
+    [SerializeField] private float pogoForce = 10f;
+    [SerializeField] private float pogoDuration = 0.5f;
+    [SerializeField] private float pogoAttackDelay = 0.5f;
+    [SerializeField] private Vector2 pogoAttackBoxSize = new Vector2(1.25f, 0.85f);
+    [SerializeField] private Vector2 pogoAttackBoxOffset = new Vector2(0f, -2f);
 
     [Header("Hit State")]
     [SerializeField] private float gettingHitDuration = 1f;
@@ -36,7 +43,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private Transform groundCheckTransform;
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
-    private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested;
+    private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested;
     private float dashDirection = 1f;
     private float nextDashTime;
     private Vector3 localScale;
@@ -44,6 +51,7 @@ public class JonCharacterController : MonoBehaviour
 
     private Vector2 movementVector;
     private bool isAttacking;
+    private bool isPogoing;
     private bool isAttackHitActive;
     public bool isGettingHit { get; private set; }
     private Coroutine gettingHitCoroutine;
@@ -89,12 +97,23 @@ public class JonCharacterController : MonoBehaviour
         animator.SetBool("isGrounded", isGrounded);
         animator.SetBool("isAttacking", isAttacking);
         animator.SetBool("isGettingHit", isGettingHit);
+        animator.SetBool("isDashing", isDashing);
+        animator.SetBool("isPogoing", isPogoing);
 
     }
 
     void FixedUpdate()
     {
         doGroundCheck();
+
+        if (pogoRequested)
+        {
+            rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+            pogoRequested = false;
+            attackRequested = false; // Cancel attack if pogo is performed
+            StartCoroutine(PogoAttackCoroutine(pogoDuration));
+            Debug.Log("Pogo executed with jump force: " + jumpForce);
+        }
         if (attackRequested)
         {
             StartCoroutine(AttackCoroutine(attackDuration));
@@ -230,6 +249,16 @@ public class JonCharacterController : MonoBehaviour
 
     }
 
+    public void Pogo()
+    {
+        if (isGrounded)
+            return;
+
+        // Implement pogo logic here, for example:
+        pogoRequested = true; // Bounce up with jump force
+        Debug.Log("Pogo action triggered");
+    }
+
     public void JumpCut()
     {
         jumpcutRequested = true;
@@ -283,6 +312,36 @@ public class JonCharacterController : MonoBehaviour
         isAttackHitActive = false;
     }
 
+
+    IEnumerator PogoAttackCoroutine(float seconds)
+    {
+        Debug.Log("Starting pogo attack coroutine");
+        if (isAttacking) yield break;
+
+        isPogoing = true;
+        //rb.linearVelocityX = 0; // Stop horizontal movement during attack 
+        float clampedHitDelay = Mathf.Max(0f, pogoAttackDelay);
+
+        if (clampedHitDelay > 0f)
+        {
+            yield return new WaitForSeconds(clampedHitDelay);
+        }
+
+        isAttackHitActive = true;
+        PerformPogoHit();
+        yield return null;
+        isAttackHitActive = false;
+
+        float remainingAttackTime = Mathf.Max(0f, seconds - clampedHitDelay);
+        if (remainingAttackTime > 0f)
+        {
+            yield return new WaitForSeconds(remainingAttackTime);
+        }
+
+        isPogoing = false;
+        isAttackHitActive = false;
+    }
+
     IEnumerator GettingHitCoroutine(float seconds)
     {
         isGettingHit = true;
@@ -299,7 +358,8 @@ public class JonCharacterController : MonoBehaviour
         HashSet<Rigidbody2D> processedBodies = new HashSet<Rigidbody2D>();
 
         foreach (Collider2D hit in hits)
-        {Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
+        {
+            Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
             if (hit == null)
                 continue;
 
@@ -315,7 +375,37 @@ public class JonCharacterController : MonoBehaviour
 
             if (!TryDealDamage(hitRigidbody.gameObject))
                 continue;
-                Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
+            Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
+
+            ApplyPushback(hitRigidbody, attackCenter);
+        }
+    }
+
+    private void PerformPogoHit()
+    {
+        Vector2 attackCenter = GetPogoCenter();
+        Collider2D[] hits = Physics2D.OverlapBoxAll(attackCenter, pogoAttackBoxSize, 0f, attackLayerMask);
+        HashSet<Rigidbody2D> processedBodies = new HashSet<Rigidbody2D>();
+
+        foreach (Collider2D hit in hits)
+        {
+            Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
+            if (hit == null)
+                continue;
+
+            Rigidbody2D hitRigidbody = hit.attachedRigidbody;
+            if (hitRigidbody == null || hitRigidbody == rb)
+                continue;
+
+            if (hitRigidbody.transform.root == transform.root)
+                continue;
+
+            if (!processedBodies.Add(hitRigidbody))
+                continue;
+
+            if (!TryDealDamage(hitRigidbody.gameObject))
+                continue;
+            Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
 
             ApplyPushback(hitRigidbody, attackCenter);
         }
@@ -326,6 +416,14 @@ public class JonCharacterController : MonoBehaviour
         return (Vector2)transform.position + new Vector2(
             Mathf.Abs(attackBoxOffset.x) * GetFacingDirection(),
             attackBoxOffset.y
+        );
+    }
+
+        private Vector2 GetPogoCenter()
+    {
+        return (Vector2)transform.position + new Vector2(
+            Mathf.Abs(pogoAttackBoxOffset.x) * GetFacingDirection(),
+            pogoAttackBoxOffset.y
         );
     }
 
@@ -358,8 +456,8 @@ public class JonCharacterController : MonoBehaviour
 
             takeDamageMethod.Invoke(component, new object[] { attackDamage });
             return true;
-            }
-            
+        }
+
 
         return false;
     }
@@ -398,6 +496,11 @@ public class JonCharacterController : MonoBehaviour
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireCube(GetEditorAttackCenter(), attackBoxSize);
         }
+        Gizmos.color = Color.orange;
+        Gizmos.DrawWireCube(GetEditorAttackCenter(), attackBoxSize);
+        Gizmos.color = Color.white;
+        Gizmos.DrawWireCube(GetEditorPogoAttackCenter(), pogoAttackBoxSize);
+
     }
 
     private Vector2 GetEditorAttackCenter()
@@ -407,6 +510,16 @@ public class JonCharacterController : MonoBehaviour
         return (Vector2)transform.position + new Vector2(
             Mathf.Abs(attackBoxOffset.x) * facing,
             attackBoxOffset.y
+        );
+    }
+
+    private Vector2 GetEditorPogoAttackCenter()
+    {
+        float facing = transform.localScale.x < 0f ? -1f : 1f;
+
+        return (Vector2)transform.position + new Vector2(
+            Mathf.Abs(pogoAttackBoxOffset.x) * facing,
+            pogoAttackBoxOffset.y
         );
     }
 }
