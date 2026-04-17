@@ -8,6 +8,8 @@ public class EnemyBase : MonoBehaviour
 
     [Header("Movement")]
     public float moveSpeed = 2f;
+    [Tooltip("How quickly the enemy accelerates toward its target move speed.")]
+    public float moveAcceleration = 20f;
     public bool startFacingRight = true;
 
     [Header("Drops")]
@@ -35,7 +37,7 @@ public class EnemyBase : MonoBehaviour
     protected virtual void FixedUpdate()
     {
         if (isDead) return;
-        Debug.Log($"{gameObject.name} is moving with speed {moveSpeed} in direction {facingDirection}");
+        //Debug.Log($"{gameObject.name} is moving with speed {moveSpeed} in direction {facingDirection}");
         Move();
     }
 
@@ -49,9 +51,16 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Move()
     {
-        Vector2 velocity = rb2d.linearVelocity;
-        velocity.x = facingDirection * moveSpeed;
-        rb2d.linearVelocity = velocity;
+        float targetVelocityX = facingDirection * moveSpeed;
+        float currentVelocityX = rb2d.linearVelocity.x;
+        float maxVelocityChange = moveAcceleration * Time.fixedDeltaTime;
+        float velocityChange = Mathf.Clamp(
+            targetVelocityX - currentVelocityX,
+            -maxVelocityChange,
+            maxVelocityChange
+        );
+
+        rb2d.AddForce(Vector2.right * (velocityChange * rb2d.mass), ForceMode2D.Impulse);
     }
 
     public virtual void TakeDamage(int amount)

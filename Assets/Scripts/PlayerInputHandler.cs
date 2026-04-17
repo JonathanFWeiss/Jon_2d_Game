@@ -31,7 +31,7 @@ public class PlayerInputHandler : MonoBehaviour
     void Update()
     {
         Vector2 moveInput = moveAction.ReadValue<Vector2>();
-        Debug.Log("Move input from input handler: " + moveInput);
+        //Debug.Log("Move input from input handler: " + moveInput);
         characterController.Move(moveInput);
 
 

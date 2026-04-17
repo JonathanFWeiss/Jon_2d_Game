@@ -26,8 +26,8 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private LayerMask attackLayerMask;
     [SerializeField] private int attackDamage = 1;
     [SerializeField] private Vector2 attackPushbackImpulse = new Vector2(4f, 1.5f);
-    [SerializeField] private float attackDuration = 0.5f;
-    [SerializeField] private float attackHitDelay = 0.2f;
+    [SerializeField] private float attackDuration = 1f;
+    [SerializeField] private float attackHitDelay = 0.5f;
 
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheckTransform;
@@ -41,6 +41,7 @@ public class JonCharacterController : MonoBehaviour
 
     private Vector2 movementVector;
     private bool isAttacking;
+    private bool isAttackHitActive;
 
     public Animator animator;
 
@@ -232,7 +233,7 @@ public class JonCharacterController : MonoBehaviour
     private void doGroundCheck()
     {
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
-        Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
+        //Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
         if (groundCollider) isGrounded = true;
         else isGrounded = false;
     }
@@ -250,7 +251,10 @@ public class JonCharacterController : MonoBehaviour
             yield return new WaitForSeconds(clampedHitDelay);
         }
 
+        isAttackHitActive = true;
         PerformAttackHit();
+        yield return null;
+        isAttackHitActive = false;
 
         float remainingAttackTime = Mathf.Max(0f, seconds - clampedHitDelay);
         if (remainingAttackTime > 0f)
@@ -259,6 +263,7 @@ public class JonCharacterController : MonoBehaviour
         }
 
         isAttacking = false;
+        isAttackHitActive = false;
     }
 
     private void PerformAttackHit()
@@ -345,8 +350,10 @@ public class JonCharacterController : MonoBehaviour
             horizontalDirection * attackPushbackImpulse.x,
             attackPushbackImpulse.y
         );
+        Debug.Log($"Applying pushback to {hitRigidbody.gameObject.name} with impulse {impulse}");
 
         hitRigidbody.AddForce(impulse, ForceMode2D.Impulse);
+        //otherRb.AddForce(direction * pushForce, ForceMode2D.Impulse);
     }
 
 
@@ -358,8 +365,11 @@ public class JonCharacterController : MonoBehaviour
             Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
         }
 
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(GetEditorAttackCenter(), attackBoxSize);
+        if (isAttackHitActive)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireCube(GetEditorAttackCenter(), attackBoxSize);
+        }
     }
 
     private Vector2 GetEditorAttackCenter()

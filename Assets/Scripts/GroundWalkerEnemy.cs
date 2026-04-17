@@ -155,7 +155,7 @@ public class GroundWalkerEnemy : EnemyBase
             ledgeCheckRadius,
             groundMask
         );
-        Debug.Log($"{gameObject.name} ledge check at {ledgeCheck.position} found ground: {groundAhead}");
+        //Debug.Log($"{gameObject.name} ledge check at {ledgeCheck.position} found ground: {groundAhead}");
 
         return !groundAhead;
     }
