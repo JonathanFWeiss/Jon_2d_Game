@@ -464,7 +464,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_6
+      name: attack1
       rect:
         serializedVersion: 2
         x: 0
@@ -486,7 +486,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_7
+      name: attack2
       rect:
         serializedVersion: 2
         x: 56
@@ -508,7 +508,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_8
+      name: attack3
       rect:
         serializedVersion: 2
         x: 112
@@ -530,7 +530,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_9
+      name: attack4
       rect:
         serializedVersion: 2
         x: 168
@@ -552,7 +552,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_10
+      name: attack5
       rect:
         serializedVersion: 2
         x: 224
@@ -574,7 +574,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_11
+      name: attack6
       rect:
         serializedVersion: 2
         x: 280
@@ -1843,8 +1843,12 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":56.0,"y":56.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      char_red_1_10: -1646344528426393620
-      char_red_1_11: 7860054100599173436
+      attack1: -42276737052414112
+      attack2: 7194181026904205713
+      attack3: 8812414287886770779
+      attack4: -2137098477131360537
+      attack5: -1646344528426393620
+      attack6: 7860054100599173436
       char_red_1_12: 9172935127669368835
       char_red_1_13: -6312034077454042477
       char_red_1_22: -5733490603385329181
@@ -1874,7 +1878,6 @@ TextureImporter:
       char_red_1_57: 7015228164383829436
       char_red_1_58: 7216973383955334952
       char_red_1_59: 3569312059541262636
-      char_red_1_6: -42276737052414112
       char_red_1_60: -4336340372131371832
       char_red_1_61: 737160717832974173
       char_red_1_62: -7129802907820426984
@@ -1883,9 +1886,6 @@ TextureImporter:
       char_red_1_65: 6248888487687991014
       char_red_1_66: -8594966910719959752
       char_red_1_67: -1000285343028949368
-      char_red_1_7: 7194181026904205713
-      char_red_1_8: 8812414287886770779
-      char_red_1_9: -2137098477131360537
       idle1: 1684256597749961581
       idle2: -4264497638767173755
       idle3: 1334582614908416109

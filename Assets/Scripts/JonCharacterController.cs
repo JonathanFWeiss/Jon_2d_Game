@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 
 public class JonCharacterController : MonoBehaviour
 {
@@ -18,6 +20,15 @@ public class JonCharacterController : MonoBehaviour
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
 
+    [Header("Melee Attack")]
+    [SerializeField] private Vector2 attackBoxSize = new Vector2(1.25f, 0.85f);
+    [SerializeField] private Vector2 attackBoxOffset = new Vector2(0.9f, 0f);
+    [SerializeField] private LayerMask attackLayerMask;
+    [SerializeField] private int attackDamage = 1;
+    [SerializeField] private Vector2 attackPushbackImpulse = new Vector2(4f, 1.5f);
+    [SerializeField] private float attackDuration = 0.5f;
+    [SerializeField] private float attackHitDelay = 0.2f;
+
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheckTransform;
     [SerializeField] private float groundCheckRadius = 0.2f;
@@ -29,6 +40,7 @@ public class JonCharacterController : MonoBehaviour
 
 
     private Vector2 movementVector;
+    private bool isAttacking;
 
     public Animator animator;
 
@@ -36,8 +48,14 @@ public class JonCharacterController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
         Debug.Log("Rigidbody2D component found: " + rb);
         rb.freezeRotation = true;
+
+        if (attackLayerMask == 0)
+        {
+            attackLayerMask = LayerMask.GetMask("Player", "NPCs", "Enemy");
+        }
     }
 
     public void Move(Vector2 move)
@@ -48,28 +66,40 @@ public class JonCharacterController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (animator == null)
+            return;
+
         animator.SetFloat("xSpeedABS", Mathf.Abs(movementVector.x));
         animator.SetFloat("ySpeed", rb.linearVelocity.y);
         animator.SetBool("isGrounded", isGrounded);
+        animator.SetBool("isAttacking", isAttacking);
 
     }
 
     void FixedUpdate()
     {
         doGroundCheck();
+        if (attackRequested)
+        {
+            StartCoroutine(AttackCoroutine(attackDuration));
+            attackRequested = false;
+        }
         if (isGrounded)
         {
             doubleJumpAvailable = canDoubleJump;
             airDashAvailable = canDash;
         }
-        // Don't apply normal movement during dash
-        if (!isDashing)
+        // Don't apply normal movement during dash or attack
+        if (!isDashing || isAttacking)
         {
             rb.linearVelocityX = movementVector.x * movementSpeed;
         }
@@ -184,6 +214,9 @@ public class JonCharacterController : MonoBehaviour
 
     public void Attack()
     {
+        if (isAttacking || attackRequested)
+            return;
+
         attackRequested = true;
 
         Debug.Log("Attack action triggered");
@@ -204,6 +237,118 @@ public class JonCharacterController : MonoBehaviour
         else isGrounded = false;
     }
 
+    IEnumerator AttackCoroutine(float seconds)
+    {
+        Debug.Log("Starting attack coroutine");
+        if (isAttacking) yield break;
+
+        isAttacking = true;
+        float clampedHitDelay = Mathf.Max(0f, attackHitDelay);
+
+        if (clampedHitDelay > 0f)
+        {
+            yield return new WaitForSeconds(clampedHitDelay);
+        }
+
+        PerformAttackHit();
+
+        float remainingAttackTime = Mathf.Max(0f, seconds - clampedHitDelay);
+        if (remainingAttackTime > 0f)
+        {
+            yield return new WaitForSeconds(remainingAttackTime);
+        }
+
+        isAttacking = false;
+    }
+
+    private void PerformAttackHit()
+    {
+        Vector2 attackCenter = GetAttackCenter();
+        Collider2D[] hits = Physics2D.OverlapBoxAll(attackCenter, attackBoxSize, 0f, attackLayerMask);
+        HashSet<Rigidbody2D> processedBodies = new HashSet<Rigidbody2D>();
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hit == null)
+                continue;
+
+            Rigidbody2D hitRigidbody = hit.attachedRigidbody;
+            if (hitRigidbody == null || hitRigidbody == rb)
+                continue;
+
+            if (hitRigidbody.transform.root == transform.root)
+                continue;
+
+            if (!processedBodies.Add(hitRigidbody))
+                continue;
+
+            if (!TryDealDamage(hitRigidbody.gameObject))
+                continue;
+
+            ApplyPushback(hitRigidbody, attackCenter);
+        }
+    }
+
+    private Vector2 GetAttackCenter()
+    {
+        return (Vector2)transform.position + new Vector2(
+            Mathf.Abs(attackBoxOffset.x) * GetFacingDirection(),
+            attackBoxOffset.y
+        );
+    }
+
+    private float GetFacingDirection()
+    {
+        if (movementVector.x != 0f)
+            return Mathf.Sign(movementVector.x);
+
+        float facing = Mathf.Sign(transform.localScale.x);
+        return facing == 0f ? 1f : facing;
+    }
+
+    private bool TryDealDamage(GameObject targetObject)
+    {
+        foreach (MonoBehaviour component in targetObject.GetComponents<MonoBehaviour>())
+        {
+            if (component == null)
+                continue;
+
+            MethodInfo takeDamageMethod = component.GetType().GetMethod(
+                "TakeDamage",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(int) },
+                null
+            );
+
+            if (takeDamageMethod == null)
+                continue;
+
+            takeDamageMethod.Invoke(component, new object[] { attackDamage });
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ApplyPushback(Rigidbody2D hitRigidbody, Vector2 attackCenter)
+    {
+        Vector2 direction = hitRigidbody.worldCenterOfMass - attackCenter;
+        float horizontalDirection = Mathf.Sign(direction.x);
+
+        if (horizontalDirection == 0f)
+        {
+            horizontalDirection = GetFacingDirection();
+        }
+
+        Vector2 impulse = new Vector2(
+            horizontalDirection * attackPushbackImpulse.x,
+            attackPushbackImpulse.y
+        );
+
+        hitRigidbody.AddForce(impulse, ForceMode2D.Impulse);
+    }
+
 
     private void OnDrawGizmosSelected()
     {
@@ -212,5 +357,18 @@ public class JonCharacterController : MonoBehaviour
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
         }
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(GetEditorAttackCenter(), attackBoxSize);
+    }
+
+    private Vector2 GetEditorAttackCenter()
+    {
+        float facing = transform.localScale.x < 0f ? -1f : 1f;
+
+        return (Vector2)transform.position + new Vector2(
+            Mathf.Abs(attackBoxOffset.x) * facing,
+            attackBoxOffset.y
+        );
     }
 }
