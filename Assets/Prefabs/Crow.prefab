@@ -198,7 +198,7 @@ MonoBehaviour:
   dashChance: 0.2
   dashSpeed: 6
   dashDuration: 0.25
-  groundMask:
+  crowGroundMask:
     serializedVersion: 2
     m_Bits: 383
   groundCheck: {fileID: 1602584319498772286}

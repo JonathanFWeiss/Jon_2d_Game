@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class GroundCrow : GroundWalkerEnemy
@@ -22,8 +23,9 @@ public class GroundCrow : GroundWalkerEnemy
     [Tooltip("Duration of the dash in seconds.")]
     public float dashDuration = 0.25f;
 
+    [FormerlySerializedAs("groundMask")]
     [Tooltip("Which layers count as ground for hop resets and edge detection.")]
-    public new LayerMask groundMask = ~0;
+    public LayerMask crowGroundMask = ~0;
 
     [Tooltip("Position used to check if the crow is on the ground.")]
     public Transform groundCheck;
@@ -84,17 +86,17 @@ public class GroundCrow : GroundWalkerEnemy
 
     protected override void InitializeGroundMask()
     {
-        if (groundMask == 0)
+        if (crowGroundMask == 0)
         {
             base.InitializeGroundMask();
             return;
         }
 
-        base.groundMask = groundMask;
+        base.groundMask = crowGroundMask;
 
         if (obstacleMask == 0)
         {
-            obstacleMask = groundMask;
+            obstacleMask = crowGroundMask;
         }
     }
 
@@ -149,7 +151,7 @@ public class GroundCrow : GroundWalkerEnemy
             return false;
 
         Vector2 origin = (Vector2)edgeCheck.position + Vector2.right * facingDirection * edgeCheckForward;
-        return Physics2D.Raycast(origin, Vector2.down, edgeCheckDistance, groundMask).collider == null;
+        return Physics2D.Raycast(origin, Vector2.down, edgeCheckDistance, crowGroundMask).collider == null;
     }
 
     protected virtual void PerformHop()
@@ -186,6 +188,6 @@ public class GroundCrow : GroundWalkerEnemy
         if (groundCheck == null)
             return false;
 
-        return Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundMask) != null;
+        return Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, crowGroundMask) != null;
     }
 }

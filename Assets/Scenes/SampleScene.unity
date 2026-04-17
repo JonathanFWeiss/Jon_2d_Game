@@ -4893,7 +4893,7 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1249643843}
     - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
-      propertyPath: groundMask.m_Bits
+      propertyPath: crowGroundMask.m_Bits
       value: 383
       objectReference: {fileID: 0}
     - target: {fileID: 5859722392788650121, guid: f69f6d135eea61042b85e041f729f04f, type: 3}

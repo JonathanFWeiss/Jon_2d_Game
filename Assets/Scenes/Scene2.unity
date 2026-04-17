@@ -210,6 +210,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 34.696}
+--- !u!1001 &379232765
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 296672763217885605, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_Name
+      value: SpikeTile (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.09
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.3367094
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1105966195158307058, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d41978082c5d0154b9d4bd923b714af9, type: 3}
 --- !u!1001 &465359851
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1142,6 +1199,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: ledgeCheckX
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: hitFlashColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: hitFlashColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: hitFlashColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: ledgeCheckRadius
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5859722392788650121, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
       propertyPath: m_Name
       value: Crow
@@ -2993,6 +3070,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: ledgeCheckX
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: hitFlashColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: hitFlashColor.g
+      value: 0.049078412
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: hitFlashColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
+      propertyPath: ledgeCheckRadius
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 5859722392788650121, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
       propertyPath: m_Name
       value: Crow (1)
@@ -3586,6 +3683,7 @@ SceneRoots:
   - {fileID: 9162099943532794112}
   - {fileID: 2119723730}
   - {fileID: 1031317417}
+  - {fileID: 379232765}
   - {fileID: 1302472234}
   - {fileID: 1220717115}
   - {fileID: 1327017376}

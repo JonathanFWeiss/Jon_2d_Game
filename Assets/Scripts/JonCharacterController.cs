@@ -31,7 +31,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float attackHitDelay = 0.5f;
     [Header("Pogo Parameters")]
     [SerializeField] private float pogoForce = 10f;
-    [SerializeField] private float pogoDuration = 0.5f;
+    [SerializeField] private float pogoDuration = 1.5f;
     [SerializeField] private float pogoAttackDelay = 0.5f;
     [SerializeField] private Vector2 pogoAttackBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 pogoAttackBoxOffset = new Vector2(0f, -2f);
@@ -108,7 +108,7 @@ public class JonCharacterController : MonoBehaviour
 
         if (pogoRequested)
         {
-            rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+            
             pogoRequested = false;
             attackRequested = false; // Cancel attack if pogo is performed
             StartCoroutine(PogoAttackCoroutine(pogoDuration));
@@ -316,26 +316,22 @@ public class JonCharacterController : MonoBehaviour
     IEnumerator PogoAttackCoroutine(float seconds)
     {
         Debug.Log("Starting pogo attack coroutine");
-        if (isAttacking) yield break;
+        if (isPogoing) yield break;
+        
 
         isPogoing = true;
         //rb.linearVelocityX = 0; // Stop horizontal movement during attack 
-        float clampedHitDelay = Mathf.Max(0f, pogoAttackDelay);
-
-        if (clampedHitDelay > 0f)
-        {
-            yield return new WaitForSeconds(clampedHitDelay);
-        }
+        
 
         isAttackHitActive = true;
         PerformPogoHit();
         yield return null;
         isAttackHitActive = false;
 
-        float remainingAttackTime = Mathf.Max(0f, seconds - clampedHitDelay);
-        if (remainingAttackTime > 0f)
+        float remainingPogoTime = Mathf.Max(0f, seconds);
+        if (remainingPogoTime > 0f)
         {
-            yield return new WaitForSeconds(remainingAttackTime);
+            yield return new WaitForSeconds(remainingPogoTime);
         }
 
         isPogoing = false;
@@ -392,6 +388,11 @@ public class JonCharacterController : MonoBehaviour
             Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
             if (hit == null)
                 continue;
+            if (hit.attachedRigidbody != null)
+                rb.AddForce(new Vector2(0, 2*jumpForce), ForceMode2D.Impulse);
+                Debug.Log($"Pogo bounce applied to {rb.gameObject.name} with jump force: {jumpForce}");
+
+            
 
             Rigidbody2D hitRigidbody = hit.attachedRigidbody;
             if (hitRigidbody == null || hitRigidbody == rb)
