@@ -224,7 +224,7 @@ public class EnemyBase : MonoBehaviour
             horizontalDirection * contactPushbackImpulse.x,
             contactPushbackImpulse.y
         );
-
+        playerRb.linearVelocity = Vector2.zero;
         playerRb.AddForce(impulse, ForceMode2D.Impulse);
         JonCharacterController playerController = playerRb.GetComponent<JonCharacterController>();
         if (playerController == null)
