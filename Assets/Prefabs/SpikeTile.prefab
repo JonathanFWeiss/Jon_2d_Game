@@ -196,7 +196,7 @@ MonoBehaviour:
   playerLayerMask:
     serializedVersion: 2
     m_Bits: 0
-  contactPushbackImpulse: {x: 5, y: 5}
+  contactPushbackImpulse: {x: 2, y: 2}
   coinPrefab: {fileID: 0}
   coinDropCount: 0
   hitFlashDuration: 0.08
