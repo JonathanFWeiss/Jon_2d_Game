@@ -121,11 +121,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4446089243053877143}
+  - component: {fileID: 795095146912734926}
   - component: {fileID: 5074523630458625808}
   - component: {fileID: 4406866223317735574}
   - component: {fileID: 7020851170427762323}
   - component: {fileID: 9063344862847950564}
-  - component: {fileID: 795095146912734926}
   m_Layer: 8
   m_Name: Beetle 1
   m_TagString: Untagged
@@ -149,6 +149,41 @@ Transform:
   - {fileID: 498933782131279644}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &795095146912734926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3376403896269771773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5c3ee34d9668424fa47f66899af52bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BettleWalker
+  hp: 3
+  moveSpeed: 2
+  moveAcceleration: 20
+  startFacingRight: 1
+  contactDamage: 1
+  contactDamageCooldown: 1
+  playerLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  contactPushbackImpulse: {x: 5, y: 8}
+  coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
+  coinDropCount: 0
+  hitFlashDuration: 0.25
+  hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 8
+  ledgeCheck: {fileID: 0}
+  ledgeCheckX: 2
+  ledgeCheckY: -2
+  ledgeCheckRadius: 0.5
+  turnAtLedges: 1
+  turnAtWalls: 1
 --- !u!212 &5074523630458625808
 SpriteRenderer:
   serializedVersion: 2
@@ -303,36 +338,3 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &795095146912734926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3376403896269771773}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5c3ee34d9668424fa47f66899af52bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BettleWalker
-  hp: 3
-  moveSpeed: 2
-  moveAcceleration: 20
-  startFacingRight: 1
-  contactDamage: 1
-  contactDamageCooldown: 1
-  playerLayerMask:
-    serializedVersion: 2
-    m_Bits: 64
-  contactPushbackImpulse: {x: 5, y: 8}
-  coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
-  coinDropCount: 0
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 8
-  ledgeCheck: {fileID: 0}
-  ledgeCheckX: 2
-  ledgeCheckY: -2
-  ledgeCheckRadius: 0.5
-  turnAtLedges: 1
-  turnAtWalls: 1

@@ -13,6 +13,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
+    [SerializeField] private float coyoteTime = 0.1f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
     private bool airDashAvailable = true; // Tracks if the player can still air dash
     [SerializeField] private bool canDash = true; // For if the player can air dash or not, set in inspector
@@ -48,6 +49,7 @@ public class JonCharacterController : MonoBehaviour
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested;
     private float dashDirection = 1f;
     private float nextDashTime;
+    private float lastGroundedTime = float.NegativeInfinity;
     private Vector3 localScale;
 
 
@@ -133,7 +135,8 @@ public class JonCharacterController : MonoBehaviour
         }
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
-        if (jumpRequested && (isGrounded || doubleJumpAvailable))
+        bool hasGroundJumpAvailable = HasGroundJumpAvailable();
+        if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
         {
             Debug.Log("Processing jump request. Jumprequested: " + jumpRequested + ", isGrounded: " + isGrounded + ", doubleJumpAvailable: " + doubleJumpAvailable);
             if (rb.linearVelocity.y < 0)
@@ -143,8 +146,9 @@ public class JonCharacterController : MonoBehaviour
             }
             rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
             jumpRequested = false;
+            lastGroundedTime = float.NegativeInfinity;
 
-            if (!isGrounded && doubleJumpAvailable)
+            if (!hasGroundJumpAvailable && doubleJumpAvailable)
             {
                 doubleJumpAvailable = false; // Consume double jump
                 Debug.Log("Double jump used");
@@ -191,12 +195,13 @@ public class JonCharacterController : MonoBehaviour
 
     public void Jump()
     {
-        if (jumpRequested || isDashing || (!doubleJumpAvailable && !isGrounded))
+        bool hasGroundJumpAvailable = HasGroundJumpAvailable();
+        if (jumpRequested || isDashing || (!doubleJumpAvailable && !hasGroundJumpAvailable))
         {
-            Debug.Log("Jump conditions not met, all must be false: jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !isGrounded) " + (!doubleJumpAvailable && !isGrounded));
+            Debug.Log("Jump conditions not met, all must be false: jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !hasGroundJumpAvailable) " + (!doubleJumpAvailable && !hasGroundJumpAvailable));
             return;
         }
-        Debug.Log("Jump conditions met, processing jump jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !isGrounded) " + (!doubleJumpAvailable && !isGrounded));
+        Debug.Log("Jump conditions met, processing jump jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !hasGroundJumpAvailable) " + (!doubleJumpAvailable && !hasGroundJumpAvailable));
 
         jumpRequested = true;
         Debug.Log("Jump action triggered");
@@ -281,8 +286,17 @@ public class JonCharacterController : MonoBehaviour
     {
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
         //Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
-        if (groundCollider) isGrounded = true;
+        if (groundCollider)
+        {
+            isGrounded = true;
+            lastGroundedTime = Time.time;
+        }
         else isGrounded = false;
+    }
+
+    private bool HasGroundJumpAvailable()
+    {
+        return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
     }
 
     IEnumerator AttackCoroutine(float seconds)

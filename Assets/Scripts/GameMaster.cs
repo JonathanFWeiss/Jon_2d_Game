@@ -41,6 +41,7 @@ public class GameMaster : MonoBehaviour
         ResolveUiDocument();
         CacheUiReferences();
         RefreshCounters(forceRefresh: true);
+        Application.targetFrameRate = 60;
     }
 
     private void Update()

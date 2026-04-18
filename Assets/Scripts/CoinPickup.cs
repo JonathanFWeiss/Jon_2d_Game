@@ -17,7 +17,7 @@ public class CoinPickup : MonoBehaviour
     void Awake()
     {
         currentPickupDelay = pickupDelay;
-        Debug.Log("Coin " + gameObject.name + " pickup delay: " + currentPickupDelay.ToString("F2") + " seconds");
+//        Debug.Log("Coin " + gameObject.name + " pickup delay: " + currentPickupDelay.ToString("F2") + " seconds");
     
     }
 
