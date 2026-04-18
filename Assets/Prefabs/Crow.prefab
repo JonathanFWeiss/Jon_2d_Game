@@ -64,7 +64,7 @@ MonoBehaviour:
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 328
   ledgeCheck: {fileID: 0}
   ledgeCheckX: 2
   ledgeCheckY: -2

@@ -3253,7 +3253,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
       propertyPath: obstacleMask.m_Bits
-      value: 8
+      value: 328
       objectReference: {fileID: 0}
     - target: {fileID: 5532839171923976371, guid: f69f6d135eea61042b85e041f729f04f, type: 3}
       propertyPath: crowGroundMask.m_Bits
