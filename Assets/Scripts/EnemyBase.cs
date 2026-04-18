@@ -24,7 +24,7 @@ public class EnemyBase : MonoBehaviour
     public LayerMask playerLayerMask = 0;
 
     [Tooltip("Impulse applied to the player when this enemy deals contact damage.")]
-    public Vector2 contactPushbackImpulse = new Vector2(4f, 1.5f);
+    public Vector2 contactPushbackImpulse = new Vector2(6f, 6f);
 
     [Header("Drops")]
     [Tooltip("Prefab to spawn on death.")]
