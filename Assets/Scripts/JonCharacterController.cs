@@ -13,7 +13,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
-    [SerializeField] private float coyoteTime = 0.1f;
+    [SerializeField] private float coyoteTime = 0.3f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
     private bool airDashAvailable = true; // Tracks if the player can still air dash
     [SerializeField] private bool canDash = true; // For if the player can air dash or not, set in inspector
@@ -50,6 +50,9 @@ public class JonCharacterController : MonoBehaviour
     private float dashDirection = 1f;
     private float nextDashTime;
     private float lastGroundedTime = float.NegativeInfinity;
+    private float defaultGravityScale = 1f;
+    private Vector3 lastGroundedPosition;
+    private bool hasLastGroundedPosition;
     private Vector3 localScale;
 
 
@@ -70,7 +73,10 @@ public class JonCharacterController : MonoBehaviour
         animator = GetComponent<Animator>();
         
         Debug.Log("Rigidbody2D component found: " + rb);
+        defaultGravityScale = rb.gravityScale;
         rb.freezeRotation = true;
+        lastGroundedPosition = transform.position;
+        hasLastGroundedPosition = true;
 
         if (attackLayerMask == 0)
         {
@@ -295,6 +301,32 @@ public class JonCharacterController : MonoBehaviour
         gettingHitCoroutine = StartCoroutine(GettingHitCoroutine(gettingHitDuration));
     }
 
+    public void TeleportToLastGroundedPosition(Vector2 offset)
+    {
+        Vector3 teleportTarget = hasLastGroundedPosition
+            ? lastGroundedPosition
+            : transform.position;
+
+        teleportTarget += (Vector3)offset;
+
+        transform.position = teleportTarget;
+        rb.gravityScale = defaultGravityScale;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+        lastGroundedTime = Time.time;
+        doubleJumpAvailable = canDoubleJump;
+        airDashAvailable = canDash;
+
+        jumpRequested = false;
+        dashRequested = false;
+        attackRequested = false;
+        jumpcutRequested = false;
+        pogoRequested = false;
+        isDashing = false;
+        isAttacking = false;
+        isPogoing = false;
+    }
+
     private void doGroundCheck()
     {
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
@@ -303,6 +335,8 @@ public class JonCharacterController : MonoBehaviour
         {
             isGrounded = true;
             lastGroundedTime = Time.time;
+            lastGroundedPosition = transform.position;
+            hasLastGroundedPosition = true;
         }
         else isGrounded = false;
     }
@@ -310,6 +344,7 @@ public class JonCharacterController : MonoBehaviour
     private bool HasGroundJumpAvailable()
     {
         return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
+        // This allows the player to still jump for a short time after leaving the ground, making the controls feel more responsive.
     }
 
     IEnumerator AttackCoroutine(float seconds)

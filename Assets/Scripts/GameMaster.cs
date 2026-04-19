@@ -37,6 +37,8 @@ public class GameMaster : MonoBehaviour
     private bool warnedMissingCountersLabel;
     private bool warnedMissingPlayer;
     private bool isRespawningPlayer;
+    private Vector3 checkpointRespawnPosition;
+    private bool hasCheckpointRespawnPosition;
     private Vector3 fallbackRespawnPosition;
     private bool hasFallbackRespawnPosition;
 
@@ -118,6 +120,52 @@ public class GameMaster : MonoBehaviour
 
         fallbackRespawnPosition = playerTransform.position;
         hasFallbackRespawnPosition = true;
+    }
+
+    public bool TryGetCurrentRespawnPosition(out Vector3 respawnPosition)
+    {
+        if (hasCheckpointRespawnPosition)
+        {
+            respawnPosition = checkpointRespawnPosition;
+            return true;
+        }
+
+        if (respawnPoint != null)
+        {
+            respawnPosition = respawnPoint.position;
+            return true;
+        }
+
+        if (hasFallbackRespawnPosition)
+        {
+            respawnPosition = fallbackRespawnPosition;
+            return true;
+        }
+
+        ResolvePlayer();
+
+        if (playerTransform != null)
+        {
+            respawnPosition = playerTransform.position;
+            return true;
+        }
+
+        respawnPosition = Vector3.zero;
+        return false;
+    }
+
+    public bool TrySetCheckpointRespawnPosition(Vector3 newRespawnPosition, float minimumDistance = 0f)
+    {
+        if (minimumDistance > 0f &&
+            TryGetCurrentRespawnPosition(out Vector3 currentRespawnPosition) &&
+            (currentRespawnPosition - newRespawnPosition).sqrMagnitude <= minimumDistance * minimumDistance)
+        {
+            return false;
+        }
+
+        checkpointRespawnPosition = newRespawnPosition;
+        hasCheckpointRespawnPosition = true;
+        return true;
     }
 
     private void CacheUiReferences()
@@ -267,13 +315,10 @@ public class GameMaster : MonoBehaviour
 
         isRespawningPlayer = true;
 
-        Vector3 respawnPosition = hasFallbackRespawnPosition
-            ? fallbackRespawnPosition
-            : playerTransform.position;
-
-        if (respawnPoint != null)
+        Vector3 respawnPosition = playerTransform.position;
+        if (TryGetCurrentRespawnPosition(out Vector3 currentRespawnPosition))
         {
-            respawnPosition = respawnPoint.position;
+            respawnPosition = currentRespawnPosition;
         }
 
         playerTransform.position = respawnPosition;

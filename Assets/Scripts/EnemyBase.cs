@@ -178,6 +178,7 @@ public class EnemyBase : MonoBehaviour
 
         lastContactDamageTime = Time.time;
         PlayerData.RemoveHP(contactDamage);
+        Debug.Log($"{gameObject.name} dealt {contactDamage} contact damage to player. Player HP: {PlayerData.HP}");
         ApplyContactPushback(hitObject, rootObject);
     }
 
