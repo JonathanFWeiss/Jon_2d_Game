@@ -17,6 +17,7 @@ public static class PlayerData
         HP -= amount;
         HP = Mathf.Max(HP, 0);
         Debug.Log("Player HP: " + HP);
+        
     }
 
     public static void RestoreFullHP()

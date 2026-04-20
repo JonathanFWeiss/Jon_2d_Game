@@ -20,6 +20,8 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
+    private float canBeGroundedTime = 0f;
+    private float delayBeforeGrounded = 0.2f;
 
     [Header("Melee Attack")]
     [SerializeField] private Vector2 attackBoxSize = new Vector2(1.25f, 0.85f);
@@ -29,7 +31,8 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private int attackDamage = 1;
     [SerializeField] private Vector2 attackPushbackImpulse = new Vector2(4f, 1.5f);
     [SerializeField] private float attackDuration = 1f;
-    [SerializeField] private float attackHitDelay = 0.5f;
+    [SerializeField] private float attackHitDelay = 0f;
+    [SerializeField] private GameObject attackSlashEffect;
     [Header("Pogo Parameters")]
     //[SerializeField] private float pogoForce = 10f;
     [SerializeField] private float pogoDuration = 1.5f;
@@ -37,7 +40,15 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private Vector2 pogoAttackBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 pogoAttackBoxOffset = new Vector2(0f, -2f);
     [SerializeField] private float pogoBounceCooldown = 0.5f;
+    [SerializeField] private GameObject pogoSlashEffect;
     private float nextPogoBounceTime;
+
+    [Header("UpSlash Parameters")]
+    [SerializeField] private float UpSlashDuration = .5f;
+    [SerializeField] private Vector2 upSlashBoxSize = new Vector2(1.25f, 0.85f);
+    [SerializeField] private Vector2 upSlashBoxOffset = new Vector2(0f, 2f);
+    [SerializeField] private float upSlashCooldown = 0.5f;
+    [SerializeField] private GameObject upSlashEffect;
 
     [Header("Hit State")]
     [SerializeField] private float gettingHitDuration = 1f;
@@ -46,7 +57,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private Transform groundCheckTransform;
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
-    private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested;
+    private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested, upSlashRequested;
     private float dashDirection = 1f;
     private float nextDashTime;
     private float lastGroundedTime = float.NegativeInfinity;
@@ -59,19 +70,22 @@ public class JonCharacterController : MonoBehaviour
     private Vector2 movementVector;
     private bool isAttacking;
     private bool isPogoing;
+    private bool isJumping = false;
     private bool isAttackHitActive;
     public bool isGettingHit { get; private set; }
+    private bool isUpSlashing;
     private Coroutine gettingHitCoroutine;
 
     public Animator animator;
-    [SerializeField] private GameObject pogoSlashEffect;
+
+
 
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-        
+
         Debug.Log("Rigidbody2D component found: " + rb);
         defaultGravityScale = rb.gravityScale;
         rb.freezeRotation = true;
@@ -101,7 +115,7 @@ public class JonCharacterController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
 
         if (animator == null)
             return;
@@ -113,12 +127,13 @@ public class JonCharacterController : MonoBehaviour
         animator.SetBool("isGettingHit", isGettingHit);
         animator.SetBool("isDashing", isDashing);
         animator.SetBool("isPogoing", isPogoing);
+        animator.SetBool("isUpSlashing", isUpSlashing);
 
     }
 
-    
 
-    
+
+
 
     void FixedUpdate()
     {
@@ -129,8 +144,17 @@ public class JonCharacterController : MonoBehaviour
 
             pogoRequested = false;
             attackRequested = false; // Cancel attack if pogo is performed
+            upSlashRequested = false; // Cancel upslash if pogo is performed
             StartCoroutine(PogoAttackCoroutine(pogoDuration));
             Debug.Log("Pogo executed with jump force: " + jumpForce);
+        }
+        if (upSlashRequested)
+        {
+            upSlashRequested = false;
+            attackRequested = false; // Cancel attack if upslash is performed
+            StartCoroutine(UpSlashCoroutine(
+                UpSlashDuration));
+
         }
         if (attackRequested)
         {
@@ -150,29 +174,58 @@ public class JonCharacterController : MonoBehaviour
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
         bool hasGroundJumpAvailable = HasGroundJumpAvailable();
+        // if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
+        // {
+        //     Debug.Log("Processing jump request. Jumprequested: " + jumpRequested + ", isGrounded: " + isGrounded + ", doubleJumpAvailable: " + doubleJumpAvailable);
+        //     if (rb.linearVelocity.y < 0)
+        //     {
+        //         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset downward velocity for consistent jumps
+        //         Debug.Log("Resetting downward velocity for consistent jump height");
+        //     }
+        //     if (rb.linearVelocity.y > 0)
+        //     {
+        //         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset upward velocity for consistent jumps
+        //         Debug.Log("Resetting upward velocity for consistent jump height");
+        //     }
+        //     rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+        //     canBeGroundedTime = Time.time + coyoteTime;
+        //     if (hasGroundJumpAvailable && !isGrounded)
+        //     {
+        //         Debug.Log("Coyote Jump");
+        //     }
+        //     jumpRequested = false;
+        //     isJumping = true;
+        //     hasGroundJumpAvailable = false;
+        //     lastGroundedTime = float.NegativeInfinity;
+
+        //     if (!hasGroundJumpAvailable && doubleJumpAvailable)
+        //     {
+        //         doubleJumpAvailable = false; // Consume double jump
+        //         Debug.Log("Double jump used");
+        //     }
+
+        // }
         if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
         {
-            Debug.Log("Processing jump request. Jumprequested: " + jumpRequested + ", isGrounded: " + isGrounded + ", doubleJumpAvailable: " + doubleJumpAvailable);
-            if (rb.linearVelocity.y < 0)
+            bool usingGroundJump = hasGroundJumpAvailable;
+
+            if (rb.linearVelocity.y != 0)
             {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset downward velocity for consistent jumps
-                Debug.Log("Resetting downward velocity for consistent jump height");
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
             }
-            if (rb.linearVelocity.y > 0)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset upward velocity for consistent jumps
-                Debug.Log("Resetting upward velocity for consistent jump height");
-            }
+
             rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+
+            canBeGroundedTime = Time.time + coyoteTime;
             jumpRequested = false;
+            isJumping = true;
             lastGroundedTime = float.NegativeInfinity;
 
-            if (!hasGroundJumpAvailable && doubleJumpAvailable)
+            if (!usingGroundJump && doubleJumpAvailable)
             {
-                doubleJumpAvailable = false; // Consume double jump
+                doubleJumpAvailable = false;
                 Debug.Log("Double jump used");
             }
-
         }
 
         if (jumpcutRequested && rb.linearVelocity.y > 0)
@@ -266,7 +319,7 @@ public class JonCharacterController : MonoBehaviour
 
     public void Attack()
     {
-        if (isAttacking || attackRequested)
+        if (isAttacking || attackRequested || isPogoing || isUpSlashing)
             return;
 
         attackRequested = true;
@@ -277,12 +330,23 @@ public class JonCharacterController : MonoBehaviour
 
     public void Pogo()
     {
+        if (isAttacking || pogoRequested || isPogoing || isUpSlashing)
+            return;
         if (isGrounded)
             return;
 
         // Implement pogo logic here, for example:
         pogoRequested = true; // Bounce up with jump force
         Debug.Log("Pogo action triggered");
+    }
+
+    public void UpSlash()
+    {
+        if (isAttacking || upSlashRequested || isPogoing || isUpSlashing)
+            return;
+
+        upSlashRequested = true;
+        Debug.Log("UpSlash action triggered");
     }
 
     public void JumpCut()
@@ -329,11 +393,17 @@ public class JonCharacterController : MonoBehaviour
 
     private void doGroundCheck()
     {
+        if (Time.time < canBeGroundedTime)
+        {
+            isGrounded = false;
+            return;
+        }
         Collider2D groundCollider = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
         //Debug.Log("Ground check result: " + (groundCollider != null ? "Grounded" : "Not Grounded"));
         if (groundCollider)
         {
             isGrounded = true;
+            isJumping = false;
             lastGroundedTime = Time.time;
             lastGroundedPosition = transform.position;
             hasLastGroundedPosition = true;
@@ -343,7 +413,8 @@ public class JonCharacterController : MonoBehaviour
 
     private bool HasGroundJumpAvailable()
     {
-        return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
+        //return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
+        return isGrounded && Time.time > canBeGroundedTime || Time.time <= lastGroundedTime + coyoteTime && !isJumping;
         // This allows the player to still jump for a short time after leaving the ground, making the controls feel more responsive.
     }
 
@@ -402,6 +473,31 @@ public class JonCharacterController : MonoBehaviour
         isAttackHitActive = false;
     }
 
+    IEnumerator UpSlashCoroutine(float seconds)
+    {
+        Debug.Log("Starting up slash attack coroutine");
+        if (isUpSlashing) yield break;
+
+
+        isUpSlashing = true;
+        //rb.linearVelocityX = 0; // Stop horizontal movement during attack 
+
+
+        isAttackHitActive = true;
+        PerformUpSlashHit();
+        yield return null;
+        isAttackHitActive = false;
+
+        float remainingUpSlashTime = Mathf.Max(0f, seconds);
+        if (remainingUpSlashTime > 0f)
+        {
+            yield return new WaitForSeconds(remainingUpSlashTime);
+        }
+
+        isUpSlashing = false;
+        isAttackHitActive = false;
+    }
+
     IEnumerator GettingHitCoroutine(float seconds)
     {
         isGettingHit = true;
@@ -454,13 +550,45 @@ public class JonCharacterController : MonoBehaviour
                 continue;
             if (hit.attachedRigidbody != null)
                 if (Time.time >= nextPogoBounceTime)
-                { rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset vertical velocity for consistent pogo bounces
-                    rb.AddForce(new Vector2(0, 1.2f*jumpForce), ForceMode2D.Impulse);
+                {
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset vertical velocity for consistent pogo bounces
+                    rb.AddForce(new Vector2(0, 1.2f * jumpForce), ForceMode2D.Impulse);
                     nextPogoBounceTime = Time.time + pogoBounceCooldown;
-                    Debug.Log($"Pogo bounce applied to {rb.gameObject.name} with jump force: {1.2*jumpForce}");
+                    Debug.Log($"Pogo bounce applied to {rb.gameObject.name} with jump force: {1.2 * jumpForce}");
                 }
 
 
+
+            Rigidbody2D hitRigidbody = hit.attachedRigidbody;
+            if (hitRigidbody == null || hitRigidbody == rb)
+                continue;
+
+            if (hitRigidbody.transform.root == transform.root)
+                continue;
+
+            if (!processedBodies.Add(hitRigidbody))
+                continue;
+
+            if (!TryDealDamage(hitRigidbody.gameObject))
+                continue;
+            Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
+
+            ApplyPushback(hitRigidbody, attackCenter);
+        }
+    }
+
+
+    private void PerformUpSlashHit()
+    {
+        Vector2 attackCenter = GetUpSlashCenter();
+        Collider2D[] hits = Physics2D.OverlapBoxAll(attackCenter, upSlashBoxSize, 0f, attackLayerMask);
+        HashSet<Rigidbody2D> processedBodies = new HashSet<Rigidbody2D>();
+
+        foreach (Collider2D hit in hits)
+        {
+            Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
+            if (hit == null)
+                continue;
 
             Rigidbody2D hitRigidbody = hit.attachedRigidbody;
             if (hitRigidbody == null || hitRigidbody == rb)
@@ -493,6 +621,14 @@ public class JonCharacterController : MonoBehaviour
         return (Vector2)transform.position + new Vector2(
             Mathf.Abs(pogoAttackBoxOffset.x) * GetFacingDirection(),
             pogoAttackBoxOffset.y
+        );
+    }
+
+    private Vector2 GetUpSlashCenter()
+    {
+        return (Vector2)transform.position + new Vector2(
+            Mathf.Abs(upSlashBoxOffset.x) * GetFacingDirection(),
+            upSlashBoxOffset.y
         );
     }
 
@@ -569,6 +705,8 @@ public class JonCharacterController : MonoBehaviour
         Gizmos.DrawWireCube(GetEditorAttackCenter(), attackBoxSize);
         Gizmos.color = Color.white;
         Gizmos.DrawWireCube(GetEditorPogoAttackCenter(), pogoAttackBoxSize);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireCube(GetUpSlashCenter(), upSlashBoxSize);
 
     }
 
@@ -594,17 +732,33 @@ public class JonCharacterController : MonoBehaviour
 
     private void LateUpdate()
     {
-        SyncPogoSlashEffectVisibility();
+        SyncSlashEffectVisibility();
     }
 
-    private void SyncPogoSlashEffectVisibility()
+    private void SyncSlashEffectVisibility()
     {
         if (pogoSlashEffect != null)
         {
-            bool shouldBeVisible = isPogoing;;
-            if (pogoSlashEffect.activeSelf != shouldBeVisible)
+            bool pogoShouldBeVisible = isPogoing; ;
+            if (pogoSlashEffect.activeSelf != pogoShouldBeVisible)
             {
-                pogoSlashEffect.SetActive(shouldBeVisible);
+                pogoSlashEffect.SetActive(pogoShouldBeVisible);
+            }
+        }
+        if (upSlashEffect != null)
+        {
+            bool upSlashShouldBeVisible = isUpSlashing; ;
+            if (upSlashEffect.activeSelf != upSlashShouldBeVisible)
+            {
+                upSlashEffect.SetActive(upSlashShouldBeVisible);
+            }
+        }
+        if (attackSlashEffect != null)
+        {
+            bool AttackSlashShouldBeVisible = isAttacking; ;
+            if (attackSlashEffect.activeSelf != AttackSlashShouldBeVisible)
+            {
+                attackSlashEffect.SetActive(AttackSlashShouldBeVisible);
             }
         }
     }
