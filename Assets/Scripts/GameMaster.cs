@@ -1,3 +1,4 @@
+using System.Collections;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -6,6 +7,9 @@ using UnityEngine.UIElements;
 
 public class GameMaster : MonoBehaviour
 {
+    private const string DeathMessageText = "Try Again!";
+    private const string DeathMessageLabelName = "DeathMessage";
+
     private static readonly BindingFlags PlayerStateBindingFlags =
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -16,12 +20,9 @@ public class GameMaster : MonoBehaviour
     [Tooltip("Optional respawn point. If left empty, the player's starting position is used.")]
     public Transform respawnPoint;
 
-    [Header("Fall Damage")]
-    [Tooltip("If the player falls below this Y position, GameMaster applies fatal damage.")]
-    public float fallDeathY = -50f;
-
-    [Tooltip("Damage applied when the player falls below the kill plane.")]
-    public int fallDamage = 5000;
+    [Min(0f)]
+    [Tooltip("How long to wait after death before respawning the player.")]
+    public float deathRespawnDelay = 1f;
 
     [Header("UI")]
     [Tooltip("UI Toolkit document that contains the Counters label.")]
@@ -55,11 +56,10 @@ public class GameMaster : MonoBehaviour
     private void Update()
     {
         ResolvePlayer();
-        TryApplyFallDamage();
 
         if (!isRespawningPlayer && PlayerData.HP <= 0)
         {
-            RespawnPlayer();
+            StartCoroutine(RespawnPlayerAfterDelay());
         }
 
         if (uiCountersText == null)
@@ -203,17 +203,65 @@ public class GameMaster : MonoBehaviour
         uiCountersText.style.display = DisplayStyle.Flex;
     }
 
-    private void TryApplyFallDamage()
+    private void ShowDeathMessage()
     {
-        if (isRespawningPlayer || playerTransform == null || fallDamage <= 0)
+        ResolveUiDocument();
+        if (uiDocument == null)
             return;
 
-        if (PlayerData.HP <= 0)
+        VisualElement root = uiDocument.rootVisualElement;
+        if (root == null)
             return;
 
-        if (playerTransform.position.y < fallDeathY)
+        Label existingMessage = root.Q<Label>(DeathMessageLabelName);
+        if (existingMessage != null)
         {
-            PlayerData.RemoveHP(fallDamage);
+            existingMessage.RemoveFromHierarchy();
+        }
+
+        Label deathMessage = new Label(DeathMessageText)
+        {
+            name = DeathMessageLabelName,
+            pickingMode = PickingMode.Ignore
+        };
+
+        deathMessage.style.position = Position.Absolute;
+        deathMessage.style.top = 48f;
+        deathMessage.style.left = 0f;
+        deathMessage.style.right = 0f;
+        deathMessage.style.marginLeft = StyleKeyword.Auto;
+        deathMessage.style.marginRight = StyleKeyword.Auto;
+        deathMessage.style.paddingLeft = 14f;
+        deathMessage.style.paddingRight = 14f;
+        deathMessage.style.paddingTop = 8f;
+        deathMessage.style.paddingBottom = 8f;
+        deathMessage.style.backgroundColor = new Color(0f, 0f, 0f, 0.65f);
+        deathMessage.style.color = Color.white;
+        deathMessage.style.fontSize = 22f;
+        deathMessage.style.unityFontStyleAndWeight = FontStyle.Bold;
+        deathMessage.style.unityTextAlign = TextAnchor.MiddleCenter;
+        deathMessage.style.borderTopLeftRadius = 8f;
+        deathMessage.style.borderTopRightRadius = 8f;
+        deathMessage.style.borderBottomLeftRadius = 8f;
+        deathMessage.style.borderBottomRightRadius = 8f;
+        deathMessage.style.alignSelf = Align.Center;
+
+        root.Add(deathMessage);
+    }
+
+    private void HideDeathMessage()
+    {
+        if (uiDocument == null)
+            return;
+
+        VisualElement root = uiDocument.rootVisualElement;
+        if (root == null)
+            return;
+
+        Label existingMessage = root.Q<Label>(DeathMessageLabelName);
+        if (existingMessage != null)
+        {
+            existingMessage.RemoveFromHierarchy();
         }
     }
 
@@ -308,12 +356,36 @@ public class GameMaster : MonoBehaviour
                memberName.StartsWith("Is", StringComparison.Ordinal);
     }
 
+    private void SetPlayerActive(bool isActive)
+    {
+        Transform playerRoot = GetPlayerStateRoot();
+        if (playerRoot == null)
+            return;
+
+        playerRoot.gameObject.SetActive(isActive);
+    }
+
+    private IEnumerator RespawnPlayerAfterDelay()
+    {
+        isRespawningPlayer = true;
+        ShowDeathMessage();
+        SetPlayerActive(false);
+
+        if (deathRespawnDelay > 0f)
+        {
+            yield return new WaitForSeconds(deathRespawnDelay);
+        }
+
+        SetPlayerActive(true);
+        RespawnPlayer();
+        HideDeathMessage();
+        isRespawningPlayer = false;
+    }
+
     private void RespawnPlayer()
     {
         if (playerTransform == null)
             return;
-
-        isRespawningPlayer = true;
 
         Vector3 respawnPosition = playerTransform.position;
         if (TryGetCurrentRespawnPosition(out Vector3 currentRespawnPosition))
@@ -338,6 +410,5 @@ public class GameMaster : MonoBehaviour
         ResetPlayerIsStateFlags();
         PlayerData.RestoreFullHP();
         RefreshCounters(forceRefresh: true);
-        isRespawningPlayer = false;
     }
 }

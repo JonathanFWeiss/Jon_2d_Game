@@ -64,6 +64,7 @@ public class EnemyBase : MonoBehaviour
         CacheHitFlashRenderers();
 
         Debug.Log($"{gameObject.name} remaining {hp}");
+        gameObject.layer = LayerMask.NameToLayer("NPCs");
     }
 
     protected virtual void FixedUpdate()
