@@ -9,6 +9,8 @@ public class GameMaster : MonoBehaviour
 {
     private const string DeathMessageText = "Try Again!";
     private const string DeathMessageLabelName = "DeathMessage";
+    private const string HeartIconsRootName = "HeartIcons";
+    private const float HeartIconSpacing = 1f;
 
     private static readonly BindingFlags PlayerStateBindingFlags =
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -22,7 +24,7 @@ public class GameMaster : MonoBehaviour
 
     [Min(0f)]
     [Tooltip("How long to wait after death before respawning the player.")]
-    public float deathRespawnDelay = 1f;
+    public float deathRespawnDelay = 2f;
 
     [Header("UI")]
     [Tooltip("UI Toolkit document that contains the Counters label.")]
@@ -31,17 +33,24 @@ public class GameMaster : MonoBehaviour
     [Tooltip("Name of the label used to show player counters.")]
     public string countersLabelName = "Counters";
 
+    [Tooltip("Prefab instantiated to show player HP in the upper-left corner of the screen.")]
+    public GameObject heartIconPrefab;
+
     private Label uiCountersText;
+    private readonly List<GameObject> heartIcons = new List<GameObject>();
     private int lastDisplayedCoins = int.MinValue;
     private int lastDisplayedHp = int.MinValue;
     private bool warnedMissingUiDocument;
     private bool warnedMissingCountersLabel;
     private bool warnedMissingPlayer;
+    private bool warnedMissingHeartIconPrefab;
+    private bool warnedMissingMainCamera;
     private bool isRespawningPlayer;
     private Vector3 checkpointRespawnPosition;
     private bool hasCheckpointRespawnPosition;
     private Vector3 fallbackRespawnPosition;
     private bool hasFallbackRespawnPosition;
+    private Transform heartIconsRoot;
 
     private void Awake()
     {
@@ -60,6 +69,10 @@ public class GameMaster : MonoBehaviour
         if (!isRespawningPlayer && PlayerData.HP <= 0)
         {
             StartCoroutine(RespawnPlayerAfterDelay());
+            ResetPlayerIsStateFlags();
+            PlayerData.RestoreFullHP();
+            JonCharacterController jonCharacter = FindObjectOfType<JonCharacterController>();
+            jonCharacter.ResetGravity();
         }
 
         if (uiCountersText == null)
@@ -186,6 +199,8 @@ public class GameMaster : MonoBehaviour
 
     private void RefreshCounters(bool forceRefresh = false)
     {
+        RefreshHeartIcons();
+
         if (uiCountersText == null)
             return;
 
@@ -201,6 +216,125 @@ public class GameMaster : MonoBehaviour
 
         uiCountersText.text = $"Coins: {PlayerData.Coins} HP: {PlayerData.HP}";
         uiCountersText.style.display = DisplayStyle.Flex;
+    }
+
+    private void RefreshHeartIcons()
+    {
+        if (heartIconPrefab == null)
+        {
+            if (!warnedMissingHeartIconPrefab)
+            {
+                warnedMissingHeartIconPrefab = true;
+                Debug.LogWarning("GameMaster could not find the HeartIcon prefab. Assign one in the Inspector.");
+            }
+
+            return;
+        }
+
+        Camera activeCamera = Camera.main;
+        if (activeCamera == null)
+        {
+            if (!warnedMissingMainCamera)
+            {
+                warnedMissingMainCamera = true;
+                Debug.LogWarning("GameMaster could not find a Main Camera to position HeartIcons.");
+            }
+
+            return;
+        }
+
+        EnsureHeartIconsRoot();
+        PruneMissingHeartIcons();
+        EnsureHeartIconCount(Mathf.Max(PlayerData.HP, 0));
+        LayoutHeartIcons(activeCamera);
+    }
+
+    private void EnsureHeartIconsRoot()
+    {
+        if (heartIconsRoot != null)
+            return;
+
+        Transform existingRoot = transform.Find(HeartIconsRootName);
+        if (existingRoot != null)
+        {
+            heartIconsRoot = existingRoot;
+            return;
+        }
+
+        GameObject heartIconsRootObject = new GameObject(HeartIconsRootName);
+        heartIconsRoot = heartIconsRootObject.transform;
+        heartIconsRoot.SetParent(transform);
+        heartIconsRoot.localPosition = Vector3.zero;
+        heartIconsRoot.localRotation = Quaternion.identity;
+        heartIconsRoot.localScale = Vector3.one;
+    }
+
+    private void PruneMissingHeartIcons()
+    {
+        for (int i = heartIcons.Count - 1; i >= 0; i--)
+        {
+            if (heartIcons[i] == null)
+            {
+                heartIcons.RemoveAt(i);
+            }
+        }
+    }
+
+    private void EnsureHeartIconCount(int targetHeartCount)
+    {
+        while (heartIcons.Count < targetHeartCount)
+        {
+            GameObject heartIcon = Instantiate(heartIconPrefab, heartIconsRoot);
+            heartIcons.Add(heartIcon);
+        }
+
+        while (heartIcons.Count > targetHeartCount)
+        {
+            int lastHeartIndex = heartIcons.Count - 1;
+            GameObject heartIcon = heartIcons[lastHeartIndex];
+            heartIcons.RemoveAt(lastHeartIndex);
+
+            if (heartIcon == null)
+                continue;
+
+            if (Application.isPlaying)
+            {
+                Destroy(heartIcon);
+            }
+            else
+            {
+                DestroyImmediate(heartIcon);
+            }
+        }
+    }
+
+    private void LayoutHeartIcons(Camera activeCamera)
+    {
+        float worldDepth = Mathf.Abs(activeCamera.transform.position.z);
+        Vector3 upperLeftCorner = activeCamera.ViewportToWorldPoint(new Vector3(0f, 1f, worldDepth));
+        Vector3 firstHeartPosition = upperLeftCorner;
+
+        if (heartIcons.Count > 0)
+        {
+            SpriteRenderer firstHeartRenderer = heartIcons[0].GetComponent<SpriteRenderer>();
+            if (firstHeartRenderer != null)
+            {
+                Vector3 heartExtents = firstHeartRenderer.bounds.extents;
+                firstHeartPosition.x += heartExtents.x;
+                firstHeartPosition.y -= heartExtents.y;
+            }
+        }
+
+        firstHeartPosition.z = 0f;
+
+        for (int i = 0; i < heartIcons.Count; i++)
+        {
+            GameObject heartIcon = heartIcons[i];
+            if (heartIcon == null)
+                continue;
+
+            heartIcon.transform.position = firstHeartPosition + (Vector3.right * (i * HeartIconSpacing));
+        }
     }
 
     private void ShowDeathMessage()
@@ -380,6 +514,8 @@ public class GameMaster : MonoBehaviour
         RespawnPlayer();
         HideDeathMessage();
         isRespawningPlayer = false;
+        ResetPlayerIsStateFlags();
+        PlayerData.RestoreFullHP();
     }
 
     private void RespawnPlayer()

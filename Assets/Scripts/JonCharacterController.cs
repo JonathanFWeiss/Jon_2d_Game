@@ -61,7 +61,7 @@ public class JonCharacterController : MonoBehaviour
     private float dashDirection = 1f;
     private float nextDashTime;
     private float lastGroundedTime = float.NegativeInfinity;
-    private float defaultGravityScale = 1f;
+    private float defaultGravityScale = 3f;
     private Vector3 lastGroundedPosition;
     private bool hasLastGroundedPosition;
     private Vector3 localScale;
@@ -225,6 +225,12 @@ public class JonCharacterController : MonoBehaviour
             {
                 doubleJumpAvailable = false;
                 Debug.Log("Double jump used");
+            }
+
+            if (rb.gravityScale < defaultGravityScale && !isDashing);
+            {
+                rb.gravityScale = defaultGravityScale;
+                
             }
         }
 
@@ -733,6 +739,11 @@ public class JonCharacterController : MonoBehaviour
     private void LateUpdate()
     {
         SyncSlashEffectVisibility();
+    }
+
+    public void ResetGravity()
+    {
+        rb.gravityScale = defaultGravityScale;
     }
 
     private void SyncSlashEffectVisibility()

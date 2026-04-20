@@ -92,7 +92,7 @@ public class FallingRock : GroundStationaryEnemy
 
         Vector2 currentVelocity = rb2d.linearVelocity;
 
-        if (Mathf.Abs(currentVelocity.y) <= 0.5f)
+        if (Mathf.Abs(currentVelocity.y) <= 5f)
             return;
 Debug.Log($"{gameObject.name} is moving with velocity {currentVelocity}, attempting to damage player.");
         base.TryDamagePlayer(hitObject);

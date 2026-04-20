@@ -71,6 +71,10 @@ MonoBehaviour:
   ledgeCheckRadius: 0.1
   turnAtLedges: 1
   turnAtWalls: 1
+  turnAroundCooldown: 1
+  hopInterval: 2
+  hopForwardImpulse: 5
+  hopUpwardImpulse: 7
 --- !u!212 &3105299822834056662
 SpriteRenderer:
   serializedVersion: 2

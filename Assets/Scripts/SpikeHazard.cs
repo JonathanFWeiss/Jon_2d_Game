@@ -6,7 +6,7 @@ public class SpikeHazard : MonoBehaviour
 {
     [SerializeField] private int damageAmount = 1;
     [SerializeField] private Vector2 respawnOffset = Vector2.zero;
-    [SerializeField] private float retriggerCooldown = 0.1f;
+    [SerializeField] private float retriggerCooldown = 1f;
 
     private readonly Dictionary<JonCharacterController, float> nextAllowedDamageTimes =
         new Dictionary<JonCharacterController, float>();
