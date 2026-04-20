@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GroundWalkerEnemy : EnemyBase
+public class GroundPersuerEnemy : EnemyBase
 {
     [Header("Ground Walker")]
     [Tooltip("Optional override for what counts as a wall/obstacle. If left at 0, Ground layer is used.")]
@@ -29,6 +29,8 @@ public class GroundWalkerEnemy : EnemyBase
 
     protected int groundLayerIndex = -1;
     protected LayerMask groundMask;
+    protected Transform playerTransform;
+    protected float nextPlayerSearchTime = float.NegativeInfinity;
     protected float nextTurnAroundTime = float.NegativeInfinity;
 
     protected override void Awake()
@@ -38,11 +40,14 @@ public class GroundWalkerEnemy : EnemyBase
         InitializeGroundMask();
         EnsureLedgeCheckExists();
         UpdateLedgeCheckPosition();
+        ResolvePlayerTransform();
     }
 
     protected override void FixedUpdate()
     {
         if (isDead) return;
+
+        FacePlayerIfBehind();
 
         if (turnAtLedges && IsLedgeAhead())
         {
@@ -57,8 +62,6 @@ public class GroundWalkerEnemy : EnemyBase
 
         base.FixedUpdate();
     }
-
-   
 
     protected override void OnCollisionEnter2D(Collision2D collision)
     {
@@ -111,7 +114,6 @@ public class GroundWalkerEnemy : EnemyBase
     {
         if (ledgeCheck != null)
         {
-            
             return;
         }
 
@@ -126,11 +128,7 @@ public class GroundWalkerEnemy : EnemyBase
         ledgeCheckObject.transform.SetParent(transform, true);
         ledgeCheckObject.transform.localScale = Vector3.one;
         ledgeCheck = ledgeCheckObject.transform;
-
-        
     }
-
-
 
     protected virtual void UpdateLedgeCheckPosition()
     {
@@ -158,6 +156,48 @@ public class GroundWalkerEnemy : EnemyBase
         );
     }
 
+    protected virtual void ResolvePlayerTransform()
+    {
+        if (playerTransform != null)
+            return;
+
+        if (Time.time < nextPlayerSearchTime)
+            return;
+
+        nextPlayerSearchTime = Time.time + 0.5f;
+
+        JonCharacterController jonCharacter = FindObjectOfType<JonCharacterController>();
+        if (jonCharacter != null)
+        {
+            playerTransform = jonCharacter.transform;
+            return;
+        }
+
+        Hero hero = FindObjectOfType<Hero>();
+        if (hero != null)
+        {
+            playerTransform = hero.transform;
+        }
+    }
+
+    protected virtual void FacePlayerIfBehind()
+    {
+        ResolvePlayerTransform();
+
+        if (playerTransform == null)
+            return;
+
+        float directionToPlayer = playerTransform.position.x - transform.position.x;
+
+        if (Mathf.Approximately(directionToPlayer, 0f))
+            return;
+
+        if (Mathf.Sign(directionToPlayer) != Mathf.Sign(facingDirection))
+        {
+            TurnAround();
+        }
+    }
+
     protected bool IsLedgeAhead()
     {
         if (ledgeCheck == null || groundMask == 0)
@@ -168,7 +208,6 @@ public class GroundWalkerEnemy : EnemyBase
             ledgeCheckRadius,
             groundMask
         );
-        //Debug.Log($"{gameObject.name} ledge check at {ledgeCheck.position} found ground: {groundAhead}");
 
         return !groundAhead;
     }

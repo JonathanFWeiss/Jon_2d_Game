@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GroundCrow : GroundWalkerEnemy
+public class GroundCrow : GroundPersuerEnemy
 {
     protected override void Awake()
     {
