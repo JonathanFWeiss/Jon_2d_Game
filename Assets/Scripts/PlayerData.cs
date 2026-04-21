@@ -33,6 +33,7 @@ public static class PlayerData
     {
         HP = DefaultHP;
         Debug.Log("Player HP restored to: " + HP);
+        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
 
     public static void Reset()
@@ -46,5 +47,13 @@ public static class PlayerData
     {
         HP = DefaultHP;
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
+    }
+
+    public static void Start()
+    {
+        HP = DefaultHP;
+        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
+        
+        Debug.Log("PlayerData Start - Next allowed HP removal time set to: " + nextAllowedHpRemovalTime);
     }
 }

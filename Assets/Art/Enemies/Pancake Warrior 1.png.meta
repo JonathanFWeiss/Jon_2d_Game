@@ -1,10 +1,34 @@
 fileFormatVersion: 2
-guid: a523aef9d1e56c248b113301389a3dd7
+guid: 6a0885ceb95201f4eb9734e255a3810d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3836188282891893836
-    second: e52673ce-6d87-4945-a772-f468b1b9444e-removebg-preview_0
+      213: 6796177733153707138
+    second: Pancake Warrior 1_0
+  - first:
+      213: -1055882230008152678
+    second: Pancake Warrior 1_1
+  - first:
+      213: -6147341213319085017
+    second: Pancake Warrior 1_2
+  - first:
+      213: 3072826860822004194
+    second: Pancake Warrior 1_3
+  - first:
+      213: -3058801960350458570
+    second: Pancake Warrior 1_4
+  - first:
+      213: -5811132418955044224
+    second: Pancake Warrior 1_5
+  - first:
+      213: -3978470560563884443
+    second: Pancake Warrior 1_6
+  - first:
+      213: -2554294133292868968
+    second: Pancake Warrior 1_7
+  - first:
+      213: -8845246599875114198
+    second: Pancake Warrior 1_8
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,199 +137,199 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Pancake Warrior_0
+      name: Pancake Warrior 1_0
       rect:
         serializedVersion: 2
         x: 0
         y: 334
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 0994669be6d273a4cb97014e8b7af75e
-      internalID: 1097129322
+      spriteID: 284db0ff3afd05e50800000000000000
+      internalID: 6796177733153707138
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_1
+      name: Pancake Warrior 1_1
       rect:
         serializedVersion: 2
         x: 166
         y: 334
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 14680970c5df59149a62a971c14395fd
-      internalID: 287506680
+      spriteID: a9d77b3c4b0c851f0800000000000000
+      internalID: -1055882230008152678
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_2
+      name: Pancake Warrior 1_2
       rect:
         serializedVersion: 2
         x: 332
         y: 334
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 3c59f1f6322db3043b535b12f41531bb
-      internalID: -1407934764
+      spriteID: 7244ffa8cb140baa0800000000000000
+      internalID: -6147341213319085017
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_3
+      name: Pancake Warrior 1_3
       rect:
         serializedVersion: 2
         x: 0
         y: 168
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 0f3d9c965266cf94f9b7d755561b5f03
-      internalID: 1360752339
+      spriteID: 2e10397dfbfd4aa20800000000000000
+      internalID: 3072826860822004194
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_4
+      name: Pancake Warrior 1_4
       rect:
         serializedVersion: 2
         x: 166
         y: 168
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 2defdf725f0ced0488afb35911ffb417
-      internalID: 1608389774
+      spriteID: 63dda03c2d3fc85d0800000000000000
+      internalID: -3058801960350458570
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_5
+      name: Pancake Warrior 1_5
       rect:
         serializedVersion: 2
         x: 332
         y: 168
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: ab4579ba9e7bc94468bb35ff841e7097
-      internalID: -1744314931
+      spriteID: 08a9d698ad5ba5fa0800000000000000
+      internalID: -5811132418955044224
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_6
+      name: Pancake Warrior 1_6
       rect:
         serializedVersion: 2
         x: 0
         y: 2
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 973969122e593af40bc58aa93476d5e2
-      internalID: 1211882860
+      spriteID: 56e8d30aa12a9c8c0800000000000000
+      internalID: -3978470560563884443
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_7
+      name: Pancake Warrior 1_7
       rect:
         serializedVersion: 2
         x: 166
-        y: 3
+        y: 2
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 10507531f0566b0408749a68f92b2f6e
-      internalID: -52167219
+      spriteID: 89ad63dd4035d8cd0800000000000000
+      internalID: -2554294133292868968
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior_8
+      name: Pancake Warrior 1_8
       rect:
         serializedVersion: 2
         x: 332
         y: 2
         width: 166
-        height: 149
+        height: 166
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 7cbb3652a8866f9488af8c794e2a6cff
-      internalID: -752217163
+      spriteID: a2b46bfd41f5f3580800000000000000
+      internalID: -8845246599875114198
       vertices: []
       indices: 
       edges: []
@@ -314,7 +338,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 3b0fd08dd0ff37e4583dc2c71ed8ad1d
+    spriteID: 5b20e7e42fc7f2c438cf199a8dca5bce
     internalID: 0
     vertices: []
     indices: 
@@ -326,15 +350,15 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":3.0,"y":3.0},"gridSpriteSize":{"x":166.0,"y":166.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Pancake Warrior_0: 1097129322
-      Pancake Warrior_1: 287506680
-      Pancake Warrior_2: -1407934764
-      Pancake Warrior_3: 1360752339
-      Pancake Warrior_4: 1608389774
-      Pancake Warrior_5: -1744314931
-      Pancake Warrior_6: 1211882860
-      Pancake Warrior_7: -52167219
-      Pancake Warrior_8: -752217163
+      Pancake Warrior 1_0: 6796177733153707138
+      Pancake Warrior 1_1: -1055882230008152678
+      Pancake Warrior 1_2: -6147341213319085017
+      Pancake Warrior 1_3: 3072826860822004194
+      Pancake Warrior 1_4: -3058801960350458570
+      Pancake Warrior 1_5: -5811132418955044224
+      Pancake Warrior 1_6: -3978470560563884443
+      Pancake Warrior 1_7: -2554294133292868968
+      Pancake Warrior 1_8: -8845246599875114198
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

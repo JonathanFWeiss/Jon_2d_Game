@@ -21,7 +21,7 @@ public class JonCharacterController : MonoBehaviour
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
     private float canBeGroundedTime = 0f;
-    private float delayBeforeGrounded = 0.2f;
+    //private float delayBeforeGrounded = 0.2f;
 
     [Header("Melee Attack")]
     [SerializeField] private Vector2 attackBoxSize = new Vector2(1.25f, 0.85f);
@@ -36,7 +36,7 @@ public class JonCharacterController : MonoBehaviour
     [Header("Pogo Parameters")]
     //[SerializeField] private float pogoForce = 10f;
     [SerializeField] private float pogoDuration = 1.5f;
-    [SerializeField] private float pogoAttackDelay = 0.5f;
+    //[SerializeField] private float pogoAttackDelay = 0.5f;
     [SerializeField] private Vector2 pogoAttackBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 pogoAttackBoxOffset = new Vector2(0f, -2f);
     [SerializeField] private float pogoBounceCooldown = 0.5f;
@@ -47,7 +47,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float UpSlashDuration = .5f;
     [SerializeField] private Vector2 upSlashBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 upSlashBoxOffset = new Vector2(0f, 2f);
-    [SerializeField] private float upSlashCooldown = 0.5f;
+    //[SerializeField] private float upSlashCooldown = 0.5f;
     [SerializeField] private GameObject upSlashEffect;
 
     [Header("Hit State")]
@@ -57,6 +57,14 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private Transform groundCheckTransform;
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
+    [Header("Wall Jump")]
+    [SerializeField] private float wallCheckDistance = 0.1f;
+    [SerializeField][Range(0.25f, 1f)] private float wallCheckHeightMultiplier = 0.8f;
+    [SerializeField] private float wallContactGraceTime = 0.15f;
+    [SerializeField] private Vector2 wallJumpImpulse = new Vector2(6f, 5f);
+    [SerializeField] private float wallJumpMovementLockTime = 0.15f;
+    [SerializeField] private float sameWallJumpLockTime = 0.2f;
+    [SerializeField] private float wallSlideMaxFallSpeed = 3f;
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested, upSlashRequested;
     private float dashDirection = 1f;
     private float nextDashTime;
@@ -65,6 +73,15 @@ public class JonCharacterController : MonoBehaviour
     private Vector3 lastGroundedPosition;
     private bool hasLastGroundedPosition;
     private Vector3 localScale;
+    private Collider2D bodyCollider;
+    private bool isTouchingWallLeft;
+    private bool isTouchingWallRight;
+    private bool isWallSliding;
+    private float lastWallContactTime = float.NegativeInfinity;
+    private int lastWallContactDirection;
+    private int lastWallJumpedFromDirection;
+    private float sameWallJumpLockUntil = float.NegativeInfinity;
+    private float wallJumpMovementLockUntil = float.NegativeInfinity;
 
 
     private Vector2 movementVector;
@@ -84,9 +101,10 @@ public class JonCharacterController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        bodyCollider = GetComponent<Collider2D>();
         animator = GetComponent<Animator>();
 
-        Debug.Log("Rigidbody2D component found: " + rb);
+        //        Debug.Log("Rigidbody2D component found: " + rb);
         defaultGravityScale = rb.gravityScale;
         rb.freezeRotation = true;
         lastGroundedPosition = transform.position;
@@ -138,6 +156,7 @@ public class JonCharacterController : MonoBehaviour
     void FixedUpdate()
     {
         doGroundCheck();
+        doWallCheck();
 
         if (pogoRequested)
         {
@@ -166,14 +185,19 @@ public class JonCharacterController : MonoBehaviour
             doubleJumpAvailable = canDoubleJump;
             airDashAvailable = canDash;
         }
+
+        bool wallJumpMovementLocked = Time.time < wallJumpMovementLockUntil;
+
         // Don't apply normal movement during dash or attack
-        if (!isDashing && !isAttacking && !isGettingHit)
+        if (!isDashing && !isAttacking && !isGettingHit && !wallJumpMovementLocked)
         {
             rb.linearVelocityX = movementVector.x * movementSpeed;
         }
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
         bool hasGroundJumpAvailable = HasGroundJumpAvailable();
+        bool hasWallJumpAvailable = HasWallJumpAvailable();
+        //Debug.Log("Jump availability - Ground Jump: " + hasGroundJumpAvailable + ", Wall Jump: " + hasWallJumpAvailable + ", Double Jump Available: " + doubleJumpAvailable);
         // if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
         // {
         //     Debug.Log("Processing jump request. Jumprequested: " + jumpRequested + ", isGrounded: " + isGrounded + ", doubleJumpAvailable: " + doubleJumpAvailable);
@@ -205,7 +229,12 @@ public class JonCharacterController : MonoBehaviour
         //     }
 
         // }
-        if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
+        if (jumpRequested && hasWallJumpAvailable)
+        {
+            PerformWallJump();
+            Debug.Log("Wall jump performed");
+        }
+        else if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
         {
             bool usingGroundJump = hasGroundJumpAvailable;
 
@@ -228,6 +257,11 @@ public class JonCharacterController : MonoBehaviour
             }
 
 
+        }
+
+        if (isWallSliding && rb.linearVelocity.y < -wallSlideMaxFallSpeed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideMaxFallSpeed);
         }
 
         if (jumpcutRequested && rb.linearVelocity.y > 0)
@@ -256,7 +290,7 @@ public class JonCharacterController : MonoBehaviour
             dashRequested = false;
         }
 
-        if (!isDashing && !isAttacking && !isGettingHit)
+        if (!isDashing && !isAttacking && !isGettingHit && Time.time >= wallJumpMovementLockUntil)
         {
             if (Mathf.Abs(movementVector.x) > 0.1f)
             {
@@ -264,7 +298,7 @@ public class JonCharacterController : MonoBehaviour
                 transform.localScale = localScale;
             }
         }
-        if (rb.gravityScale < defaultGravityScale && !isDashing) 
+        if (rb.gravityScale < defaultGravityScale && !isDashing)
         {
             rb.gravityScale = defaultGravityScale;
 
@@ -274,12 +308,14 @@ public class JonCharacterController : MonoBehaviour
     public void Jump()
     {
         bool hasGroundJumpAvailable = HasGroundJumpAvailable();
-        if (jumpRequested || isDashing || (!doubleJumpAvailable && !hasGroundJumpAvailable))
+        bool hasWallJumpAvailable = HasWallJumpAvailable();
+
+        if (jumpRequested || isDashing || (!doubleJumpAvailable && !hasGroundJumpAvailable && !hasWallJumpAvailable))
         {
-            Debug.Log("Jump conditions not met, all must be false: jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !hasGroundJumpAvailable) " + (!doubleJumpAvailable && !hasGroundJumpAvailable));
+            Debug.Log("Jump conditions not met, all must be false: jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", no jumps available: " + (!doubleJumpAvailable && !hasGroundJumpAvailable && !hasWallJumpAvailable));
             return;
         }
-        Debug.Log("Jump conditions met, processing jump jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", (!doubleJumpAvailable && !hasGroundJumpAvailable) " + (!doubleJumpAvailable && !hasGroundJumpAvailable));
+        Debug.Log("Jump conditions met, processing jump jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", no jumps available: " + (!doubleJumpAvailable && !hasGroundJumpAvailable && !hasWallJumpAvailable));
 
         jumpRequested = true;
         Debug.Log("Jump action triggered");
@@ -395,6 +431,14 @@ public class JonCharacterController : MonoBehaviour
         isDashing = false;
         isAttacking = false;
         isPogoing = false;
+        isWallSliding = false;
+        isTouchingWallLeft = false;
+        isTouchingWallRight = false;
+        lastWallContactTime = float.NegativeInfinity;
+        lastWallContactDirection = 0;
+        lastWallJumpedFromDirection = 0;
+        sameWallJumpLockUntil = float.NegativeInfinity;
+        wallJumpMovementLockUntil = float.NegativeInfinity;
     }
 
     private void doGroundCheck()
@@ -410,11 +454,65 @@ public class JonCharacterController : MonoBehaviour
         {
             isGrounded = true;
             isJumping = false;
+            isWallSliding = false;
             lastGroundedTime = Time.time;
             lastGroundedPosition = transform.position;
             hasLastGroundedPosition = true;
+            lastWallJumpedFromDirection = 0;
+            sameWallJumpLockUntil = float.NegativeInfinity;
         }
         else isGrounded = false;
+    }
+
+    private void doWallCheck()
+    {
+        isTouchingWallLeft = false;
+        isTouchingWallRight = false;
+        isWallSliding = false;
+
+        if (GetBodyCollider() == null || isGrounded)
+        {
+            return;
+        }
+
+        Vector2 wallCheckSize = GetWallCheckSize();
+        if (wallCheckSize == Vector2.zero)
+        {
+            return;
+        }
+
+        isTouchingWallLeft = Physics2D.OverlapBox(GetWallCheckCenter(Vector2.left), wallCheckSize, 0f, groundLayer) != null;
+        isTouchingWallRight = Physics2D.OverlapBox(GetWallCheckCenter(Vector2.right), wallCheckSize, 0f, groundLayer) != null;
+
+        int currentWallDirection = 0;
+        if (isTouchingWallLeft && !isTouchingWallRight)
+        {
+            currentWallDirection = -1;
+        }
+        else if (isTouchingWallRight && !isTouchingWallLeft)
+        {
+            currentWallDirection = 1;
+        }
+        else if (isTouchingWallLeft && isTouchingWallRight)
+        {
+            currentWallDirection = movementVector.x != 0f
+                ? (int)Mathf.Sign(movementVector.x)
+                : (int)GetFacingDirection();
+        }
+
+        if (currentWallDirection == 0)
+        {
+            return;
+        }
+
+        lastWallContactTime = Time.time;
+        lastWallContactDirection = currentWallDirection;
+
+        bool pressingIntoWall = currentWallDirection < 0
+            ? movementVector.x < -0.01f
+            : movementVector.x > 0.01f;
+
+        isWallSliding = rb.linearVelocity.y < 0f && pressingIntoWall;
     }
 
     private bool HasGroundJumpAvailable()
@@ -422,6 +520,123 @@ public class JonCharacterController : MonoBehaviour
         //return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
         return isGrounded && Time.time > canBeGroundedTime || Time.time <= lastGroundedTime + coyoteTime && !isJumping;
         // This allows the player to still jump for a short time after leaving the ground, making the controls feel more responsive.
+    }
+
+    private bool HasWallJumpAvailable()
+    {
+        //Debug.Log("Checking wall jump availability. isGrounded: " + isGrounded + ", Time since last wall contact: " + (Time.time - lastWallContactTime) + ", wallContactGraceTime: " + wallContactGraceTime + ", sameWallJumpLockUntil: " + sameWallJumpLockUntil + ", lastWallJumpedFromDirection: " + lastWallJumpedFromDirection);
+        if (isGrounded || Time.time > lastWallContactTime + wallContactGraceTime)
+        {
+            return false;
+        }
+
+        int wallDirection = GetWallDirectionForJump();
+        if (wallDirection == 0)
+        {
+            return false;
+        }
+
+        if (Time.time < sameWallJumpLockUntil && wallDirection == lastWallJumpedFromDirection)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void PerformWallJump()
+    {
+        int wallDirection = GetWallDirectionForJump();
+        if (wallDirection == 0)
+        {
+            return;
+        }
+
+        Vector2 force = new Vector2(-wallDirection * wallJumpImpulse.x, wallJumpImpulse.y);
+
+        jumpRequested = false;
+        isJumping = true;
+        isWallSliding = false;
+        lastGroundedTime = float.NegativeInfinity;
+        canBeGroundedTime = Time.time + coyoteTime;
+        lastWallJumpedFromDirection = wallDirection;
+        sameWallJumpLockUntil = Time.time + sameWallJumpLockTime;
+        wallJumpMovementLockUntil = Time.time + wallJumpMovementLockTime;
+        doubleJumpAvailable = canDoubleJump;
+
+        if (Mathf.Sign(rb.linearVelocity.x) != Mathf.Sign(force.x))
+        {
+            force.x -= rb.linearVelocity.x;
+        }
+
+        if (rb.linearVelocity.y < 0f)
+        {
+            force.y -= rb.linearVelocity.y;
+        }
+
+        rb.AddForce(force, ForceMode2D.Impulse);
+
+        localScale = new Vector3(Mathf.Sign(force.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+        transform.localScale = localScale;
+
+        Debug.Log("Wall jump used");
+    }
+
+    private int GetWallDirectionForJump()
+    {
+        if (Time.time > lastWallContactTime + wallContactGraceTime)
+        {
+            return 0;
+        }
+
+        if (isTouchingWallLeft && !isTouchingWallRight)
+        {
+            return -1;
+        }
+
+        if (isTouchingWallRight && !isTouchingWallLeft)
+        {
+            return 1;
+        }
+
+        return lastWallContactDirection;
+    }
+
+    private Vector2 GetWallCheckSize()
+    {
+        Collider2D collider = GetBodyCollider();
+        if (collider == null)
+        {
+            return Vector2.zero;
+        }
+
+        Bounds bounds = collider.bounds;
+        float checkWidth = Mathf.Max(0.01f, wallCheckDistance);
+        float checkHeight = Mathf.Max(0.1f, bounds.size.y * wallCheckHeightMultiplier);
+        return new Vector2(checkWidth, checkHeight);
+    }
+
+    private Vector2 GetWallCheckCenter(Vector2 direction)
+    {
+        Collider2D collider = GetBodyCollider();
+        if (collider == null)
+        {
+            return transform.position;
+        }
+
+        Bounds bounds = collider.bounds;
+        float horizontalOffset = bounds.extents.x + (Mathf.Max(0.01f, wallCheckDistance) * 0.5f);
+        return (Vector2)bounds.center + direction.normalized * horizontalOffset;
+    }
+
+    private Collider2D GetBodyCollider()
+    {
+        if (bodyCollider == null)
+        {
+            bodyCollider = GetComponent<Collider2D>();
+        }
+
+        return bodyCollider;
     }
 
     IEnumerator AttackCoroutine(float seconds)
@@ -700,6 +915,14 @@ public class JonCharacterController : MonoBehaviour
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
+        }
+
+        Vector2 wallCheckSize = GetWallCheckSize();
+        if (wallCheckSize != Vector2.zero)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.left), wallCheckSize);
+            Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.right), wallCheckSize);
         }
 
         if (isAttackHitActive)

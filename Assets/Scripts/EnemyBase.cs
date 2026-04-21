@@ -63,7 +63,7 @@ public class EnemyBase : MonoBehaviour
         UpdateSpriteDirection();
         CacheHitFlashRenderers();
 
-        Debug.Log($"{gameObject.name} remaining {hp}");
+//        Debug.Log($"{gameObject.name} remaining {hp}");
         gameObject.layer = LayerMask.NameToLayer("NPCs");
     }
 

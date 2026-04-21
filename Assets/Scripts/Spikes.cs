@@ -1,13 +1,13 @@
 using UnityEngine;
 
-public class Spikes : GroundStationaryEnemy
+public class Spikes : FixedPositionEnemy
 {
     protected override void Awake()
     {
         base.Awake();
         hp = Mathf.Max(hp, 1);
         coinDropCount = 0;
-        Debug.Log("Spikes Awake");
+//        Debug.Log("Spikes Awake");
     }
 
     public override void TakeDamage(int amount)

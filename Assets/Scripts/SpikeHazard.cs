@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
-public class SpikeHazard : MonoBehaviour
+public class SpikeHazard : FixedPositionEnemy
 {
-    [SerializeField] private int damageAmount = 1;
+  
     [SerializeField] private Vector2 respawnOffset = Vector2.zero;
-    [SerializeField] private float retriggerCooldown = 1f;
+    
 
     private readonly Dictionary<JonCharacterController, float> nextAllowedDamageTimes =
         new Dictionary<JonCharacterController, float>();
@@ -16,17 +16,19 @@ public class SpikeHazard : MonoBehaviour
         EnsureSolidCollider();
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        contactDamage = 1;
         EnsureSolidCollider();
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    protected override void OnCollisionEnter2D(Collision2D collision)
     {
         HandleCollision(collision);
     }
 
-    private void OnCollisionStay2D(Collision2D collision)
+    protected override void OnCollisionStay2D(Collision2D collision)
     {
         HandleCollision(collision);
     }
@@ -43,13 +45,9 @@ public class SpikeHazard : MonoBehaviour
             return;
         }
 
-        nextAllowedDamageTimes[playerController] = Time.time + retriggerCooldown;
         playerController.TeleportToLastGroundedPosition(respawnOffset);
 
-        if (damageAmount > 0)
-        {
-            PlayerData.RemoveHP(damageAmount);
-        }
+       
     }
 
     private static JonCharacterController GetPlayerController(Collision2D collision)

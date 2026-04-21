@@ -88,7 +88,7 @@ public class GameMaster : MonoBehaviour
         if (uiDocument != null)
             return;
 
-        uiDocument = FindFirstObjectByType<UIDocument>();
+        uiDocument = FindAnyObjectByType<UIDocument>();
 
         if (uiDocument == null && !warnedMissingUiDocument)
         {
@@ -102,7 +102,7 @@ public class GameMaster : MonoBehaviour
         if (playerTransform != null)
             return;
 
-        JonCharacterController jonCharacter = FindFirstObjectByType<JonCharacterController>();
+        JonCharacterController jonCharacter = FindAnyObjectByType<JonCharacterController>();
         if (jonCharacter != null)
         {
             playerTransform = jonCharacter.transform;
@@ -110,7 +110,7 @@ public class GameMaster : MonoBehaviour
             return;
         }
 
-        Hero hero = FindFirstObjectByType<Hero>();
+        Hero hero = FindAnyObjectByType<Hero>();
         if (hero != null)
         {
             playerTransform = hero.transform;
