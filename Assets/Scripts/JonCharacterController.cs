@@ -909,20 +909,17 @@ public class JonCharacterController : MonoBehaviour
     }
 
 
+    private void OnDrawGizmos()
+    {
+        DrawWallCheckGizmos();
+    }
+
     private void OnDrawGizmosSelected()
     {
         if (groundCheckTransform != null)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
-        }
-
-        Vector2 wallCheckSize = GetWallCheckSize();
-        if (wallCheckSize != Vector2.zero)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.left), wallCheckSize);
-            Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.right), wallCheckSize);
         }
 
         if (isAttackHitActive)
@@ -937,6 +934,19 @@ public class JonCharacterController : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireCube(GetUpSlashCenter(), upSlashBoxSize);
 
+    }
+
+    private void DrawWallCheckGizmos()
+    {
+        Vector2 wallCheckSize = GetWallCheckSize();
+        if (wallCheckSize == Vector2.zero)
+        {
+            return;
+        }
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.left), wallCheckSize);
+        Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.right), wallCheckSize);
     }
 
     private Vector2 GetEditorAttackCenter()
