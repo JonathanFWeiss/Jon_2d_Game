@@ -71,8 +71,7 @@ public class GameMaster : MonoBehaviour
             StartCoroutine(RespawnPlayerAfterDelay());
             ResetPlayerIsStateFlags();
             PlayerData.RestoreFullHP();
-            JonCharacterController jonCharacter = FindObjectOfType<JonCharacterController>();
-            jonCharacter.ResetGravity();
+            
         }
 
         if (uiCountersText == null)

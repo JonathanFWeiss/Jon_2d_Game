@@ -3,9 +3,12 @@ using UnityEngine;
 public static class PlayerData
 {
     public const int DefaultHP = 3;
+    private const float RemoveHpCooldownSeconds = 1f;
 
     public static int Coins { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
+
+    private static float nextAllowedHpRemovalTime;
 
     public static void AddCoins(int amount = 1)
     {
@@ -14,6 +17,10 @@ public static class PlayerData
 
     public static void RemoveHP(int amount = 1)
     {
+        if (amount <= 0 || Time.time < nextAllowedHpRemovalTime)
+            return;
+
+        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
         HP -= amount;
         HP = Mathf.Max(HP, 0);
         Debug.Log("Player HP: " + HP);
@@ -30,5 +37,6 @@ public static class PlayerData
     {
         Coins = 0;
         HP = DefaultHP;
+        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
 }

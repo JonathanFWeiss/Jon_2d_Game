@@ -227,11 +227,7 @@ public class JonCharacterController : MonoBehaviour
                 Debug.Log("Double jump used");
             }
 
-            if (rb.gravityScale < defaultGravityScale && !isDashing);
-            {
-                rb.gravityScale = defaultGravityScale;
-                
-            }
+
         }
 
         if (jumpcutRequested && rb.linearVelocity.y > 0)
@@ -268,7 +264,11 @@ public class JonCharacterController : MonoBehaviour
                 transform.localScale = localScale;
             }
         }
+        if (rb.gravityScale < defaultGravityScale && !isDashing) 
+        {
+            rb.gravityScale = defaultGravityScale;
 
+        }
     }
 
     public void Jump()
