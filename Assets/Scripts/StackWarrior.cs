@@ -361,7 +361,7 @@ public class StackWarrior : GroundWalkerEnemy
 
         nextPlayerSearchTime = Time.time + 0.5f;
 
-        JonCharacterController jonCharacter = FindObjectOfType<JonCharacterController>();
+        JonCharacterController jonCharacter = FindFirstObjectByType<JonCharacterController>();
 
         if (jonCharacter != null)
         {
@@ -369,7 +369,7 @@ public class StackWarrior : GroundWalkerEnemy
             return;
         }
 
-        Hero hero = FindObjectOfType<Hero>();
+        Hero hero = FindFirstObjectByType<Hero>();
 
         if (hero != null)
         {

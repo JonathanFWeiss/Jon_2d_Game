@@ -166,14 +166,14 @@ public class GroundPersuerEnemy : EnemyBase
 
         nextPlayerSearchTime = Time.time + 0.5f;
 
-        JonCharacterController jonCharacter = FindObjectOfType<JonCharacterController>();
+        JonCharacterController jonCharacter = FindFirstObjectByType<JonCharacterController>();
         if (jonCharacter != null)
         {
             playerTransform = jonCharacter.transform;
             return;
         }
 
-        Hero hero = FindObjectOfType<Hero>();
+        Hero hero = FindFirstObjectByType<Hero>();
         if (hero != null)
         {
             playerTransform = hero.transform;

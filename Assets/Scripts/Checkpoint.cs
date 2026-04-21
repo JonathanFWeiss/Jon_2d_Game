@@ -53,7 +53,7 @@ public class Checkpoint : MonoBehaviour
         if (gameMaster != null)
             return true;
 
-        gameMaster = FindObjectOfType<GameMaster>();
+        gameMaster = FindFirstObjectByType<GameMaster>();
         if (gameMaster != null)
             return true;
 
@@ -118,7 +118,7 @@ public class Checkpoint : MonoBehaviour
         if (gameMaster != null && gameMaster.uiDocument != null)
             return gameMaster.uiDocument;
 
-        UIDocument uiDocument = FindObjectOfType<UIDocument>();
+        UIDocument uiDocument = FindFirstObjectByType<UIDocument>();
         if (uiDocument != null)
             return uiDocument;
 

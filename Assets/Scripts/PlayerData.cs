@@ -8,7 +8,7 @@ public static class PlayerData
     public static int Coins { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
 
-    private static float nextAllowedHpRemovalTime;
+    private static float nextAllowedHpRemovalTime = 0f;
 
     public static void AddCoins(int amount = 1)
     {
@@ -16,7 +16,9 @@ public static class PlayerData
     }
 
     public static void RemoveHP(int amount = 1)
-    {
+    {// Prevent HP removal if the amount is not positive or if we're still in the cooldown period
+
+        Debug.Log("Current time: " + Time.time + ", Next allowed HP removal time: " + nextAllowedHpRemovalTime);
         if (amount <= 0 || Time.time < nextAllowedHpRemovalTime)
             return;
 
@@ -24,7 +26,7 @@ public static class PlayerData
         HP -= amount;
         HP = Mathf.Max(HP, 0);
         Debug.Log("Player HP: " + HP);
-        
+
     }
 
     public static void RestoreFullHP()
@@ -36,6 +38,12 @@ public static class PlayerData
     public static void Reset()
     {
         Coins = 0;
+        HP = DefaultHP;
+        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
+    }
+
+    public static void Awake()
+    {
         HP = DefaultHP;
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
