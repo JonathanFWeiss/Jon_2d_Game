@@ -254,6 +254,7 @@ MonoBehaviour:
   dashCooldown: 0.1
   jumpCutMultiplier: 0.5
   coyoteTime: 0.5
+  jumpBufferTime: 0.15
   canDash: 1
   canDoubleJump: 1
   attackBoxSize: {x: 3.2, y: 1.5}

@@ -14,6 +14,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     [SerializeField] private float coyoteTime = 0.3f;
+    [SerializeField] private float jumpBufferTime = 0.15f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
     private bool airDashAvailable = true; // Tracks if the player can still air dash
     [SerializeField] private bool canDash = true; // For if the player can air dash or not, set in inspector
@@ -68,6 +69,7 @@ public class JonCharacterController : MonoBehaviour
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested, upSlashRequested;
     private float dashDirection = 1f;
     private float nextDashTime;
+    private float jumpBufferExpireTime = float.NegativeInfinity;
     private float lastGroundedTime = float.NegativeInfinity;
     private float defaultGravityScale = 3f;
     private Vector3 lastGroundedPosition;
@@ -195,6 +197,12 @@ public class JonCharacterController : MonoBehaviour
         }
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
+        bool hasBufferedJumpRequest = HasBufferedJumpRequest();
+        if (!hasBufferedJumpRequest)
+        {
+            ClearBufferedJump();
+        }
+
         bool hasGroundJumpAvailable = HasGroundJumpAvailable();
         bool hasWallJumpAvailable = HasWallJumpAvailable();
         //Debug.Log("Jump availability - Ground Jump: " + hasGroundJumpAvailable + ", Wall Jump: " + hasWallJumpAvailable + ", Double Jump Available: " + doubleJumpAvailable);
@@ -229,12 +237,13 @@ public class JonCharacterController : MonoBehaviour
         //     }
 
         // }
-        if (jumpRequested && hasWallJumpAvailable)
+        if (hasBufferedJumpRequest && !isDashing && hasWallJumpAvailable)
         {
             PerformWallJump();
+            ClearBufferedJump();
             Debug.Log("Wall jump performed");
         }
-        else if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
+        else if (hasBufferedJumpRequest && !isDashing && (hasGroundJumpAvailable || doubleJumpAvailable))
         {
             bool usingGroundJump = hasGroundJumpAvailable;
 
@@ -246,7 +255,7 @@ public class JonCharacterController : MonoBehaviour
             rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
 
             canBeGroundedTime = Time.time + coyoteTime;
-            jumpRequested = false;
+            ClearBufferedJump();
             isJumping = true;
             lastGroundedTime = float.NegativeInfinity;
 
@@ -307,18 +316,8 @@ public class JonCharacterController : MonoBehaviour
 
     public void Jump()
     {
-        bool hasGroundJumpAvailable = HasGroundJumpAvailable();
-        bool hasWallJumpAvailable = HasWallJumpAvailable();
-
-        if (jumpRequested || isDashing || (!doubleJumpAvailable && !hasGroundJumpAvailable && !hasWallJumpAvailable))
-        {
-            Debug.Log("Jump conditions not met, all must be false: jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", no jumps available: " + (!doubleJumpAvailable && !hasGroundJumpAvailable && !hasWallJumpAvailable));
-            return;
-        }
-        Debug.Log("Jump conditions met, processing jump jumpRequested: " + jumpRequested + ", isDashing: " + isDashing + ", no jumps available: " + (!doubleJumpAvailable && !hasGroundJumpAvailable && !hasWallJumpAvailable));
-
-        jumpRequested = true;
-        Debug.Log("Jump action triggered");
+        BufferJumpRequest();
+        Debug.Log("Jump input buffered");
         jumpcutRequested = false; // Reset jump cut request when a new jump is initiated
     }
 
@@ -423,7 +422,7 @@ public class JonCharacterController : MonoBehaviour
         doubleJumpAvailable = canDoubleJump;
         airDashAvailable = canDash;
 
-        jumpRequested = false;
+        ClearBufferedJump();
         dashRequested = false;
         attackRequested = false;
         jumpcutRequested = false;
@@ -520,6 +519,23 @@ public class JonCharacterController : MonoBehaviour
         //return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
         return isGrounded && Time.time > canBeGroundedTime || Time.time <= lastGroundedTime + coyoteTime && !isJumping;
         // This allows the player to still jump for a short time after leaving the ground, making the controls feel more responsive.
+    }
+
+    private void BufferJumpRequest()
+    {
+        jumpRequested = true;
+        jumpBufferExpireTime = Time.time + jumpBufferTime;
+    }
+
+    private bool HasBufferedJumpRequest()
+    {
+        return jumpRequested && Time.time <= jumpBufferExpireTime;
+    }
+
+    private void ClearBufferedJump()
+    {
+        jumpRequested = false;
+        jumpBufferExpireTime = float.NegativeInfinity;
     }
 
     private bool HasWallJumpAvailable()

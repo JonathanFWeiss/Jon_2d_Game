@@ -159,6 +159,7 @@ MonoBehaviour:
   dashDuration: 0.2
   dashCooldown: 0.1
   jumpCutMultiplier: 0.5
+  jumpBufferTime: 0.15
   canDoubleJump: 1
   groundCheckTransform: {fileID: 2049660356057629331}
   groundCheckRadius: 0.2
