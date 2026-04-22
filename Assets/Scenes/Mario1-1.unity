@@ -1286,6 +1286,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4290b1baba51d424ab91b22e1a376db3, type: 3}
+--- !u!1001 &75158233
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 17.99589
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 9.915738
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7616358574544199784, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9139538667676608138, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
+      propertyPath: m_Name
+      value: Checkpoint
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bb8b333e12237b6468a4facc3cc3775f, type: 3}
 --- !u!1 &91006787
 GameObject:
   m_ObjectHideFlags: 0
@@ -9543,19 +9600,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2641024972472421411, guid: a8bb9a5f054c16742a19d65648ea492f, type: 3}
       propertyPath: m_LocalScale.x
-      value: 48.344555
+      value: 91.037636
       objectReference: {fileID: 0}
     - target: {fileID: 2641024972472421411, guid: a8bb9a5f054c16742a19d65648ea492f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 5.516472
+      value: 5.7161684
       objectReference: {fileID: 0}
     - target: {fileID: 2641024972472421411, guid: a8bb9a5f054c16742a19d65648ea492f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -46.5027
+      value: -67.849
       objectReference: {fileID: 0}
     - target: {fileID: 2641024972472421411, guid: a8bb9a5f054c16742a19d65648ea492f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -5.3843
+      value: -5.2846
       objectReference: {fileID: 0}
     - target: {fileID: 2641024972472421411, guid: a8bb9a5f054c16742a19d65648ea492f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -14396,12 +14453,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f237f562b18e9334f99f2a6bb5078382, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameMaster
-  playerTransform: {fileID: 0}
+  playerTransform: {fileID: 1153534840}
   respawnPoint: {fileID: 0}
   deathRespawnDelay: 1
   uiDocument: {fileID: 0}
   countersLabelName: Counters
   heartIconPrefab: {fileID: 3590932436896681316, guid: 702cbf876d816e94ea7c7a6cfa2c7aeb, type: 3}
+  transitionAnim: {fileID: 1305968726}
 --- !u!82 &1771316582
 AudioSource:
   m_ObjectHideFlags: 0
@@ -18208,3 +18266,4 @@ SceneRoots:
   - {fileID: 1460384887}
   - {fileID: 2036035718}
   - {fileID: 1305968725}
+  - {fileID: 75158233}
