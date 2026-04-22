@@ -5129,6 +5129,7 @@ MonoBehaviour:
   uiDocument: {fileID: 0}
   countersLabelName: Counters
   heartIconPrefab: {fileID: 3590932436896681316, guid: 4ea56a2ae6e1c914d95eba74976676f0, type: 3}
+  transitionAnim: {fileID: 1850850}
 --- !u!82 &1771316582
 AudioSource:
   m_ObjectHideFlags: 0
@@ -7776,6 +7777,10 @@ PrefabInstance:
     - target: {fileID: 4057874902980130363, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
       propertyPath: attackHitDelay
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4057874902980130363, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
+      propertyPath: jumpBufferTime
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8934753579426604325, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
       propertyPath: m_LocalPosition.x

@@ -51,6 +51,7 @@ public class GameMaster : MonoBehaviour
     private Vector3 fallbackRespawnPosition;
     private bool hasFallbackRespawnPosition;
     private Transform heartIconsRoot;
+    public Animator transitionAnim;
 
     private void Awake()
     {
@@ -502,11 +503,14 @@ public class GameMaster : MonoBehaviour
     {
         isRespawningPlayer = true;
         ShowDeathMessage();
+        transitionAnim.SetTrigger("RespawnStart");
+        yield return new WaitForSeconds(1f);
         SetPlayerActive(false);
+        
 
         if (deathRespawnDelay > 0f)
         {
-            yield return new WaitForSeconds(deathRespawnDelay);
+            yield return new WaitForSeconds(0f);
         }
 
         SetPlayerActive(true);
