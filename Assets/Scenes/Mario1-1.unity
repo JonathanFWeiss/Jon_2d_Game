@@ -10797,6 +10797,72 @@ Transform:
   - {fileID: 1749909541}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1305968725
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 5585510433206605043, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_Alpha
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6248850025480909022, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_Name
+      value: LevelLoader
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 145.2718
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -9.975839
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8687458488525643674, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+--- !u!95 &1305968726 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 6841968953863921347, guid: fc80acb4458e5e142b0aed32cf2183f9, type: 3}
+  m_PrefabInstance: {fileID: 1305968725}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1310486220
 GameObject:
   m_ObjectHideFlags: 0
@@ -15353,6 +15419,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9e6dce086b7d4145ae6588143e7c229, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomTransition
+  transitionAnim: {fileID: 1305968726}
   sceneToLoad: AllTheMechanics
 --- !u!212 &1821776341
 SpriteRenderer:
@@ -18136,3 +18203,4 @@ SceneRoots:
   - {fileID: 1235889072}
   - {fileID: 1460384887}
   - {fileID: 2036035718}
+  - {fileID: 1305968725}
