@@ -17914,6 +17914,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Lace3
       objectReference: {fileID: 0}
+    - target: {fileID: 1301030828523733992, guid: 78656a8370dc685459765d5de1ae20f5, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 1411992160701000501, guid: 78656a8370dc685459765d5de1ae20f5, type: 3}
       propertyPath: m_SpriteTilingProperty.newSize.x
       value: 3.5
@@ -17952,7 +17956,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6381238344334004692, guid: 78656a8370dc685459765d5de1ae20f5, type: 3}
       propertyPath: attackHitDelay
-      value: 0.3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6381238344334004692, guid: 78656a8370dc685459765d5de1ae20f5, type: 3}
       propertyPath: attackBoxSize.x

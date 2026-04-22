@@ -15,6 +15,14 @@ public static class PlayerData
         Coins += amount;
     }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void InitializeOnPlayModeStart()
+    {
+        Coins = 0;
+        HP = DefaultHP;
+        nextAllowedHpRemovalTime = 0f;
+    }
+
     public static void RemoveHP(int amount = 1)
     {// Prevent HP removal if the amount is not positive or if we're still in the cooldown period
 
@@ -41,19 +49,5 @@ public static class PlayerData
         Coins = 0;
         HP = DefaultHP;
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
-    }
-
-    public static void Awake()
-    {
-        HP = DefaultHP;
-        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
-    }
-
-    public static void Start()
-    {
-        HP = DefaultHP;
-        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
-        
-        Debug.Log("PlayerData Start - Next allowed HP removal time set to: " + nextAllowedHpRemovalTime);
     }
 }

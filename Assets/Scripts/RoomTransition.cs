@@ -13,10 +13,11 @@ public class RoomTransition : MonoBehaviour
         SceneManager.LoadScene(sceneToLoad);
     }
     void OnTriggerEnter2D(Collider2D other)
-    {
+    { if (other.CompareTag("Player"))
+        {
         Debug.Log("Enering new room");
         //changeSceneNow();
-        StartCoroutine(TransitionCoroutine());
+        StartCoroutine(TransitionCoroutine());}
     }
 
     IEnumerator TransitionCoroutine()
