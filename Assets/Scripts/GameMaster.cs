@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 public class GameMaster : MonoBehaviour
@@ -14,6 +15,25 @@ public class GameMaster : MonoBehaviour
 
     private static readonly BindingFlags PlayerStateBindingFlags =
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    private static readonly string[] PlayerInputActionNames =
+    {
+        "Move",
+        "Jump",
+        "Dash",
+        "Attack",
+        "JumpCut",
+        "Pogo",
+        "UpSlash"
+    };
+    private static readonly string[] JonCharacterInputRequestFieldNames =
+    {
+        "jumpRequested",
+        "dashRequested",
+        "attackRequested",
+        "jumpcutRequested",
+        "pogoRequested",
+        "upSlashRequested"
+    };
 
     [Header("Respawn")]
     [Tooltip("Player object to respawn. If left empty, GameMaster will try to find one.")]
@@ -61,6 +81,14 @@ public class GameMaster : MonoBehaviour
         CacheUiReferences();
         RefreshCounters(forceRefresh: true);
         Application.targetFrameRate = 60;
+    }
+
+    private void OnDisable()
+    {
+        if (isRespawningPlayer)
+        {
+            SetPlayerInputEnabled(true);
+        }
     }
 
     private void Update()
@@ -490,6 +518,84 @@ public class GameMaster : MonoBehaviour
                memberName.StartsWith("Is", StringComparison.Ordinal);
     }
 
+    private void SetPlayerInputEnabled(bool isEnabled)
+    {
+        InputActionAsset inputActions = InputSystem.actions;
+        if (inputActions != null)
+        {
+            foreach (string actionName in PlayerInputActionNames)
+            {
+                InputAction action = inputActions.FindAction(actionName, throwIfNotFound: false);
+                if (action == null)
+                    continue;
+
+                if (isEnabled)
+                {
+                    action.Enable();
+                }
+                else
+                {
+                    action.Disable();
+                }
+            }
+        }
+
+        Transform playerRoot = GetPlayerStateRoot();
+        if (playerRoot == null)
+            return;
+
+        Hero hero = playerRoot.GetComponentInChildren<Hero>(true);
+        if (hero != null)
+        {
+            hero.enabled = isEnabled;
+        }
+
+        PlayerInputHandler inputHandler = playerRoot.GetComponentInChildren<PlayerInputHandler>(true);
+        if (inputHandler != null)
+        {
+            inputHandler.enabled = isEnabled;
+        }
+
+        if (!isEnabled)
+        {
+            JonCharacterController jonCharacter = playerRoot.GetComponentInChildren<JonCharacterController>(true);
+            if (jonCharacter != null)
+            {
+                ClearJonCharacterInputState(jonCharacter);
+            }
+        }
+    }
+
+    private static void ClearJonCharacterInputState(JonCharacterController jonCharacter)
+    {
+        if (jonCharacter == null)
+            return;
+
+        Type controllerType = typeof(JonCharacterController);
+        foreach (string fieldName in JonCharacterInputRequestFieldNames)
+        {
+            FieldInfo requestField = controllerType.GetField(fieldName, PlayerStateBindingFlags);
+            if (requestField?.FieldType == typeof(bool))
+            {
+                requestField.SetValue(jonCharacter, false);
+            }
+        }
+
+        FieldInfo jumpBufferField = controllerType.GetField("jumpBufferExpireTime", PlayerStateBindingFlags);
+        if (jumpBufferField?.FieldType == typeof(float))
+        {
+            jumpBufferField.SetValue(jonCharacter, float.NegativeInfinity);
+        }
+
+        FieldInfo movementField = controllerType.GetField("movementVector", PlayerStateBindingFlags);
+        if (movementField?.FieldType == typeof(Vector2))
+        {
+            movementField.SetValue(jonCharacter, Vector2.zero);
+        }
+
+        jonCharacter.Move(Vector2.zero);
+    }
+
     private void SetPlayerActive(bool isActive)
     {
         Transform playerRoot = GetPlayerStateRoot();
@@ -502,23 +608,35 @@ public class GameMaster : MonoBehaviour
     private IEnumerator RespawnPlayerAfterDelay()
     {
         isRespawningPlayer = true;
-        ShowDeathMessage();
-        transitionAnim.SetTrigger("RespawnStart");
-        yield return new WaitForSeconds(1f);
-        SetPlayerActive(false);
-        
-
-        if (deathRespawnDelay > 0f)
+        SetPlayerInputEnabled(false);
+        try
         {
-            yield return new WaitForSeconds(0f);
-        }
+            ShowDeathMessage();
 
-        SetPlayerActive(true);
-        RespawnPlayer();
-        HideDeathMessage();
-        isRespawningPlayer = false;
-        ResetPlayerIsStateFlags();
-        PlayerData.RestoreFullHP();
+            if (transitionAnim != null)
+            {
+                transitionAnim.SetTrigger("RespawnStart");
+            }
+
+            yield return new WaitForSeconds(1f);
+            SetPlayerActive(false);
+
+            if (deathRespawnDelay > 0f)
+            {
+                yield return new WaitForSeconds(0f);
+            }
+
+            SetPlayerActive(true);
+            RespawnPlayer();
+            HideDeathMessage();
+            ResetPlayerIsStateFlags();
+            PlayerData.RestoreFullHP();
+        }
+        finally
+        {
+            SetPlayerInputEnabled(true);
+            isRespawningPlayer = false;
+        }
     }
 
     private void RespawnPlayer()
