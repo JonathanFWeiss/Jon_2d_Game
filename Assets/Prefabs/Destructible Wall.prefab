@@ -3,8 +3,8 @@
 --- !u!1 &969372196273959085
 GameObject:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 2792853854010059017, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+  m_PrefabInstance: {fileID: 2945889789757361694}
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
@@ -23,14 +23,14 @@ GameObject:
 --- !u!4 &6930375129184396614
 Transform:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+  m_PrefabInstance: {fileID: 2945889789757361694}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 969372196273959085}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -51.2971, y: -0.1741, z: 0}
-  m_LocalScale: {x: 0.4054566, y: 3.0997052, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -51.18, y: 0.8778, z: 0}
+  m_LocalScale: {x: 0.47572225, y: 4.9663944, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -39,8 +39,8 @@ Transform:
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 6350010882045951659, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+  m_PrefabInstance: {fileID: 2945889789757361694}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 969372196273959085}
   m_Enabled: 1
@@ -80,12 +80,12 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -1245182433
-  m_SortingLayer: 2
+  m_SortingLayerID: -1740619663
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0, g: 1, b: 0.13039958, a: 1}
+  m_Color: {r: 0, g: 0.43921572, b: 0.23529413, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -98,11 +98,11 @@ SpriteRenderer:
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 3678325273419950677, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+  m_PrefabInstance: {fileID: 2945889789757361694}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 969372196273959085}
-  m_BodyType: 0
+  m_BodyType: 2
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
@@ -124,8 +124,8 @@ Rigidbody2D:
 --- !u!61 &3183295703848348677
 BoxCollider2D:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 6636693421397142351, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+  m_PrefabInstance: {fileID: 2945889789757361694}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 969372196273959085}
   m_Enabled: 1
@@ -170,8 +170,8 @@ BoxCollider2D:
 --- !u!114 &8678205169715840319
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 6492473154327619579, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+  m_PrefabInstance: {fileID: 2945889789757361694}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 969372196273959085}
   m_Enabled: 1
@@ -193,3 +193,60 @@ MonoBehaviour:
   coinDropCount: 0
   hitFlashDuration: 0.25
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+--- !u!1001 &2945889789757361694
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -51.18
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.8778
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1204847278830178581, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2792853854010059017, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}
+      propertyPath: m_Name
+      value: Destructible Wall
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4532e20a88596cb4e8797f83c265bbe6, type: 3}

@@ -14,5 +14,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/AllTheMechanics.unity
     guid: 1fd4ef7168d1ad747a1f783c42f66473
+  - enabled: 1
+    path: Assets/MainMenu.unity
+    guid: 80a22401ca884964f9f2178da1b2a092
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

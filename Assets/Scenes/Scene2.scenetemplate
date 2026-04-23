@@ -63,9 +63,9 @@ MonoBehaviour:
   description: 
   preview: {fileID: -295634549207644172}
   dependencies:
-  - dependency: {fileID: 969372196273959085, guid: 41cb670188b67c84c95f83e119df66d1, type: 3}
-    instantiationMode: 1
   - dependency: {fileID: 2800000, guid: b281b91a70a624a0da1c43adc1c30c7b, type: 3}
+    instantiationMode: 1
+  - dependency: {fileID: 969372196273959085, guid: 41cb670188b67c84c95f83e119df66d1, type: 3}
     instantiationMode: 1
   - dependency: {fileID: 2800000, guid: 222d62d87db5931498bb85845842b0d3, type: 3}
     instantiationMode: 1
@@ -221,6 +221,8 @@ MonoBehaviour:
     instantiationMode: 0
   - dependency: {fileID: 2800000, guid: 6a9b202e9a1f2064b8ddb485c19be1fd, type: 3}
     instantiationMode: 1
+  - dependency: {fileID: 7400000, guid: 7cbc4b1d7289db84ebe6bf63254d513e, type: 2}
+    instantiationMode: 0
   templatePipeline: {fileID: 0}
   badge: {fileID: 0}
   addToDefaults: 0
