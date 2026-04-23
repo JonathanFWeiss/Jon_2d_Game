@@ -30,6 +30,7 @@ public class JonCharacterController : MonoBehaviour
 
     [SerializeField] private LayerMask attackLayerMask;
     [SerializeField] private int attackDamage = 1;
+    [SerializeField] private int energyGainPerSuccessfulHit = 1;
     [SerializeField] private Vector2 attackPushbackImpulse = new Vector2(4f, 1.5f);
     [SerializeField] private float attackDuration = 1f;
     [SerializeField] private float attackHitDelay = 0f;
@@ -896,11 +897,57 @@ public class JonCharacterController : MonoBehaviour
             if (takeDamageMethod == null)
                 continue;
 
+            bool trackedHealthBeforeDamage = TryGetTrackedHealthValue(component, out int healthBeforeDamage);
             takeDamageMethod.Invoke(component, new object[] { attackDamage });
+
+            if (trackedHealthBeforeDamage &&
+                (!TryGetTrackedHealthValue(component, out int healthAfterDamage) || healthAfterDamage >= healthBeforeDamage))
+            {
+                return false;
+            }
+
+            PlayerData.AddEnergy(energyGainPerSuccessfulHit);
+            Debug.Log($"Energy gained. Total energy: {PlayerData.Energy}");
             return true;
         }
 
 
+        return false;
+    }
+
+    private static bool TryGetTrackedHealthValue(MonoBehaviour component, out int healthValue)
+    {
+        string[] trackedHealthMemberNames = { "hp", "HP", "health", "Health" };
+        System.Type componentType = component.GetType();
+
+        foreach (string memberName in trackedHealthMemberNames)
+        {
+            FieldInfo healthField = componentType.GetField(
+                memberName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+            );
+
+            if (healthField?.FieldType == typeof(int))
+            {
+                healthValue = (int)healthField.GetValue(component);
+                return true;
+            }
+
+            PropertyInfo healthProperty = componentType.GetProperty(
+                memberName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+            );
+
+            if (healthProperty?.PropertyType == typeof(int) &&
+                healthProperty.CanRead &&
+                healthProperty.GetIndexParameters().Length == 0)
+            {
+                healthValue = (int)healthProperty.GetValue(component);
+                return true;
+            }
+        }
+
+        healthValue = 0;
         return false;
     }
 
@@ -927,11 +974,11 @@ public class JonCharacterController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        DrawWallCheckGizmos();
+        
     }
 
     private void OnDrawGizmosSelected()
-    {
+    {DrawWallCheckGizmos();
         if (groundCheckTransform != null)
         {
             Gizmos.color = Color.red;

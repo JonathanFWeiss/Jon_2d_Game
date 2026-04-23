@@ -59,6 +59,7 @@ public class GameMaster : MonoBehaviour
     private Label uiCountersText;
     private readonly List<GameObject> heartIcons = new List<GameObject>();
     private int lastDisplayedCoins = int.MinValue;
+    private int lastDisplayedEnergy = int.MinValue;
     private int lastDisplayedHp = int.MinValue;
     private bool warnedMissingUiDocument;
     private bool warnedMissingCountersLabel;
@@ -99,7 +100,7 @@ public class GameMaster : MonoBehaviour
         {
             StartCoroutine(RespawnPlayerAfterDelay());
             ResetPlayerIsStateFlags();
-            PlayerData.RestoreFullHP();
+            ResetPlayerStatsAfterDeath();
             
         }
 
@@ -234,16 +235,24 @@ public class GameMaster : MonoBehaviour
 
         if (!forceRefresh &&
             PlayerData.Coins == lastDisplayedCoins &&
+            PlayerData.Energy == lastDisplayedEnergy &&
             PlayerData.HP == lastDisplayedHp)
         {
             return;
         }
 
         lastDisplayedCoins = PlayerData.Coins;
+        lastDisplayedEnergy = PlayerData.Energy;
         lastDisplayedHp = PlayerData.HP;
 
-        uiCountersText.text = $"Coins: {PlayerData.Coins} HP: {PlayerData.HP}";
+        uiCountersText.text = $"Coins: {PlayerData.Coins} Energy: {PlayerData.Energy} HP: {PlayerData.HP}";
         uiCountersText.style.display = DisplayStyle.Flex;
+    }
+
+    private static void ResetPlayerStatsAfterDeath()
+    {
+        PlayerData.ResetEnergy();
+        PlayerData.RestoreFullHP();
     }
 
     private void RefreshHeartIcons()
@@ -630,7 +639,7 @@ public class GameMaster : MonoBehaviour
             RespawnPlayer();
             HideDeathMessage();
             ResetPlayerIsStateFlags();
-            PlayerData.RestoreFullHP();
+            ResetPlayerStatsAfterDeath();
         }
         finally
         {
@@ -665,7 +674,7 @@ public class GameMaster : MonoBehaviour
         }
 
         ResetPlayerIsStateFlags();
-        PlayerData.RestoreFullHP();
+        ResetPlayerStatsAfterDeath();
         RefreshCounters(forceRefresh: true);
     }
 }

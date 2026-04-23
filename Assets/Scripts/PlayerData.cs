@@ -8,6 +8,7 @@ public static class PlayerData
     private const float HpRemovalPhysicsPauseSeconds = 0.5f;
 
     public static int Coins { get; private set; }
+    public static int Energy { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
 
     private static float nextAllowedHpRemovalTime = 0f;
@@ -15,13 +16,25 @@ public static class PlayerData
 
     public static void AddCoins(int amount = 1)
     {
+        if (amount <= 0)
+            return;
+
         Coins += amount;
+    }
+
+    public static void AddEnergy(int amount = 1)
+    {
+        if (amount <= 0)
+            return;
+
+        Energy += amount;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitializeOnPlayModeStart()
     {
         Coins = 0;
+        Energy = 0;
         HP = DefaultHP;
         nextAllowedHpRemovalTime = 0f;
         physicsPauseRunner = null;
@@ -52,8 +65,14 @@ public static class PlayerData
     public static void Reset()
     {
         Coins = 0;
+        Energy = 0;
         HP = DefaultHP;
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
+    }
+
+    public static void ResetEnergy()
+    {
+        Energy = 0;
     }
 
     private static void PausePhysicsAfterHpRemoval()
