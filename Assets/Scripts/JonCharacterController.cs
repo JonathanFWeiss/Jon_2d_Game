@@ -97,9 +97,11 @@ public class JonCharacterController : MonoBehaviour
     private Coroutine gettingHitCoroutine;
 
     public Animator animator;
+    private bool isSpellCasting;
+    private bool SpellCastRequested;
 
 
-
+    public GameObject SpellPrefab;
 
     private void Awake()
     {
@@ -167,6 +169,7 @@ public class JonCharacterController : MonoBehaviour
             pogoRequested = false;
             attackRequested = false; // Cancel attack if pogo is performed
             upSlashRequested = false; // Cancel upslash if pogo is performed
+            SpellCastRequested = false; // Cancel spell cast if pogo is performed
             StartCoroutine(PogoAttackCoroutine(pogoDuration));
             Debug.Log("Pogo executed with jump force: " + jumpForce);
         }
@@ -174,6 +177,7 @@ public class JonCharacterController : MonoBehaviour
         {
             upSlashRequested = false;
             attackRequested = false; // Cancel attack if upslash is performed
+            SpellCastRequested = false; // Cancel spell cast if upslash is performed
             StartCoroutine(UpSlashCoroutine(
                 UpSlashDuration));
 
@@ -182,11 +186,18 @@ public class JonCharacterController : MonoBehaviour
         {
             StartCoroutine(AttackCoroutine(attackDuration));
             attackRequested = false;
+            SpellCastRequested = false;
         }
         if (isGrounded)
         {
             doubleJumpAvailable = canDoubleJump;
             airDashAvailable = canDash;
+        }
+        if (SpellCastRequested)
+        {
+            SpellCastRequested = false;
+
+            StartCoroutine(CastSpellCoroutine());//Probably change to a coroutine if there will be a casting time or animation
         }
 
         bool wallJumpMovementLocked = Time.time < wallJumpMovementLockUntil;
@@ -389,6 +400,25 @@ public class JonCharacterController : MonoBehaviour
 
         upSlashRequested = true;
         Debug.Log("UpSlash action triggered");
+    }
+
+    public void Spell()
+    {
+        if (isAttacking || isPogoing || isUpSlashing || isSpellCasting)
+            return;
+        // Implement spell logic here
+        SpellCastRequested = true;
+        Debug.Log("Spell action triggered");
+    }
+
+    public IEnumerator CastSpellCoroutine()
+    {
+        // Placeholder for spell casting logic
+        Debug.Log("Casting spell...");
+        // You can add spell effects, damage, etc. here
+        GameObject spell = Instantiate(SpellPrefab, rb.position, Quaternion.identity);
+        yield return new WaitForSeconds(3f); // let particles float
+        Destroy(spell);
     }
 
     public void JumpCut()
@@ -974,11 +1004,12 @@ public class JonCharacterController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        
+
     }
 
     private void OnDrawGizmosSelected()
-    {DrawWallCheckGizmos();
+    {
+        DrawWallCheckGizmos();
         if (groundCheckTransform != null)
         {
             Gizmos.color = Color.red;

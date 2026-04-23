@@ -7,7 +7,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     private JonCharacterController characterController;
 
-    private InputAction moveAction, jumpAction, dashAction, attackAction, jumpcutAction, PogoAction, UpSlashAction;
+    private InputAction moveAction, jumpAction, dashAction, attackAction, jumpcutAction, PogoAction, UpSlashAction, inputAction, SpellAction;
 
 
     void Awake()
@@ -21,6 +21,7 @@ public class PlayerInputHandler : MonoBehaviour
         jumpcutAction = InputSystem.actions.FindAction("JumpCut");
         PogoAction = InputSystem.actions.FindAction("Pogo");
         UpSlashAction = InputSystem.actions.FindAction("UpSlash");
+        SpellAction = InputSystem.actions.FindAction("Spell");
 
         jumpAction.performed += Jump;
         dashAction.performed += Dash;
@@ -28,6 +29,7 @@ public class PlayerInputHandler : MonoBehaviour
         jumpcutAction.performed += JumpCut;
         PogoAction.performed += Pogo;
         UpSlashAction.performed += UpSlash;
+        SpellAction.performed += Spell;
 
     }
 
@@ -98,6 +100,15 @@ public class PlayerInputHandler : MonoBehaviour
             Debug.Log("UpSlash action triggered from input system");
         }
         characterController.UpSlash();
+    }
+
+    public void Spell(InputAction.CallbackContext context)
+    {
+        if (SpellAction.triggered)
+        {
+            Debug.Log("Spell action triggered from input system");
+        }
+        characterController.Spell();
     }
 
 }
