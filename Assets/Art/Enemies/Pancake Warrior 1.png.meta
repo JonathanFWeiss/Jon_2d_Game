@@ -137,7 +137,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Pancake Warrior 1_0
+      name: 3
       rect:
         serializedVersion: 2
         x: 0
@@ -159,7 +159,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_1
+      name: 9
       rect:
         serializedVersion: 2
         x: 166
@@ -181,7 +181,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_2
+      name: 6
       rect:
         serializedVersion: 2
         x: 332
@@ -203,11 +203,11 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_3
+      name: 8
       rect:
         serializedVersion: 2
         x: 0
-        y: 168
+        y: 169
         width: 166
         height: 166
       alignment: 0
@@ -225,7 +225,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_4
+      name: 7
       rect:
         serializedVersion: 2
         x: 166
@@ -247,11 +247,11 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_5
+      name: 1
       rect:
         serializedVersion: 2
-        x: 332
-        y: 168
+        x: 333
+        y: 167
         width: 166
         height: 166
       alignment: 0
@@ -269,7 +269,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_6
+      name: 4
       rect:
         serializedVersion: 2
         x: 0
@@ -291,7 +291,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_7
+      name: 5
       rect:
         serializedVersion: 2
         x: 166
@@ -313,11 +313,11 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Pancake Warrior 1_8
+      name: 2
       rect:
         serializedVersion: 2
         x: 332
-        y: 2
+        y: 1
         width: 166
         height: 166
       alignment: 0
@@ -350,15 +350,15 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":3.0,"y":3.0},"gridSpriteSize":{"x":166.0,"y":166.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Pancake Warrior 1_0: 6796177733153707138
-      Pancake Warrior 1_1: -1055882230008152678
-      Pancake Warrior 1_2: -6147341213319085017
-      Pancake Warrior 1_3: 3072826860822004194
-      Pancake Warrior 1_4: -3058801960350458570
-      Pancake Warrior 1_5: -5811132418955044224
-      Pancake Warrior 1_6: -3978470560563884443
-      Pancake Warrior 1_7: -2554294133292868968
-      Pancake Warrior 1_8: -8845246599875114198
+      1: -5811132418955044224
+      2: -8845246599875114198
+      3: 6796177733153707138
+      4: -3978470560563884443
+      5: -2554294133292868968
+      6: -6147341213319085017
+      7: -3058801960350458570
+      8: 3072826860822004194
+      9: -1055882230008152678
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

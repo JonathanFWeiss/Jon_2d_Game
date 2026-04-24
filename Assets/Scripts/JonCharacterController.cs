@@ -197,7 +197,7 @@ public class JonCharacterController : MonoBehaviour
         {
             SpellCastRequested = false;
 
-            StartCoroutine(CastSpellCoroutine());//Probably change to a coroutine if there will be a casting time or animation
+            StartCoroutine(SpellCastCoroutine());//Probably change to a coroutine if there will be a casting time or animation
         }
 
         bool wallJumpMovementLocked = Time.time < wallJumpMovementLockUntil;
@@ -411,14 +411,17 @@ public class JonCharacterController : MonoBehaviour
         Debug.Log("Spell action triggered");
     }
 
-    public IEnumerator CastSpellCoroutine()
+    public IEnumerator SpellCastCoroutine()
     {
         // Placeholder for spell casting logic
         Debug.Log("Casting spell...");
         // You can add spell effects, damage, etc. here
         GameObject spell = Instantiate(SpellPrefab, rb.position, Quaternion.identity);
+        PlayerData.RestoreFullHP();
+        PlayerData.RemoveEnergy(5);
         yield return new WaitForSeconds(3f); // let particles float
         Destroy(spell);
+        
     }
 
     public void JumpCut()

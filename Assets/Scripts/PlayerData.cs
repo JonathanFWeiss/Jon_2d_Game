@@ -30,6 +30,14 @@ public static class PlayerData
         Energy += amount;
     }
 
+    public static void RemoveEnergy(int amount = 1)
+    {
+        if (amount <= 0)
+            return;
+
+        Energy = Mathf.Max(Energy - amount, 0);
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitializeOnPlayModeStart()
     {
