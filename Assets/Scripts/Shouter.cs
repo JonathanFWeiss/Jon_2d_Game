@@ -10,6 +10,9 @@ public class Shouter : GroundStationaryEnemy
     [Tooltip("Duration in seconds for which the shout animation is active.")]
     public float shoutDuration = 1f;
 
+    [Tooltip("Prefab spawned while the shout is active.")]
+    public GameObject Wind;
+
     [Header("Shout Force")]
     [Tooltip("Optional point to use as the center of the shout. If empty, the enemy's rigidbody center is used.")]
     public Transform shoutOrigin;
@@ -23,6 +26,7 @@ public class Shouter : GroundStationaryEnemy
     private float shoutTimer = 0f;
     private bool isShouting = false;
     private Animator anim;
+    private GameObject activeWind;
     private readonly HashSet<Rigidbody2D> pushedPlayerBodies = new HashSet<Rigidbody2D>();
 
     protected override void Awake()
@@ -61,6 +65,11 @@ public class Shouter : GroundStationaryEnemy
         {
             anim.SetBool("isShouting", true);
         }
+
+        if (Wind != null && activeWind == null)
+        {
+            activeWind = Instantiate(Wind, GetShoutOrigin(), Quaternion.identity, transform);
+        }
     }
     private void DeactivateShout()
     {
@@ -69,6 +78,12 @@ public class Shouter : GroundStationaryEnemy
         if (anim != null)
         {
             anim.SetBool("isShouting", false);
+        }
+
+        if (activeWind != null)
+        {
+            Destroy(activeWind);
+            activeWind = null;
         }
     }
 
