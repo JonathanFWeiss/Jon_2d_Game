@@ -13,6 +13,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float jumpCutMultiplier = .5f;
+    [SerializeField] private float maxFallSpeed = 20f;
     [SerializeField] private float coyoteTime = 0.3f;
     [SerializeField] private float jumpBufferTime = 0.15f;
     private bool doubleJumpAvailable = true; // Tracks if the player can still double jump
@@ -41,7 +42,7 @@ public class JonCharacterController : MonoBehaviour
     //[SerializeField] private float pogoAttackDelay = 0.5f;
     [SerializeField] private Vector2 pogoAttackBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 pogoAttackBoxOffset = new Vector2(0f, -2f);
-    [SerializeField] private float pogoBounceCooldown = 0.5f;
+    [SerializeField] private float pogoBounceCooldown = 0.2f;
     [SerializeField] private GameObject pogoSlashEffect;
     private float nextPogoBounceTime;
 
@@ -283,6 +284,10 @@ public class JonCharacterController : MonoBehaviour
         if (isWallSliding && rb.linearVelocity.y < -wallSlideMaxFallSpeed)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideMaxFallSpeed);
+        }
+        else if (rb.linearVelocity.y < -maxFallSpeed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
         }
 
         if (jumpcutRequested && rb.linearVelocity.y > 0)
