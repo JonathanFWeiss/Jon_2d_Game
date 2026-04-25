@@ -20,6 +20,7 @@ public class JonCharacterController : MonoBehaviour
     private bool airDashAvailable = true; // Tracks if the player can still air dash
     [SerializeField] private bool canDash = true; // For if the player can air dash or not, set in inspector
     [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
+    [SerializeField] private bool canWallJump = true;//for if the player can wall jump or not, set in inspector
     private Rigidbody2D rb;
     public bool isGrounded { get; private set; }
     private float canBeGroundedTime = 0f;
@@ -104,6 +105,14 @@ public class JonCharacterController : MonoBehaviour
 
     public GameObject SpellPrefab;
 
+    [Header("Swimming Parameters")]
+    [SerializeField] private float swimSpeed = 5f;
+    [SerializeField] private float buoyancy = 6f;
+    [SerializeField] private float waterDrag = 3f;
+    public bool isSwimming;
+    private float normalDrag;
+
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -164,7 +173,10 @@ public class JonCharacterController : MonoBehaviour
         doGroundCheck();
         doWallCheck();
 
-        if (pogoRequested)
+
+
+
+        if (pogoRequested && !isGettingHit)
         {
 
             pogoRequested = false;
@@ -174,7 +186,7 @@ public class JonCharacterController : MonoBehaviour
             StartCoroutine(PogoAttackCoroutine(pogoDuration));
             Debug.Log("Pogo executed with jump force: " + jumpForce);
         }
-        if (upSlashRequested)
+        if (upSlashRequested && !isGettingHit)
         {
             upSlashRequested = false;
             attackRequested = false; // Cancel attack if upslash is performed
@@ -183,7 +195,7 @@ public class JonCharacterController : MonoBehaviour
                 UpSlashDuration));
 
         }
-        if (attackRequested)
+        if (attackRequested && !isGettingHit)
         {
             StartCoroutine(AttackCoroutine(attackDuration));
             attackRequested = false;
@@ -194,7 +206,7 @@ public class JonCharacterController : MonoBehaviour
             doubleJumpAvailable = canDoubleJump;
             airDashAvailable = canDash;
         }
-        if (SpellCastRequested)
+        if (SpellCastRequested && !isGettingHit)
         {
             SpellCastRequested = false;
 
@@ -204,9 +216,14 @@ public class JonCharacterController : MonoBehaviour
         bool wallJumpMovementLocked = Time.time < wallJumpMovementLockUntil;
 
         // Don't apply normal movement during dash or attack
-        if (!isDashing && !isAttacking && !isGettingHit && !wallJumpMovementLocked)
+        if (!isDashing && !isAttacking && !isGettingHit && !wallJumpMovementLocked && !isSwimming)
         {
             rb.linearVelocityX = movementVector.x * movementSpeed;
+        }
+
+        if (isSwimming)
+        {
+            rb.linearVelocity = new Vector2(movementVector.x * swimSpeed, movementVector.y * swimSpeed);
         }
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
@@ -218,45 +235,14 @@ public class JonCharacterController : MonoBehaviour
 
         bool hasGroundJumpAvailable = HasGroundJumpAvailable();
         bool hasWallJumpAvailable = HasWallJumpAvailable();
-        //Debug.Log("Jump availability - Ground Jump: " + hasGroundJumpAvailable + ", Wall Jump: " + hasWallJumpAvailable + ", Double Jump Available: " + doubleJumpAvailable);
-        // if (jumpRequested && (hasGroundJumpAvailable || doubleJumpAvailable))
-        // {
-        //     Debug.Log("Processing jump request. Jumprequested: " + jumpRequested + ", isGrounded: " + isGrounded + ", doubleJumpAvailable: " + doubleJumpAvailable);
-        //     if (rb.linearVelocity.y < 0)
-        //     {
-        //         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset downward velocity for consistent jumps
-        //         Debug.Log("Resetting downward velocity for consistent jump height");
-        //     }
-        //     if (rb.linearVelocity.y > 0)
-        //     {
-        //         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset upward velocity for consistent jumps
-        //         Debug.Log("Resetting upward velocity for consistent jump height");
-        //     }
-        //     rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
-        //     canBeGroundedTime = Time.time + coyoteTime;
-        //     if (hasGroundJumpAvailable && !isGrounded)
-        //     {
-        //         Debug.Log("Coyote Jump");
-        //     }
-        //     jumpRequested = false;
-        //     isJumping = true;
-        //     hasGroundJumpAvailable = false;
-        //     lastGroundedTime = float.NegativeInfinity;
 
-        //     if (!hasGroundJumpAvailable && doubleJumpAvailable)
-        //     {
-        //         doubleJumpAvailable = false; // Consume double jump
-        //         Debug.Log("Double jump used");
-        //     }
-
-        // }
         if (hasBufferedJumpRequest && !isDashing && hasWallJumpAvailable)
         {
             PerformWallJump();
             ClearBufferedJump();
             Debug.Log("Wall jump performed");
         }
-        else if (hasBufferedJumpRequest && !isDashing && (hasGroundJumpAvailable || doubleJumpAvailable))
+        else if (hasBufferedJumpRequest && !isDashing && !isGettingHit && (hasGroundJumpAvailable || doubleJumpAvailable || isSwimming))
         {
             bool usingGroundJump = hasGroundJumpAvailable;
 
@@ -426,7 +412,7 @@ public class JonCharacterController : MonoBehaviour
         PlayerData.RemoveEnergy(5);
         yield return new WaitForSeconds(3f); // let particles float
         Destroy(spell);
-        
+
     }
 
     public void JumpCut()
@@ -579,6 +565,10 @@ public class JonCharacterController : MonoBehaviour
 
     private bool HasWallJumpAvailable()
     {
+        if (!canWallJump)
+        {
+            return false;
+        }
         //Debug.Log("Checking wall jump availability. isGrounded: " + isGrounded + ", Time since last wall contact: " + (Time.time - lastWallContactTime) + ", wallContactGraceTime: " + wallContactGraceTime + ", sameWallJumpLockUntil: " + sameWallJumpLockUntil + ", lastWallJumpedFromDirection: " + lastWallJumpedFromDirection);
         if (isGrounded || Time.time > lastWallContactTime + wallContactGraceTime)
         {

@@ -15,7 +15,7 @@ public class CircularMovingPlatform2D : MonoBehaviour
     public bool snapToCircleOnStart = true;
 
     [Header("Circle")]
-    [Tooltip("Optional transform used as the center of the circular path. If this is unassigned, Center Position is used.")]
+    [Tooltip("Optional transform used as the center of the circular path. Its starting world position is cached when play starts.")]
     public Transform centerPoint;
 
     [Tooltip("World-space center of the circular path when Center Point is unassigned.")]
@@ -35,12 +35,15 @@ public class CircularMovingPlatform2D : MonoBehaviour
     private readonly HashSet<Rigidbody2D> passengerRigidbodies = new HashSet<Rigidbody2D>();
     private readonly List<Rigidbody2D> passengerRemovalBuffer = new List<Rigidbody2D>();
     private Rigidbody2D rb2d;
+    private Vector2 cachedCenterPosition;
+    private bool hasCachedCenterPosition;
     private float currentAngleRadians;
 
     private void Awake()
     {
         rb2d = GetComponent<Rigidbody2D>();
         ConfigureRigidbody();
+        CacheCenterPosition();
 
         currentAngleRadians = GetInitialAngleRadians();
 
@@ -109,7 +112,21 @@ public class CircularMovingPlatform2D : MonoBehaviour
         return startAngleDegrees * Mathf.Deg2Rad;
     }
 
+    private void CacheCenterPosition()
+    {
+        cachedCenterPosition = GetConfiguredCenterPosition();
+        hasCachedCenterPosition = true;
+    }
+
     private Vector2 GetCenterPosition()
+    {
+        if (Application.isPlaying && hasCachedCenterPosition)
+            return cachedCenterPosition;
+
+        return GetConfiguredCenterPosition();
+    }
+
+    private Vector2 GetConfiguredCenterPosition()
     {
         if (centerPoint == null)
             return centerPosition;
