@@ -395,7 +395,7 @@ public class StackWarrior : GroundWalkerEnemy
 
         facingDirection = newFacingDirection;
         UpdateSpriteDirection();
-        UpdateLedgeCheckPosition();
+        
     }
 
     private float GetPlayerDirection()

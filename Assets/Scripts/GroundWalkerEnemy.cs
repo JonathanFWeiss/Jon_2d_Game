@@ -6,17 +6,19 @@ public class GroundWalkerEnemy : EnemyBase
     [Tooltip("Optional override for what counts as a wall/obstacle. If left at 0, Ground layer is used.")]
     public LayerMask obstacleMask = 0;
 
-    [Tooltip("Optional manually assigned ledge check. If empty, one is created automatically.")]
-    public Transform ledgeCheck;
-
-    [Tooltip("Horizontal distance in front of the enemy for the ledge check.")]
-    public float ledgeCheckX = 1f;
+    
 
     [Tooltip("Vertical offset below the enemy for the ledge check.")]
     public float ledgeCheckY = -0.5f;
+    public float ledgeCheckX = 1;
 
-    [Tooltip("Radius of the ledge ground check.")]
-    public float ledgeCheckRadius = 0.1f;
+    [Tooltip("Extra horizontal padding past the collider edge for the wall check.")]
+    public float wallCheckX = 0.05f;
+
+    [Tooltip("Vertical offset from the enemy center for the wall check.")]
+    public float wallCheckY = 0f;
+
+    
 
     [Tooltip("Turn around when there is no ground ahead.")]
     public bool turnAtLedges = true;
@@ -28,30 +30,44 @@ public class GroundWalkerEnemy : EnemyBase
     public float turnAroundCooldown = 1f;
 
     protected int groundLayerIndex = -1;
-    protected LayerMask groundMask;
+    public LayerMask groundMask;
     protected float nextTurnAroundTime = float.NegativeInfinity;
+
+    [SerializeField] private float ledgeCheckDistance = 1f;
+    [SerializeField] private float wallCheckDistance = 0.25f;
+    private Collider2D wallCheckCollider;
+    
+
 
     protected override void Awake()
     {
         base.Awake();
 
+        wallCheckCollider = GetComponent<Collider2D>();
         InitializeGroundMask();
-        EnsureLedgeCheckExists();
-        UpdateLedgeCheckPosition();
     }
 
     protected override void FixedUpdate()
     {
         if (isDead) return;
 
-        if (turnAtLedges && IsLedgeAhead())
+        bool shouldTurnAround = turnAtWalls && IsWallAhead();
+        string turnAroundReason = "wall";
+
+        if (!shouldTurnAround && turnAtLedges && IsLedgeAhead())
+        {
+            shouldTurnAround = true;
+            turnAroundReason = "ledge";
+        }
+
+        if (shouldTurnAround)
         {
             float previousFacingDirection = facingDirection;
             TurnAround();
 
             if (!Mathf.Approximately(previousFacingDirection, facingDirection))
             {
-                Debug.Log($"{gameObject.name} turned around at ledge");
+                Debug.Log($"{gameObject.name} turned around at {turnAroundReason}");
             }
         }
 
@@ -88,18 +104,20 @@ public class GroundWalkerEnemy : EnemyBase
     {
         groundLayerIndex = LayerMask.NameToLayer("Ground");
 
-        if (groundLayerIndex == -1)
+        if (groundMask == 0)
         {
-            Debug.LogWarning(
-                $"{gameObject.name}: No layer named 'Ground' exists. " +
-                "Create a Ground layer in Unity for ledge and wall checks."
-            );
+            if (groundLayerIndex == -1)
+            {
+                Debug.LogWarning(
+                    $"{gameObject.name}: No layer named 'Ground' exists. " +
+                    "Create a Ground layer in Unity for ledge checks."
+                );
 
-            groundMask = 0;
-            return;
+                return;
+            }
+
+            groundMask = 1 << groundLayerIndex;
         }
-
-        groundMask = 1 << groundLayerIndex;
 
         if (obstacleMask == 0)
         {
@@ -107,70 +125,67 @@ public class GroundWalkerEnemy : EnemyBase
         }
     }
 
-    protected virtual void EnsureLedgeCheckExists()
-    {
-        if (ledgeCheck != null)
-        {
-            
-            return;
-        }
-
-        Transform existing = transform.Find("LedgeCheck");
-        if (existing != null)
-        {
-            ledgeCheck = existing;
-            return;
-        }
-
-        GameObject ledgeCheckObject = new GameObject("LedgeCheck");
-        ledgeCheckObject.transform.SetParent(transform, true);
-        ledgeCheckObject.transform.localScale = Vector3.one;
-        ledgeCheck = ledgeCheckObject.transform;
-
-        
-    }
+   
 
 
 
-    protected virtual void UpdateLedgeCheckPosition()
-    {
-        if (ledgeCheck == null)
-            return;
-
-        Vector3 localOffset = new Vector3(
-            Mathf.Abs(ledgeCheckX),
-            ledgeCheckY,
-            0f
-        );
-
-        if (ledgeCheck.parent == transform)
-        {
-            // The enemy already flips by changing its own X scale, so the child
-            // should keep a positive local X and let the parent mirror it.
-            ledgeCheck.localPosition = localOffset;
-            return;
-        }
-
-        ledgeCheck.position = transform.position + new Vector3(
-            Mathf.Abs(ledgeCheckX) * facingDirection,
-            ledgeCheckY,
-            0f
-        );
-    }
+   
 
     protected bool IsLedgeAhead()
     {
-        if (ledgeCheck == null || groundMask == 0)
-            return false;
-
-        bool groundAhead = Physics2D.OverlapCircle(
-            ledgeCheck.position,
-            ledgeCheckRadius,
+        Vector2 origin = GetLedgeCheckOrigin(facingDirection);
+        RaycastHit2D groundHit = Physics2D.Raycast(
+            origin,
+            Vector2.down,
+            ledgeCheckDistance,
             groundMask
         );
-        //Debug.Log($"{gameObject.name} ledge check at {ledgeCheck.position} found ground: {groundAhead}");
 
-        return !groundAhead;
+        
+        return groundHit.collider == null;
+    }
+
+    protected bool IsWallAhead()
+    {
+        Vector2 origin = GetWallCheckOrigin(facingDirection);
+        Vector2 direction = Vector2.right * facingDirection;
+        RaycastHit2D[] hits = Physics2D.RaycastAll(
+            origin,
+            direction,
+            wallCheckDistance,
+            obstacleMask
+        );
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null || hit.collider.transform.IsChildOf(transform))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    protected Vector2 GetLedgeCheckOrigin(float direction)
+    {
+        return (Vector2)transform.position + new Vector2(ledgeCheckX * direction, ledgeCheckY);
+    }
+
+    protected Vector2 GetWallCheckOrigin(float direction)
+    {
+        Collider2D checkCollider = wallCheckCollider != null
+            ? wallCheckCollider
+            : GetComponent<Collider2D>();
+
+        if (checkCollider == null)
+        {
+            return (Vector2)transform.position + new Vector2(wallCheckX * direction, wallCheckY);
+        }
+
+        Bounds bounds = checkCollider.bounds;
+        float edgeX = direction >= 0f ? bounds.max.x : bounds.min.x;
+        return new Vector2(edgeX + wallCheckX * direction, bounds.center.y + wallCheckY);
     }
 
     protected bool IsObstacle(GameObject obj)
@@ -196,27 +211,42 @@ public class GroundWalkerEnemy : EnemyBase
 
         nextTurnAroundTime = Time.time + Mathf.Max(0f, turnAroundCooldown);
         base.TurnAround();
-        UpdateLedgeCheckPosition();
+        
     }
 
     protected virtual void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
+        DrawLedgeCheckGizmo();
+        Gizmos.color = Color.red;
+        DrawWallCheckGizmo();
+    }
 
-        if (ledgeCheck != null)
-        {
-            Gizmos.DrawWireSphere(ledgeCheck.position, ledgeCheckRadius);
-        }
-        else
-        {
-            float previewFacing = startFacingRight ? 1f : -1f;
-            Vector3 previewPos = transform.position + new Vector3(
-                Mathf.Abs(ledgeCheckX) * previewFacing,
-                ledgeCheckY,
-                0f
-            );
+    protected virtual void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        DrawLedgeCheckGizmo();
+        Gizmos.color = Color.red;
+        DrawWallCheckGizmo();
+    }
 
-            Gizmos.DrawWireSphere(previewPos, ledgeCheckRadius);
-        }
+    private void DrawLedgeCheckGizmo()
+    {
+        float previewFacingDirection = Application.isPlaying
+            ? facingDirection
+            : startFacingRight ? 1f : -1f;
+
+        Vector3 start = GetLedgeCheckOrigin(previewFacingDirection);
+        Gizmos.DrawLine(start, start + Vector3.down * ledgeCheckDistance);
+    }
+
+    private void DrawWallCheckGizmo()
+    {
+        float previewFacingDirection = Application.isPlaying
+            ? facingDirection
+            : startFacingRight ? 1f : -1f;
+
+        Vector3 start = GetWallCheckOrigin(previewFacingDirection);
+        Gizmos.DrawLine(start, start + Vector3.right * previewFacingDirection * wallCheckDistance);
     }
 }
