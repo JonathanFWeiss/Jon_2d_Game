@@ -12,6 +12,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashSpeed = 10f;
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
+    [SerializeField] private float dashHeldSpeedMultiplier = 2f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     [SerializeField] private float maxFallSpeed = 20f;
     [SerializeField] private float coyoteTime = 0.3f;
@@ -70,7 +71,10 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float sameWallJumpLockTime = 0.2f;
     [SerializeField] private float wallSlideMaxFallSpeed = 3f;
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested, upSlashRequested;
+    private bool isDashButtonHeld;
+    private bool isDashSpeedBoostActive;
     private float dashDirection = 1f;
+    private float dashSpeedBoostDirection = 1f;
     private float nextDashTime;
     private float jumpBufferExpireTime = float.NegativeInfinity;
     private float lastGroundedTime = float.NegativeInfinity;
@@ -215,10 +219,12 @@ public class JonCharacterController : MonoBehaviour
 
         bool wallJumpMovementLocked = Time.time < wallJumpMovementLockUntil;
 
+        UpdateDashSpeedBoost();
+
         // Don't apply normal movement during dash or attack
         if (!isDashing && !isAttacking && !isGettingHit && !wallJumpMovementLocked && !isSwimming)
         {
-            rb.linearVelocityX = movementVector.x * movementSpeed;
+            rb.linearVelocityX = movementVector.x * GetCurrentMovementSpeed();
         }
 
         if (isSwimming)
@@ -348,6 +354,67 @@ public class JonCharacterController : MonoBehaviour
 
     }
 
+    public void SetDashHeld(bool isHeld)
+    {
+        if (isDashButtonHeld == isHeld)
+        {
+            return;
+        }
+
+        isDashButtonHeld = isHeld;
+
+        if (isDashButtonHeld)
+        {
+            StartDashSpeedBoost();
+        }
+        else
+        {
+            StopDashSpeedBoost();
+        }
+    }
+
+    private void StartDashSpeedBoost()
+    {
+        dashSpeedBoostDirection = GetDashBoostDirection();
+        isDashSpeedBoostActive = true;
+    }
+
+    private void StopDashSpeedBoost()
+    {
+        isDashSpeedBoostActive = false;
+    }
+
+    private void UpdateDashSpeedBoost()
+    {
+        if (!isDashButtonHeld || !isDashSpeedBoostActive || Mathf.Abs(movementVector.x) <= 0.1f)
+        {
+            return;
+        }
+
+        if (Mathf.Sign(movementVector.x) != dashSpeedBoostDirection)
+        {
+            StopDashSpeedBoost();
+        }
+    }
+
+    private float GetCurrentMovementSpeed()
+    {
+        return isDashSpeedBoostActive
+            ? movementSpeed * dashHeldSpeedMultiplier
+            : movementSpeed;
+    }
+
+    private float GetDashBoostDirection()
+    {
+        if (Mathf.Abs(movementVector.x) > 0.1f)
+        {
+            return Mathf.Sign(movementVector.x);
+        }
+
+        float facing = Mathf.Sign(transform.localScale.x);
+        return facing == 0f ? 1f : facing;
+    }
+
     IEnumerator DashCoroutine(float seconds)
     {
         Debug.Log("Starting dash coroutine");
@@ -452,6 +519,7 @@ public class JonCharacterController : MonoBehaviour
         attackRequested = false;
         jumpcutRequested = false;
         pogoRequested = false;
+        SetDashHeld(false);
         isDashing = false;
         isAttacking = false;
         isPogoing = false;

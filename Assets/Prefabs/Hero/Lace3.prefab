@@ -252,12 +252,14 @@ MonoBehaviour:
   dashSpeed: 10
   dashDuration: 0.2
   dashCooldown: 0.1
+  dashHeldSpeedMultiplier: 5
   jumpCutMultiplier: 0.5
   maxFallSpeed: 20
   coyoteTime: 0.5
-  jumpBufferTime: 0.15
+  jumpBufferTime: 2
   canDash: 1
   canDoubleJump: 1
+  canWallJump: 1
   attackBoxSize: {x: 3.2, y: 1.5}
   attackBoxOffset: {x: 1.5, y: -0.4}
   attackLayerMask:
@@ -293,6 +295,10 @@ MonoBehaviour:
   wallSlideMaxFallSpeed: 3
   animator: {fileID: 0}
   SpellPrefab: {fileID: 5751419703586308306, guid: 4bf03d83a697c884aac52e36949bec86, type: 3}
+  swimSpeed: 5
+  buoyancy: 6
+  waterDrag: 3
+  isSwimming: 0
 --- !u!50 &8734763382801387636
 Rigidbody2D:
   serializedVersion: 5
@@ -504,7 +510,7 @@ Transform:
   m_GameObject: {fileID: 6310995977990298452}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.2, y: 0, z: 0}
+  m_LocalPosition: {x: 1.2, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

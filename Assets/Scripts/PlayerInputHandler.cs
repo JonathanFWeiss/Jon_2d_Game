@@ -25,6 +25,7 @@ public class PlayerInputHandler : MonoBehaviour
 
         jumpAction.performed += Jump;
         dashAction.performed += Dash;
+        dashAction.canceled += DashCanceled;
         attackAction.performed += Attack;
         jumpcutAction.performed += JumpCut;
         PogoAction.performed += Pogo;
@@ -39,8 +40,17 @@ public class PlayerInputHandler : MonoBehaviour
         Vector2 moveInput = moveAction.ReadValue<Vector2>();
         //Debug.Log("Move input from input handler: " + moveInput);
         characterController.Move(moveInput);
+        characterController.SetDashHeld(dashAction.IsPressed());
 
 
+    }
+
+    private void OnDisable()
+    {
+        if (characterController != null)
+        {
+            characterController.SetDashHeld(false);
+        }
     }
 
 
@@ -63,7 +73,13 @@ public class PlayerInputHandler : MonoBehaviour
         {
             Debug.Log("Dash action triggered from input system");
         }
+        characterController.SetDashHeld(true);
         characterController.Dash();
+    }
+
+    public void DashCanceled(InputAction.CallbackContext context)
+    {
+        characterController.SetDashHeld(false);
     }
 
     public void Attack(InputAction.CallbackContext context)
