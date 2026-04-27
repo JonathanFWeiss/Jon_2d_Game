@@ -553,6 +553,17 @@
                     "isPartOfComposite": false
                 },
                 {
+                    "name": "",
+                    "id": "68a499c9-2e70-4ab0-be68-82be074f7de8",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
                     "name": "One Modifier",
                     "id": "706af8a2-8488-47e7-9dd3-d127c611e9c8",
                     "path": "OneModifier",

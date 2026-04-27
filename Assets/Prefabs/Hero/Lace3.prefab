@@ -252,7 +252,9 @@ MonoBehaviour:
   dashSpeed: 10
   dashDuration: 0.2
   dashCooldown: 0.1
-  dashHeldSpeedMultiplier: 5
+  dashHeldSpeedMultiplier: 2.5
+  dashHeldInputThreshold: 0.5
+  dashHeldGroundedCarryTime: 0.25
   jumpCutMultiplier: 0.5
   maxFallSpeed: 20
   coyoteTime: 0.5

@@ -13,6 +13,8 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
     [SerializeField] private float dashHeldSpeedMultiplier = 2f;
+    [SerializeField][Range(0f, 1f)] private float dashHeldInputThreshold = 0.5f;
+    [SerializeField] private float dashHeldGroundedCarryTime = 0.25f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     [SerializeField] private float maxFallSpeed = 20f;
     [SerializeField] private float coyoteTime = 0.3f;
@@ -73,8 +75,11 @@ public class JonCharacterController : MonoBehaviour
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested, upSlashRequested;
     private bool isDashButtonHeld;
     private bool isDashSpeedBoostActive;
+    private bool isDashSpeedBoostArmed;
     private float dashDirection = 1f;
     private float dashSpeedBoostDirection = 1f;
+    private bool dashSpeedBoostWentAirborne;
+    private float dashSpeedBoostGroundedSince = float.NegativeInfinity;
     private float nextDashTime;
     private float jumpBufferExpireTime = float.NegativeInfinity;
     private float lastGroundedTime = float.NegativeInfinity;
@@ -365,10 +370,11 @@ public class JonCharacterController : MonoBehaviour
 
         if (isDashButtonHeld)
         {
-            StartDashSpeedBoost();
+            isDashSpeedBoostArmed = true;
         }
         else
         {
+            isDashSpeedBoostArmed = false;
             StopDashSpeedBoost();
         }
     }
@@ -376,25 +382,96 @@ public class JonCharacterController : MonoBehaviour
     private void StartDashSpeedBoost()
     {
         dashSpeedBoostDirection = GetDashBoostDirection();
+        dashSpeedBoostWentAirborne = false;
+        dashSpeedBoostGroundedSince = isGrounded
+            ? Time.time
+            : float.NegativeInfinity;
+        isDashSpeedBoostArmed = false;
         isDashSpeedBoostActive = true;
     }
 
     private void StopDashSpeedBoost()
     {
         isDashSpeedBoostActive = false;
+        dashSpeedBoostWentAirborne = false;
+        dashSpeedBoostGroundedSince = float.NegativeInfinity;
+    }
+
+    private void CancelDashSpeedBoost()
+    {
+        isDashSpeedBoostArmed = false;
+        StopDashSpeedBoost();
     }
 
     private void UpdateDashSpeedBoost()
     {
-        if (!isDashButtonHeld || !isDashSpeedBoostActive || Mathf.Abs(movementVector.x) <= 0.1f)
+        if (!isDashButtonHeld)
         {
+            StopDashSpeedBoost();
             return;
         }
 
-        if (Mathf.Sign(movementVector.x) != dashSpeedBoostDirection)
+        if (isSwimming)
         {
-            StopDashSpeedBoost();
+            CancelDashSpeedBoost();
+            return;
         }
+
+        if (isDashSpeedBoostActive)
+        {
+            if (ShouldStopDashSpeedBoostFromInput())
+            {
+                StopDashSpeedBoost();
+                return;
+            }
+
+            //UpdateDashSpeedBoostGroundedCarry();
+        }
+
+        if (!isDashSpeedBoostActive && CanStartDashSpeedBoost())
+        {
+            StartDashSpeedBoost();
+        }
+    }
+
+    private bool ShouldStopDashSpeedBoostFromInput()
+    {
+        float directionalInput = movementVector.x * dashSpeedBoostDirection;
+        return directionalInput < dashHeldInputThreshold;
+    }
+
+    // private void UpdateDashSpeedBoostGroundedCarry()
+    // {
+    //     if (!isGrounded)
+    //     {
+    //         dashSpeedBoostWentAirborne = true;
+    //         dashSpeedBoostGroundedSince = float.NegativeInfinity;
+    //         return;
+    //     }
+
+    //     if (!dashSpeedBoostWentAirborne)
+    //     {
+    //         dashSpeedBoostGroundedSince = Time.time;
+    //         return;
+    //     }
+
+    //     if (float.IsNegativeInfinity(dashSpeedBoostGroundedSince))
+    //     {
+    //         dashSpeedBoostGroundedSince = Time.time;
+    //     }
+
+    //     if (Time.time - dashSpeedBoostGroundedSince > dashHeldGroundedCarryTime)
+    //     {
+    //         StopDashSpeedBoost();
+    //     }
+    // }
+
+    private bool CanStartDashSpeedBoost()
+    {
+        return isGrounded &&
+            isDashSpeedBoostArmed &&
+            !isSwimming &&
+            Mathf.Abs(movementVector.x) >= dashHeldInputThreshold;
     }
 
     private float GetCurrentMovementSpeed()
@@ -406,7 +483,7 @@ public class JonCharacterController : MonoBehaviour
 
     private float GetDashBoostDirection()
     {
-        if (Mathf.Abs(movementVector.x) > 0.1f)
+        if (Mathf.Abs(movementVector.x) >= dashHeldInputThreshold)
         {
             return Mathf.Sign(movementVector.x);
         }
@@ -490,6 +567,8 @@ public class JonCharacterController : MonoBehaviour
 
     public void StartGettingHit()
     {
+        CancelDashSpeedBoost();
+
         if (gettingHitCoroutine != null)
         {
             StopCoroutine(gettingHitCoroutine);
@@ -664,6 +743,8 @@ public class JonCharacterController : MonoBehaviour
         {
             return;
         }
+
+        CancelDashSpeedBoost();
 
         Vector2 force = new Vector2(-wallDirection * wallJumpImpulse.x, wallJumpImpulse.y);
 
