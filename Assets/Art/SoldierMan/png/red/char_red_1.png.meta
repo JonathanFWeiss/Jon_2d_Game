@@ -1520,7 +1520,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_54
+      name: spell1
       rect:
         serializedVersion: 2
         x: 0
@@ -1542,7 +1542,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_55
+      name: spell2
       rect:
         serializedVersion: 2
         x: 56
@@ -1564,7 +1564,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_56
+      name: spell3
       rect:
         serializedVersion: 2
         x: 112
@@ -1586,7 +1586,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_57
+      name: spell4
       rect:
         serializedVersion: 2
         x: 168
@@ -1608,7 +1608,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_58
+      name: spell5
       rect:
         serializedVersion: 2
         x: 224
@@ -1630,7 +1630,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_59
+      name: spell6
       rect:
         serializedVersion: 2
         x: 280
@@ -1652,7 +1652,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_60
+      name: spell7
       rect:
         serializedVersion: 2
         x: 336
@@ -1674,7 +1674,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_61
+      name: spell8
       rect:
         serializedVersion: 2
         x: 392
@@ -1872,14 +1872,6 @@ TextureImporter:
       char_red_1_51: -8223432550376248560
       char_red_1_52: -4295774819993255050
       char_red_1_53: 3358898119214813805
-      char_red_1_54: 1765526087285392659
-      char_red_1_55: -4473010796930070624
-      char_red_1_56: -7394859499888272802
-      char_red_1_57: 7015228164383829436
-      char_red_1_58: 7216973383955334952
-      char_red_1_59: 3569312059541262636
-      char_red_1_60: -4336340372131371832
-      char_red_1_61: 737160717832974173
       char_red_1_62: -7129802907820426984
       char_red_1_63: -5327570704780418886
       char_red_1_64: -1614409928816144380
@@ -1911,6 +1903,14 @@ TextureImporter:
       run6: -1710146646610226784
       run7: 839151410600438188
       run8: 663266009219257763
+      spell1: 1765526087285392659
+      spell2: -4473010796930070624
+      spell3: -7394859499888272802
+      spell4: 7015228164383829436
+      spell5: 7216973383955334952
+      spell6: 3569312059541262636
+      spell7: -4336340372131371832
+      spell8: 737160717832974173
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

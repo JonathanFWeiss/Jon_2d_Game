@@ -304,6 +304,8 @@ MonoBehaviour:
   sameWallJumpLockTime: 0.2
   wallSlideMaxFallSpeed: 3
   animator: {fileID: 0}
+  spellEnergyCost: 5
+  insufficientSpellEnergyClip: {fileID: 8300000, guid: d641206ba0efa41c2b13aeb52a842fae, type: 3}
   SpellPrefab: {fileID: 5751419703586308306, guid: 4bf03d83a697c884aac52e36949bec86, type: 3}
   swimSpeed: 5
   buoyancy: 6

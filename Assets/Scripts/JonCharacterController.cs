@@ -146,7 +146,9 @@ public class JonCharacterController : MonoBehaviour
     private bool isSpellCasting;
     private bool SpellCastRequested;
 
-
+    [Header("Spell")]
+    [SerializeField] private int spellEnergyCost = 5;
+    [SerializeField] private AudioClip insufficientSpellEnergyClip;
     public GameObject SpellPrefab;
 
     [Header("Swimming Parameters")]
@@ -208,6 +210,8 @@ public class JonCharacterController : MonoBehaviour
         animator.SetBool("isUpSlashing", isUpSlashing);
         animator.SetBool("isLedgeGrabbing", isLedgeGrabbing);
         animator.SetBool("isLedgePullingUp", isLedgePullingUp);
+        animator.SetBool("isSwimming", isSwimming);
+        animator.SetBool("isSpellCasting", isSpellCasting);
 
     }
 
@@ -597,24 +601,36 @@ public class JonCharacterController : MonoBehaviour
 
     public void Spell()
     {
-        if (isAttacking || isPogoing || isUpSlashing || isSpellCasting || isLedgeGrabbing || isLedgePullingUp)
+        if (isAttacking || isPogoing || isUpSlashing || isSpellCasting || SpellCastRequested || isLedgeGrabbing || isLedgePullingUp)
             return;
-        // Implement spell logic here
+
+        if (PlayerData.Energy < spellEnergyCost)
+        {
+            PlayInsufficientSpellEnergyVoice();
+            Debug.Log("Not enough energy to cast spell.");
+            return;
+        }
+
         SpellCastRequested = true;
         Debug.Log("Spell action triggered");
     }
 
     public IEnumerator SpellCastCoroutine()
     {
-        // Placeholder for spell casting logic
-        Debug.Log("Casting spell...");
-        // You can add spell effects, damage, etc. here
-        GameObject spell = Instantiate(SpellPrefab, rb.position, Quaternion.identity);
-        PlayerData.RestoreFullHP();
-        PlayerData.RemoveEnergy(5);
-        yield return new WaitForSeconds(3f); // let particles float
-        Destroy(spell);
+        if (isSpellCasting)
+            yield break;
 
+        isSpellCasting = true;
+        Debug.Log("Casting spell...");
+        yield return new WaitForSeconds(0.5f); // start the spell 
+        isSpellCasting = false;
+        GameObject spell = Instantiate(SpellPrefab, rb.position, Quaternion.identity);
+        PlayerData.RestoreFullHP(); //do the effect now
+        PlayerData.RemoveEnergy(spellEnergyCost);
+        yield return new WaitForSeconds(3f); // visual after effect
+        Destroy(spell);
+        
+        
     }
 
     public void JumpCut()
@@ -931,6 +947,8 @@ public class JonCharacterController : MonoBehaviour
         ledgeGrabStartedTime = Time.time;
         lastWallContactTime = Time.time;
         lastWallContactDirection = ledgeGrabDirection;
+        doubleJumpAvailable = canDoubleJump;
+        airDashAvailable = canDash;
 
         rb.gravityScale = 0f;
         rb.linearVelocity = Vector2.zero;
@@ -1043,6 +1061,7 @@ public class JonCharacterController : MonoBehaviour
         sameWallJumpLockUntil = Time.time + sameWallJumpLockTime;
         wallJumpMovementLockUntil = Time.time + wallJumpMovementLockTime;
         doubleJumpAvailable = canDoubleJump;
+        airDashAvailable = canDash;
 
         localScale = new Vector3(Mathf.Sign(force.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
         transform.localScale = localScale;
@@ -1192,6 +1211,7 @@ public class JonCharacterController : MonoBehaviour
         sameWallJumpLockUntil = Time.time + sameWallJumpLockTime;
         wallJumpMovementLockUntil = Time.time + wallJumpMovementLockTime;
         doubleJumpAvailable = canDoubleJump;
+        airDashAvailable = canDash;
 
         if (Mathf.Sign(rb.linearVelocity.x) != Mathf.Sign(force.x))
         {
@@ -1311,10 +1331,25 @@ public class JonCharacterController : MonoBehaviour
             return;
         }
 
+        PlayVoiceClip(attackVoiceClip);
+    }
+
+    private void PlayInsufficientSpellEnergyVoice()
+    {
+        PlayVoiceClip(insufficientSpellEnergyClip);
+    }
+
+    private void PlayVoiceClip(AudioClip clip)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
         AudioSource audioSource = GetAttackVoiceAudioSource();
         if (audioSource != null)
         {
-            audioSource.PlayOneShot(attackVoiceClip);
+            audioSource.PlayOneShot(clip);
         }
     }
 
