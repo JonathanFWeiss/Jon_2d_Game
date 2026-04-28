@@ -12,7 +12,10 @@ public class FallingRock : GroundStationaryEnemy
     [Tooltip("Gravity scale applied after the rock is triggered.")]
     public float fallGravityScale = 5f;
 
+    private const float DamageWindowAfterActivation = 2f;
+
     protected bool hasActivated = false;
+    protected float activationTime = -Mathf.Infinity;
 
     protected override void Awake()
     {
@@ -78,6 +81,7 @@ public class FallingRock : GroundStationaryEnemy
     protected virtual void ActivateFalling()
     {
         hasActivated = true;
+        activationTime = Time.time;
 
         if (rb2d != null)
         {
@@ -87,6 +91,9 @@ public class FallingRock : GroundStationaryEnemy
 
     protected override void TryDamagePlayer(GameObject hitObject)
     {
+        if (!hasActivated || Time.time > activationTime + DamageWindowAfterActivation)
+            return;
+
         if (rb2d == null)
             return;
 
@@ -94,7 +101,8 @@ public class FallingRock : GroundStationaryEnemy
 
         if (Mathf.Abs(currentVelocity.y) <= 5f)
             return;
-Debug.Log($"{gameObject.name} is moving with velocity {currentVelocity}, attempting to damage player.");
+
+        Debug.Log($"{gameObject.name} is moving with velocity {currentVelocity}, attempting to damage player.");
         base.TryDamagePlayer(hitObject);
     }
 
