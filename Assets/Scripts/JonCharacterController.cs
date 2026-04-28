@@ -1344,6 +1344,7 @@ public class JonCharacterController : MonoBehaviour
 
 
         isPogoing = true;
+        PlayRandomAttackVoice();
         //rb.linearVelocityX = 0; // Stop horizontal movement during attack 
 
 
@@ -1369,6 +1370,7 @@ public class JonCharacterController : MonoBehaviour
 
 
         isUpSlashing = true;
+        PlayRandomAttackVoice();
         //rb.linearVelocityX = 0; // Stop horizontal movement during attack 
 
 
