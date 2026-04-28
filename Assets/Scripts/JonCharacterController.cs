@@ -93,6 +93,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float ledgePullUpForwardOffset = 0.12f;
     [SerializeField] private float ledgePullUpGroundClearance = 0.03f;
     [SerializeField] private float ledgePullUpDuration = 0.16f;
+    [SerializeField] private float LedgeClingMinumHangTime = 0.3f;
     [SerializeField] private float ledgeRegrabCooldown = 0.18f;
     [SerializeField] private float ledgeGrabMaxUpwardSpeed = 0.75f;
     [SerializeField][Range(0.1f, 1f)] private float ledgeTopNormalMinY = 0.65f;
@@ -126,6 +127,7 @@ public class JonCharacterController : MonoBehaviour
     private int ledgeGrabDirection;
     private Vector2 ledgeHangPosition;
     private Vector2 ledgeClimbTargetPosition;
+    private float ledgeGrabStartedTime = float.NegativeInfinity;
     private float ledgeGrabDisabledUntil = float.NegativeInfinity;
     private Coroutine dashCoroutine;
     private Coroutine ledgePullUpCoroutine;
@@ -204,6 +206,8 @@ public class JonCharacterController : MonoBehaviour
         animator.SetBool("isDashing", isDashing);
         animator.SetBool("isPogoing", isPogoing);
         animator.SetBool("isUpSlashing", isUpSlashing);
+        animator.SetBool("isLedgeGrabbing", isLedgeGrabbing);
+        animator.SetBool("isLedgePullingUp", isLedgePullingUp);
 
     }
 
@@ -779,22 +783,26 @@ public class JonCharacterController : MonoBehaviour
 
         bool wantsAway = movementVector.x * ledgeGrabDirection < -ledgeGrabInputThreshold;
         bool wantsDown = movementVector.y < -ledgeGrabInputThreshold;
+        bool canPullUp = CanPullUpFromLedge();
 
         if (HasBufferedJumpRequest())
         {
-            ClearBufferedJump();
-
             if (wantsAway)
             {
+                ClearBufferedJump();
                 PerformLedgeJumpAway();
                 return false;
             }
 
-            StartLedgePullUp();
-            return true;
+            if (canPullUp)
+            {
+                ClearBufferedJump();
+                StartLedgePullUp();
+                return true;
+            }
         }
 
-        if (movementVector.y > ledgeGrabInputThreshold)
+        if (canPullUp && movementVector.y > ledgeGrabInputThreshold)
         {
             StartLedgePullUp();
             return true;
@@ -920,6 +928,7 @@ public class JonCharacterController : MonoBehaviour
         ledgeGrabDirection = ledgeGrabInfo.Direction;
         ledgeHangPosition = ledgeGrabInfo.HangPosition;
         ledgeClimbTargetPosition = ledgeGrabInfo.ClimbPosition;
+        ledgeGrabStartedTime = Time.time;
         lastWallContactTime = Time.time;
         lastWallContactDirection = ledgeGrabDirection;
 
@@ -942,6 +951,7 @@ public class JonCharacterController : MonoBehaviour
 
         isLedgeGrabbing = false;
         isWallSliding = false;
+        ledgeGrabStartedTime = float.NegativeInfinity;
         rb.gravityScale = defaultGravityScale;
 
         if (applyCooldown)
@@ -959,6 +969,11 @@ public class JonCharacterController : MonoBehaviour
 
         EndLedgeGrab(false);
         ledgePullUpCoroutine = StartCoroutine(LedgePullUpCoroutine(ledgeClimbTargetPosition, ledgePullUpDuration));
+    }
+
+    private bool CanPullUpFromLedge()
+    {
+        return Time.time >= ledgeGrabStartedTime + Mathf.Max(0f, LedgeClingMinumHangTime);
     }
 
     private IEnumerator LedgePullUpCoroutine(Vector2 targetPosition, float seconds)
@@ -1044,6 +1059,7 @@ public class JonCharacterController : MonoBehaviour
         isLedgePullingUp = false;
         isLedgeGrabbing = false;
         ledgeGrabDirection = 0;
+        ledgeGrabStartedTime = float.NegativeInfinity;
         isWallSliding = false;
 
         if (restoreGravity)
