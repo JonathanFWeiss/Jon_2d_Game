@@ -161,6 +161,14 @@ MonoBehaviour:
   jumpCutMultiplier: 0.5
   jumpBufferTime: 0.15
   canDoubleJump: 1
+  attackVoiceClips:
+  - {fileID: 8300000, guid: b0eddbe92b9c249b6a3e6913ea2dc163, type: 3}
+  - {fileID: 8300000, guid: 144ee9438b9364f969c0fc7064615c19, type: 3}
+  - {fileID: 8300000, guid: 2a1cfd41c98d1460d816233f23e6152f, type: 3}
+  - {fileID: 8300000, guid: 17eaccd8f692843cf9652d4cec294fe2, type: 3}
+  - {fileID: 8300000, guid: 962fed30cb2044e488376207e9cd60f3, type: 3}
+  - {fileID: 8300000, guid: 940905f8a21c145119b64f16e7131c47, type: 3}
+  attackVoiceAudioSource: {fileID: 0}
   groundCheckTransform: {fileID: 2049660356057629331}
   groundCheckRadius: 0.2
   groundLayer:

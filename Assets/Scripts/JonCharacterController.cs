@@ -40,6 +40,11 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float attackDuration = 1f;
     [SerializeField] private float attackHitDelay = 0f;
     [SerializeField] private GameObject attackSlashEffect;
+
+    [Header("Attack Audio")]
+    [SerializeField] private AudioClip[] attackVoiceClips;
+    [SerializeField] private AudioSource attackVoiceAudioSource;
+
     [Header("Pogo Parameters")]
     //[SerializeField] private float pogoForce = 10f;
     [SerializeField] private float pogoDuration = 1.5f;
@@ -127,6 +132,7 @@ public class JonCharacterController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         bodyCollider = GetComponent<Collider2D>();
         animator = GetComponent<Animator>();
+        attackVoiceAudioSource = attackVoiceAudioSource != null ? attackVoiceAudioSource : GetComponent<AudioSource>();
 
         //        Debug.Log("Rigidbody2D component found: " + rb);
         defaultGravityScale = rb.gravityScale;
@@ -839,6 +845,7 @@ public class JonCharacterController : MonoBehaviour
         if (isAttacking) yield break;
 
         isAttacking = true;
+        PlayRandomAttackVoice();
         rb.linearVelocityX = 0; // Stop horizontal movement during attack 
         float clampedHitDelay = Mathf.Max(0f, attackHitDelay);
 
@@ -860,6 +867,44 @@ public class JonCharacterController : MonoBehaviour
 
         isAttacking = false;
         isAttackHitActive = false;
+    }
+
+    private void PlayRandomAttackVoice()
+    {
+        if (attackVoiceClips == null || attackVoiceClips.Length == 0)
+        {
+            return;
+        }
+
+        AudioClip attackVoiceClip = attackVoiceClips[Random.Range(0, attackVoiceClips.Length)];
+        if (attackVoiceClip == null)
+        {
+            return;
+        }
+
+        AudioSource audioSource = GetAttackVoiceAudioSource();
+        if (audioSource != null)
+        {
+            audioSource.PlayOneShot(attackVoiceClip);
+        }
+    }
+
+    private AudioSource GetAttackVoiceAudioSource()
+    {
+        if (attackVoiceAudioSource != null)
+        {
+            return attackVoiceAudioSource;
+        }
+
+        attackVoiceAudioSource = GetComponent<AudioSource>();
+        if (attackVoiceAudioSource == null)
+        {
+            attackVoiceAudioSource = gameObject.AddComponent<AudioSource>();
+            attackVoiceAudioSource.playOnAwake = false;
+            attackVoiceAudioSource.spatialBlend = 0f;
+        }
+
+        return attackVoiceAudioSource;
     }
 
 

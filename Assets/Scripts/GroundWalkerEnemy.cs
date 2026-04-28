@@ -34,6 +34,8 @@ public class GroundWalkerEnemy : EnemyBase
     protected float nextTurnAroundTime = float.NegativeInfinity;
 
     [SerializeField] private float ledgeCheckDistance = 1f;
+    [Tooltip("Horizontal spacing between the two ledge-check rays.")]
+    [SerializeField] private float ledgeCheckRaySpacing = 0.25f;
     [SerializeField] private float wallCheckDistance = 0.25f;
     private Collider2D wallCheckCollider;
     
@@ -133,16 +135,10 @@ public class GroundWalkerEnemy : EnemyBase
 
     protected bool IsLedgeAhead()
     {
-        Vector2 origin = GetLedgeCheckOrigin(facingDirection);
-        RaycastHit2D groundHit = Physics2D.Raycast(
-            origin,
-            Vector2.down,
-            ledgeCheckDistance,
-            groundMask
-        );
+        Vector2 firstOrigin = GetLedgeCheckOrigin(facingDirection);
+        Vector2 secondOrigin = GetSecondLedgeCheckOrigin(firstOrigin, facingDirection);
 
-        
-        return groundHit.collider == null;
+        return !HasGroundBelowLedgeCheck(firstOrigin) && !HasGroundBelowLedgeCheck(secondOrigin);
     }
 
     protected bool IsWallAhead()
@@ -170,6 +166,17 @@ public class GroundWalkerEnemy : EnemyBase
     protected Vector2 GetLedgeCheckOrigin(float direction)
     {
         return (Vector2)transform.position + new Vector2(ledgeCheckX * direction, ledgeCheckY);
+    }
+
+    private bool HasGroundBelowLedgeCheck(Vector2 origin)
+    {
+        RaycastHit2D groundHit = Physics2D.Raycast(origin, Vector2.down, ledgeCheckDistance, groundMask);
+        return groundHit.collider != null;
+    }
+
+    private Vector2 GetSecondLedgeCheckOrigin(Vector2 firstOrigin, float direction)
+    {
+        return firstOrigin + Vector2.right * direction * Mathf.Max(0f, ledgeCheckRaySpacing);
     }
 
     protected Vector2 GetWallCheckOrigin(float direction)
@@ -236,8 +243,11 @@ public class GroundWalkerEnemy : EnemyBase
             ? facingDirection
             : startFacingRight ? 1f : -1f;
 
-        Vector3 start = GetLedgeCheckOrigin(previewFacingDirection);
-        Gizmos.DrawLine(start, start + Vector3.down * ledgeCheckDistance);
+        Vector2 firstOrigin = GetLedgeCheckOrigin(previewFacingDirection);
+        Vector2 secondOrigin = GetSecondLedgeCheckOrigin(firstOrigin, previewFacingDirection);
+
+        Gizmos.DrawLine(firstOrigin, firstOrigin + Vector2.down * ledgeCheckDistance);
+        Gizmos.DrawLine(secondOrigin, secondOrigin + Vector2.down * ledgeCheckDistance);
     }
 
     private void DrawWallCheckGizmo()
