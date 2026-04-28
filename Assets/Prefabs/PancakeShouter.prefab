@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6842523356063142115}
   - component: {fileID: 1490784296159220109}
   - component: {fileID: 5476298496746212323}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: PancakeShouter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -103,8 +103,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 2033030571
+  m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: b43d0e0574a55de48913123b359b18f9, type: 3}

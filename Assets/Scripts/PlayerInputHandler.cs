@@ -34,6 +34,18 @@ public class PlayerInputHandler : MonoBehaviour
 
     }
 
+    void OnDestroy()
+{
+    jumpAction.performed -= Jump;
+        dashAction.performed -= Dash;
+        dashAction.canceled -= DashCanceled;
+        attackAction.performed -= Attack;
+        jumpcutAction.performed -= JumpCut;
+        PogoAction.performed -= Pogo;
+        UpSlashAction.performed -= UpSlash;
+        SpellAction.performed -= Spell;
+}
+
     // Update is called once per frame
     void Update()
     {
