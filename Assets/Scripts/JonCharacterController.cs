@@ -77,6 +77,26 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float wallJumpMovementLockTime = 0.15f;
     [SerializeField] private float sameWallJumpLockTime = 0.2f;
     [SerializeField] private float wallSlideMaxFallSpeed = 3f;
+    [Header("Ledge Grab")]
+    [SerializeField] private bool canLedgeGrab = true;
+    [SerializeField] private LayerMask ledgeGrabLayer;
+    [SerializeField] private bool ledgeGrabRequiresForwardInput = true;
+    [SerializeField][Range(0f, 1f)] private float ledgeGrabInputThreshold = 0.2f;
+    [SerializeField] private float ledgeGrabForwardDistance = 0.45f;
+    [SerializeField][Range(0.1f, 0.9f)] private float ledgeGrabWallRayHeight = 0.55f;
+    [SerializeField][Range(0.5f, 1f)] private float ledgeGrabClearRayHeight = 0.9f;
+    [SerializeField] private float ledgeTopProbeHeight = 0.4f;
+    [SerializeField] private float ledgeTopRayDistance = 1.1f;
+    [SerializeField] private float ledgeTopProbeInset = 0.08f;
+    [SerializeField] private float ledgeHangHorizontalOffset = 0.05f;
+    [SerializeField] private float ledgeHangVerticalOffset = 0.12f;
+    [SerializeField] private float ledgePullUpForwardOffset = 0.12f;
+    [SerializeField] private float ledgePullUpGroundClearance = 0.03f;
+    [SerializeField] private float ledgePullUpDuration = 0.16f;
+    [SerializeField] private float ledgeRegrabCooldown = 0.18f;
+    [SerializeField] private float ledgeGrabMaxUpwardSpeed = 0.75f;
+    [SerializeField][Range(0.1f, 1f)] private float ledgeTopNormalMinY = 0.65f;
+    [SerializeField] private float ledgeClearanceSkin = 0.04f;
     private bool jumpRequested, dashRequested, attackRequested, isDashing, jumpcutRequested, pogoRequested, upSlashRequested;
     private bool isDashButtonHeld;
     private bool isDashSpeedBoostActive;
@@ -101,6 +121,14 @@ public class JonCharacterController : MonoBehaviour
     private int lastWallJumpedFromDirection;
     private float sameWallJumpLockUntil = float.NegativeInfinity;
     private float wallJumpMovementLockUntil = float.NegativeInfinity;
+    private bool isLedgeGrabbing;
+    private bool isLedgePullingUp;
+    private int ledgeGrabDirection;
+    private Vector2 ledgeHangPosition;
+    private Vector2 ledgeClimbTargetPosition;
+    private float ledgeGrabDisabledUntil = float.NegativeInfinity;
+    private Coroutine dashCoroutine;
+    private Coroutine ledgePullUpCoroutine;
 
 
     private Vector2 movementVector;
@@ -188,7 +216,22 @@ public class JonCharacterController : MonoBehaviour
         doGroundCheck();
         doWallCheck();
 
+        if (isLedgePullingUp)
+        {
+            return;
+        }
 
+        if (isLedgeGrabbing)
+        {
+            if (UpdateLedgeGrabState())
+            {
+                return;
+            }
+        }
+        else if (TryStartLedgeGrab())
+        {
+            return;
+        }
 
 
         if (pogoRequested && !isGettingHit)
@@ -315,7 +358,7 @@ public class JonCharacterController : MonoBehaviour
             }
             // Implement dash logic here
             //rb.AddForce(new Vector2(dashForce, 0), ForceMode2D.Impulse);
-            StartCoroutine(DashCoroutine(dashDuration));
+            dashCoroutine = StartCoroutine(DashCoroutine(dashDuration));
             dashRequested = false;
         }
 
@@ -501,7 +544,11 @@ public class JonCharacterController : MonoBehaviour
     IEnumerator DashCoroutine(float seconds)
     {
         Debug.Log("Starting dash coroutine");
-        if (isDashing) yield break;
+        if (isDashing)
+        {
+            dashCoroutine = null;
+            yield break;
+        }
         isDashing = true;
         float prevGravity = rb.gravityScale;
         rb.gravityScale = 0; // Disable gravity
@@ -509,11 +556,12 @@ public class JonCharacterController : MonoBehaviour
         yield return new WaitForSeconds(seconds); // Wait for dash duration
         rb.gravityScale = prevGravity; // Restore gravity
         isDashing = false;
+        dashCoroutine = null;
     }
 
     public void Attack()
     {
-        if (isAttacking || attackRequested || isPogoing || isUpSlashing)
+        if (isAttacking || attackRequested || isPogoing || isUpSlashing || isLedgeGrabbing || isLedgePullingUp)
             return;
 
         attackRequested = true;
@@ -524,7 +572,7 @@ public class JonCharacterController : MonoBehaviour
 
     public void Pogo()
     {
-        if (isAttacking || pogoRequested || isPogoing || isUpSlashing)
+        if (isAttacking || pogoRequested || isPogoing || isUpSlashing || isLedgeGrabbing || isLedgePullingUp)
             return;
         if (isGrounded)
             return;
@@ -536,7 +584,7 @@ public class JonCharacterController : MonoBehaviour
 
     public void UpSlash()
     {
-        if (isAttacking || upSlashRequested || isPogoing || isUpSlashing)
+        if (isAttacking || upSlashRequested || isPogoing || isUpSlashing || isLedgeGrabbing || isLedgePullingUp)
             return;
 
         upSlashRequested = true;
@@ -545,7 +593,7 @@ public class JonCharacterController : MonoBehaviour
 
     public void Spell()
     {
-        if (isAttacking || isPogoing || isUpSlashing || isSpellCasting)
+        if (isAttacking || isPogoing || isUpSlashing || isSpellCasting || isLedgeGrabbing || isLedgePullingUp)
             return;
         // Implement spell logic here
         SpellCastRequested = true;
@@ -574,6 +622,7 @@ public class JonCharacterController : MonoBehaviour
     public void StartGettingHit()
     {
         CancelDashSpeedBoost();
+        CancelLedgeGrabAndPullUp(true);
 
         if (gettingHitCoroutine != null)
         {
@@ -590,6 +639,9 @@ public class JonCharacterController : MonoBehaviour
             : transform.position;
 
         teleportTarget += (Vector3)offset;
+
+        CancelDash();
+        CancelLedgeGrabAndPullUp(false);
 
         transform.position = teleportTarget;
         rb.gravityScale = defaultGravityScale;
@@ -609,6 +661,12 @@ public class JonCharacterController : MonoBehaviour
         isAttacking = false;
         isPogoing = false;
         isWallSliding = false;
+        isLedgeGrabbing = false;
+        isLedgePullingUp = false;
+        ledgeGrabDirection = 0;
+        ledgeHangPosition = Vector2.zero;
+        ledgeClimbTargetPosition = Vector2.zero;
+        ledgeGrabDisabledUntil = Time.time + ledgeRegrabCooldown;
         isTouchingWallLeft = false;
         isTouchingWallRight = false;
         lastWallContactTime = float.NegativeInfinity;
@@ -690,6 +748,361 @@ public class JonCharacterController : MonoBehaviour
             : movementVector.x > 0.01f;
 
         isWallSliding = rb.linearVelocity.y < 0f && pressingIntoWall;
+    }
+
+    private bool TryStartLedgeGrab()
+    {
+        if (!TryFindLedgeGrab(out LedgeGrabInfo ledgeGrabInfo))
+        {
+            return false;
+        }
+
+        BeginLedgeGrab(ledgeGrabInfo);
+        return true;
+    }
+
+    private bool UpdateLedgeGrabState()
+    {
+        if (isGrounded || isSwimming || isGettingHit)
+        {
+            EndLedgeGrab(false);
+            return false;
+        }
+
+        CancelDashSpeedBoost();
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+        rb.position = ledgeHangPosition;
+        transform.position = ledgeHangPosition;
+        isWallSliding = false;
+
+        bool wantsAway = movementVector.x * ledgeGrabDirection < -ledgeGrabInputThreshold;
+        bool wantsDown = movementVector.y < -ledgeGrabInputThreshold;
+
+        if (HasBufferedJumpRequest())
+        {
+            ClearBufferedJump();
+
+            if (wantsAway)
+            {
+                PerformLedgeJumpAway();
+                return false;
+            }
+
+            StartLedgePullUp();
+            return true;
+        }
+
+        if (movementVector.y > ledgeGrabInputThreshold)
+        {
+            StartLedgePullUp();
+            return true;
+        }
+
+        if (wantsDown || wantsAway || dashRequested || attackRequested || pogoRequested || upSlashRequested || SpellCastRequested)
+        {
+            EndLedgeGrab(true);
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryFindLedgeGrab(out LedgeGrabInfo ledgeGrabInfo)
+    {
+        ledgeGrabInfo = default(LedgeGrabInfo);
+
+        Collider2D collider = GetBodyCollider();
+        LayerMask ledgeMask = GetLedgeGrabMask();
+        if (!canLedgeGrab ||
+            Time.time < ledgeGrabDisabledUntil ||
+            collider == null ||
+            ledgeMask.value == 0 ||
+            isGrounded ||
+            isSwimming ||
+            isGettingHit ||
+            isLedgePullingUp ||
+            isAttacking ||
+            isPogoing ||
+            isUpSlashing ||
+            isSpellCasting ||
+            attackRequested ||
+            pogoRequested ||
+            upSlashRequested ||
+            SpellCastRequested ||
+            rb.linearVelocity.y > ledgeGrabMaxUpwardSpeed ||
+            movementVector.y < -ledgeGrabInputThreshold)
+        {
+            return false;
+        }
+
+        int direction = GetLedgeGrabCheckDirection();
+        if (direction == 0)
+        {
+            return false;
+        }
+
+        Bounds bounds = collider.bounds;
+        Vector2 rayDirection = Vector2.right * direction;
+        Vector2 wallOrigin = new Vector2(
+            bounds.center.x,
+            bounds.min.y + bounds.size.y * ledgeGrabWallRayHeight
+        );
+        Vector2 clearOrigin = new Vector2(
+            bounds.center.x,
+            bounds.min.y + bounds.size.y * ledgeGrabClearRayHeight
+        );
+
+        RaycastHit2D wallHit = Physics2D.Raycast(wallOrigin, rayDirection, ledgeGrabForwardDistance, ledgeMask);
+        if (wallHit.collider == null)
+        {
+            return false;
+        }
+
+        RaycastHit2D clearHit = Physics2D.Raycast(clearOrigin, rayDirection, ledgeGrabForwardDistance, ledgeMask);
+        if (clearHit.collider != null)
+        {
+            return false;
+        }
+
+        float wallX = wallHit.point.x;
+        Vector2 topOrigin = new Vector2(
+            wallX + direction * ledgeTopProbeInset,
+            bounds.max.y + ledgeTopProbeHeight
+        );
+        RaycastHit2D topHit = Physics2D.Raycast(topOrigin, Vector2.down, ledgeTopRayDistance, ledgeMask);
+        if (topHit.collider == null || topHit.normal.y < ledgeTopNormalMinY)
+        {
+            return false;
+        }
+
+        float minimumLedgeTopY = bounds.min.y + bounds.size.y * ledgeGrabWallRayHeight;
+        if (topHit.point.y < minimumLedgeTopY)
+        {
+            return false;
+        }
+
+        Vector2 colliderCenterOffset = (Vector2)bounds.center - (Vector2)transform.position;
+        Vector2 hangCenter = new Vector2(
+            wallX - direction * (bounds.extents.x + ledgeHangHorizontalOffset),
+            topHit.point.y - ledgeHangVerticalOffset - bounds.extents.y
+        );
+        Vector2 climbCenter = new Vector2(
+            wallX + direction * (bounds.extents.x + ledgePullUpForwardOffset),
+            topHit.point.y + ledgePullUpGroundClearance + bounds.extents.y
+        );
+
+        Vector2 hangPosition = hangCenter - colliderCenterOffset;
+        Vector2 climbPosition = climbCenter - colliderCenterOffset;
+        if (!IsBodyClearAt(climbPosition, bounds, ledgeMask))
+        {
+            return false;
+        }
+
+        ledgeGrabInfo = new LedgeGrabInfo
+        {
+            Direction = direction,
+            HangPosition = hangPosition,
+            ClimbPosition = climbPosition
+        };
+        return true;
+    }
+
+    private void BeginLedgeGrab(LedgeGrabInfo ledgeGrabInfo)
+    {
+        CancelDash();
+        CancelDashSpeedBoost();
+
+        isLedgeGrabbing = true;
+        isLedgePullingUp = false;
+        isWallSliding = false;
+        ledgeGrabDirection = ledgeGrabInfo.Direction;
+        ledgeHangPosition = ledgeGrabInfo.HangPosition;
+        ledgeClimbTargetPosition = ledgeGrabInfo.ClimbPosition;
+        lastWallContactTime = Time.time;
+        lastWallContactDirection = ledgeGrabDirection;
+
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+        rb.position = ledgeHangPosition;
+        transform.position = ledgeHangPosition;
+
+        localScale = new Vector3(ledgeGrabDirection * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+        transform.localScale = localScale;
+    }
+
+    private void EndLedgeGrab(bool applyCooldown)
+    {
+        if (!isLedgeGrabbing)
+        {
+            return;
+        }
+
+        isLedgeGrabbing = false;
+        isWallSliding = false;
+        rb.gravityScale = defaultGravityScale;
+
+        if (applyCooldown)
+        {
+            ledgeGrabDisabledUntil = Time.time + ledgeRegrabCooldown;
+        }
+    }
+
+    private void StartLedgePullUp()
+    {
+        if (isLedgePullingUp)
+        {
+            return;
+        }
+
+        EndLedgeGrab(false);
+        ledgePullUpCoroutine = StartCoroutine(LedgePullUpCoroutine(ledgeClimbTargetPosition, ledgePullUpDuration));
+    }
+
+    private IEnumerator LedgePullUpCoroutine(Vector2 targetPosition, float seconds)
+    {
+        isLedgePullingUp = true;
+        CancelDash();
+        CancelDashSpeedBoost();
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+
+        Vector2 startPosition = rb.position;
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, seconds);
+
+        while (elapsed < duration)
+        {
+            if (isGettingHit || isSwimming)
+            {
+                break;
+            }
+
+            float progress = Mathf.Clamp01(elapsed / duration);
+            float smoothedProgress = progress * progress * (3f - 2f * progress);
+            Vector2 nextPosition = Vector2.Lerp(startPosition, targetPosition, smoothedProgress);
+            rb.position = nextPosition;
+            transform.position = nextPosition;
+            elapsed += Time.fixedDeltaTime;
+            yield return new WaitForFixedUpdate();
+        }
+
+        if (!isGettingHit && !isSwimming)
+        {
+            rb.position = targetPosition;
+            transform.position = targetPosition;
+            rb.linearVelocity = Vector2.zero;
+            isGrounded = true;
+            isJumping = false;
+            lastGroundedTime = Time.time;
+            lastGroundedPosition = transform.position;
+            hasLastGroundedPosition = true;
+            doubleJumpAvailable = canDoubleJump;
+            airDashAvailable = canDash;
+        }
+
+        rb.gravityScale = defaultGravityScale;
+        isLedgePullingUp = false;
+        ledgePullUpCoroutine = null;
+        ledgeGrabDisabledUntil = Time.time + ledgeRegrabCooldown;
+    }
+
+    private void PerformLedgeJumpAway()
+    {
+        int jumpDirection = ledgeGrabDirection;
+        EndLedgeGrab(true);
+        CancelDashSpeedBoost();
+
+        Vector2 force = new Vector2(-jumpDirection * wallJumpImpulse.x, wallJumpImpulse.y);
+        rb.gravityScale = defaultGravityScale;
+        rb.linearVelocity = Vector2.zero;
+        rb.AddForce(force, ForceMode2D.Impulse);
+
+        isJumping = true;
+        lastGroundedTime = float.NegativeInfinity;
+        canBeGroundedTime = Time.time + coyoteTime;
+        lastWallJumpedFromDirection = jumpDirection;
+        sameWallJumpLockUntil = Time.time + sameWallJumpLockTime;
+        wallJumpMovementLockUntil = Time.time + wallJumpMovementLockTime;
+        doubleJumpAvailable = canDoubleJump;
+
+        localScale = new Vector3(Mathf.Sign(force.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+        transform.localScale = localScale;
+    }
+
+    private void CancelLedgeGrabAndPullUp(bool restoreGravity)
+    {
+        if (ledgePullUpCoroutine != null)
+        {
+            StopCoroutine(ledgePullUpCoroutine);
+            ledgePullUpCoroutine = null;
+        }
+
+        isLedgePullingUp = false;
+        isLedgeGrabbing = false;
+        ledgeGrabDirection = 0;
+        isWallSliding = false;
+
+        if (restoreGravity)
+        {
+            rb.gravityScale = defaultGravityScale;
+        }
+    }
+
+    private void CancelDash()
+    {
+        if (dashCoroutine != null)
+        {
+            StopCoroutine(dashCoroutine);
+            dashCoroutine = null;
+        }
+
+        isDashing = false;
+    }
+
+    private bool IsBodyClearAt(Vector2 targetPosition, Bounds currentBounds, LayerMask obstacleMask)
+    {
+        Vector2 colliderCenterOffset = (Vector2)currentBounds.center - (Vector2)transform.position;
+        Vector2 targetCenter = targetPosition + colliderCenterOffset;
+        float skin = Mathf.Max(0f, ledgeClearanceSkin);
+        Vector2 checkSize = new Vector2(
+            Mathf.Max(0.01f, currentBounds.size.x - skin * 2f),
+            Mathf.Max(0.01f, currentBounds.size.y - skin * 2f)
+        );
+
+        return Physics2D.OverlapBox(targetCenter, checkSize, 0f, obstacleMask) == null;
+    }
+
+    private int GetLedgeGrabCheckDirection()
+    {
+        if (Mathf.Abs(movementVector.x) >= ledgeGrabInputThreshold)
+        {
+            return (int)Mathf.Sign(movementVector.x);
+        }
+
+        if (ledgeGrabRequiresForwardInput)
+        {
+            return 0;
+        }
+
+        return (int)GetFacingDirection();
+    }
+
+    private LayerMask GetLedgeGrabMask()
+    {
+        return ledgeGrabLayer.value != 0
+            ? ledgeGrabLayer
+            : groundLayer;
+    }
+
+    private struct LedgeGrabInfo
+    {
+        public int Direction;
+        public Vector2 HangPosition;
+        public Vector2 ClimbPosition;
     }
 
     private bool HasGroundJumpAvailable()
@@ -1202,6 +1615,7 @@ public class JonCharacterController : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         DrawWallCheckGizmos();
+        DrawLedgeGrabGizmos();
         if (groundCheckTransform != null)
         {
             Gizmos.color = Color.red;
@@ -1233,6 +1647,51 @@ public class JonCharacterController : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.left), wallCheckSize);
         Gizmos.DrawWireCube(GetWallCheckCenter(Vector2.right), wallCheckSize);
+    }
+
+    private void DrawLedgeGrabGizmos()
+    {
+        Collider2D collider = GetBodyCollider();
+        if (collider == null)
+        {
+            return;
+        }
+
+        Bounds bounds = collider.bounds;
+        int direction = Mathf.Abs(movementVector.x) >= ledgeGrabInputThreshold
+            ? (int)Mathf.Sign(movementVector.x)
+            : (transform.localScale.x < 0f ? -1 : 1);
+        Vector3 rayDirection = Vector3.right * direction;
+        Vector3 wallOrigin = new Vector3(
+            bounds.center.x,
+            bounds.min.y + bounds.size.y * ledgeGrabWallRayHeight,
+            transform.position.z
+        );
+        Vector3 clearOrigin = new Vector3(
+            bounds.center.x,
+            bounds.min.y + bounds.size.y * ledgeGrabClearRayHeight,
+            transform.position.z
+        );
+        Vector3 topOrigin = new Vector3(
+            bounds.center.x + direction * (bounds.extents.x + ledgeGrabForwardDistance + ledgeTopProbeInset),
+            bounds.max.y + ledgeTopProbeHeight,
+            transform.position.z
+        );
+
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawLine(wallOrigin, wallOrigin + rayDirection * ledgeGrabForwardDistance);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(clearOrigin, clearOrigin + rayDirection * ledgeGrabForwardDistance);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(topOrigin, topOrigin + Vector3.down * ledgeTopRayDistance);
+
+        if (isLedgeGrabbing)
+        {
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireSphere(ledgeHangPosition, 0.08f);
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(ledgeClimbTargetPosition, 0.08f);
+        }
     }
 
     private Vector2 GetEditorAttackCenter()
