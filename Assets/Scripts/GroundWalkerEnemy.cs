@@ -70,7 +70,7 @@ public class GroundWalkerEnemy : EnemyBase
 
             if (!Mathf.Approximately(previousFacingDirection, facingDirection))
             {
-                Debug.Log($"{gameObject.name} turned around at {turnAroundReason}");
+//                Debug.Log($"{gameObject.name} turned around at {turnAroundReason}");
             }
         }
 
@@ -138,7 +138,7 @@ public class GroundWalkerEnemy : EnemyBase
     {
         Vector2 firstOrigin = GetLedgeCheckOrigin(facingDirection);
         Vector2 secondOrigin = GetSecondLedgeCheckOrigin(firstOrigin, facingDirection);
-Debug.Log(HasGroundBelowLedgeCheck(firstOrigin)+" "+HasGroundBelowLedgeCheck(secondOrigin));
+//Debug.Log(HasGroundBelowLedgeCheck(firstOrigin)+" "+HasGroundBelowLedgeCheck(secondOrigin));
         return !HasGroundBelowLedgeCheck(firstOrigin) && !HasGroundBelowLedgeCheck(secondOrigin);
     }
 

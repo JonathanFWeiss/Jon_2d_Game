@@ -5,7 +5,7 @@ public class MainMenu : MonoBehaviour
 {
     public void PlayGame()
     {
-        SceneManager.LoadScene("AllTheMechanics");
+        SceneManager.LoadScene("CastleStart");
     }
 
     public void QuitGame()
