@@ -32,6 +32,7 @@ public class GroundWalkerEnemy : EnemyBase
     protected int groundLayerIndex = -1;
     public LayerMask groundMask;
     protected float nextTurnAroundTime = float.NegativeInfinity;
+    
 
     [SerializeField] private float ledgeCheckDistance = 1f;
     [Tooltip("Horizontal spacing between the two ledge-check rays.")]
@@ -137,7 +138,7 @@ public class GroundWalkerEnemy : EnemyBase
     {
         Vector2 firstOrigin = GetLedgeCheckOrigin(facingDirection);
         Vector2 secondOrigin = GetSecondLedgeCheckOrigin(firstOrigin, facingDirection);
-
+Debug.Log(HasGroundBelowLedgeCheck(firstOrigin)+" "+HasGroundBelowLedgeCheck(secondOrigin));
         return !HasGroundBelowLedgeCheck(firstOrigin) && !HasGroundBelowLedgeCheck(secondOrigin);
     }
 
