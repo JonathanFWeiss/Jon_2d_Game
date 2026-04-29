@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5405021645061645628}
   - component: {fileID: 1737461005594855149}
   - component: {fileID: 1818863043436641235}
-  - component: {fileID: 7124109329864600936}
+  - component: {fileID: 4159538567488080009}
   m_Layer: 8
   m_Name: 'Jetpack Pancake '
   m_TagString: Untagged
@@ -157,7 +157,7 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 1.9944
---- !u!114 &7124109329864600936
+--- !u!114 &4159538567488080009
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -177,7 +177,7 @@ MonoBehaviour:
   contactDamageCooldown: 1
   playerLayerMask:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 0
   contactPushbackImpulse: {x: 6, y: 6}
   coinPrefab: {fileID: 0}
   coinDropCount: 0
@@ -190,20 +190,23 @@ MonoBehaviour:
   aimDuration: 1
   randomMoveDuration: 2
   upwardRetreatDuration: 1
-  groundAvoidanceDistance: 1
+  hitStunDuration: 0.35
+  groundCollisionRecoveryDuration: 0.5
+  groundCollisionRecoverySpeed: 1
+  groundAvoidanceDistance: 0.5
   groundAvoidanceDuration: 0.5
-  randomMoveSpeed: 3
-  chargeAcceleration: 40
-  maxChargeSpeed: 14
+  randomMoveSpeed: 1
+  chargeAcceleration: 20
+  maxChargeSpeed: 10
   maxChargeDuration: 5
-  ceilingRetreatFraction: 0.445
+  ceilingRetreatFraction: 0.5
   fallbackCeilingDistance: 4
   raycastOrigin: {fileID: 0}
   groundMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 0
   lineOfSightBlockerMask:
     serializedVersion: 2
-    m_Bits: 8
-  ceilingRaycastDistance: 20
+    m_Bits: 0
+  ceilingRaycastDistance: 12
   spriteForwardAngleOffset: 0

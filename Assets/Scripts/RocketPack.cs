@@ -8,7 +8,10 @@ public class RocketPack : FlyingEnemy
         MoveAwayFromGround,
         AimAtPlayer,
         Charge,
+        GroundCollisionRecovery,
+        HitStun,
         RandomMove,
+        TurnUpright,
         RetreatUp
     }
 
@@ -25,6 +28,21 @@ public class RocketPack : FlyingEnemy
     [Tooltip("How long the enemy flies upward after a charge impact.")]
     public float upwardRetreatDuration = 1f;
 
+    [Tooltip("How long the enemy takes to turn upright before flying upward after a charge.")]
+    public float uprightTurnDuration = 0.5f;
+
+    [Tooltip("How long movement is interrupted after taking damage so attack knockback can move the enemy.")]
+    public float hitStunDuration = 0.35f;
+
+    [Tooltip("How long the enemy moves away after touching ground geometry.")]
+    public float groundCollisionRecoveryDuration = 1f;
+
+    [Tooltip("How fast the enemy moves away from a ground collision point.")]
+    public float groundCollisionRecoverySpeed = 3f;
+
+    [Tooltip("How far to probe for ground while sanity-checking escape directions.")]
+    public float groundDirectionProbeDistance = 2f;
+
     [Header("Rocket Pack Movement")]
     [Tooltip("How far the enemy moves away from the closest ground structure before aiming at the player.")]
     public float groundAvoidanceDistance = 1f;
@@ -33,20 +51,20 @@ public class RocketPack : FlyingEnemy
     public float groundAvoidanceDuration = 0.5f;
 
     [Tooltip("Speed used while wandering in a random direction.")]
-    public float randomMoveSpeed = 3f;
+    public float randomMoveSpeed = 1f;
 
     [Tooltip("How quickly the enemy accelerates during its charge.")]
-    public float chargeAcceleration = 40f;
+    public float chargeAcceleration = 20f;
 
     [Tooltip("Maximum speed during the charge.")]
-    public float maxChargeSpeed = 14f;
+    public float maxChargeSpeed = 10f;
 
     [Tooltip("Fallback time before leaving charge if no player or ground collision happens. Set to 0 to charge indefinitely.")]
     public float maxChargeDuration = 5f;
 
     [Tooltip("Fraction of the ceiling ray distance to travel upward after charging.")]
     [Range(0f, 1f)]
-    public float ceilingRetreatFraction = 0.75f;
+    public float ceilingRetreatFraction = 0.5f;
 
     [Tooltip("Distance to fly upward when no ceiling is found.")]
     public float fallbackCeilingDistance = 4f;
@@ -75,12 +93,15 @@ public class RocketPack : FlyingEnemy
     private float nextPlayerSearchTime = float.NegativeInfinity;
     private Vector2 chargeDirection = Vector2.right;
     private Vector2 randomMoveDirection = Vector2.right;
-    private Vector2 groundAvoidanceStartPosition;
+    private Vector2 groundCollisionRecoveryDirection = Vector2.up;
     private Vector2 groundAvoidanceTargetPosition;
-    private Vector2 retreatStartPosition;
     private Vector2 retreatTargetPosition;
+    private float rocketHoverCenterY;
+    private float rocketBobPhaseOffset;
     private Quaternion aimStartRotation;
     private Quaternion aimTargetRotation;
+    private Quaternion uprightStartRotation;
+    private Quaternion uprightTargetRotation;
 
     private void Reset()
     {
@@ -92,6 +113,8 @@ public class RocketPack : FlyingEnemy
         base.Awake();
 
         bodyCollider = GetComponent<Collider2D>();
+        rocketHoverCenterY = rb2d.position.y;
+        rocketBobPhaseOffset = Random.Range(0f, Mathf.PI * 2f);
         InitializeMasks();
         EnterIdle();
     }
@@ -112,8 +135,17 @@ public class RocketPack : FlyingEnemy
             case RocketPackState.Charge:
                 UpdateCharge();
                 break;
+            case RocketPackState.GroundCollisionRecovery:
+                UpdateGroundCollisionRecovery();
+                break;
+            case RocketPackState.HitStun:
+                UpdateHitStun();
+                break;
             case RocketPackState.RandomMove:
                 UpdateRandomMove();
+                break;
+            case RocketPackState.TurnUpright:
+                UpdateTurnUpright();
                 break;
             case RocketPackState.RetreatUp:
                 UpdateRetreatUp();
@@ -121,27 +153,55 @@ public class RocketPack : FlyingEnemy
         }
     }
 
+    public override void TakeDamage(int amount)
+    {
+        bool shouldInterruptMovement = amount > 0 && !isDead;
+
+        base.TakeDamage(amount);
+
+        if (!shouldInterruptMovement || isDead)
+            return;
+
+        EnterHitStun();
+    }
+
     protected override void OnCollisionEnter2D(Collision2D collision)
     {
         base.OnCollisionEnter2D(collision);
+
+        if (TryStartGroundCollisionRecovery(collision))
+            return;
+
         TryFinishChargeFromHit(collision.gameObject);
     }
 
     protected override void OnCollisionStay2D(Collision2D collision)
     {
         base.OnCollisionStay2D(collision);
+
+        if (TryStartGroundCollisionRecovery(collision))
+            return;
+
         TryFinishChargeFromHit(collision.gameObject);
     }
 
     protected override void OnTriggerEnter2D(Collider2D other)
     {
         base.OnTriggerEnter2D(other);
+
+        if (TryStartGroundCollisionRecovery(other))
+            return;
+
         TryFinishChargeFromHit(other.gameObject);
     }
 
     protected override void OnTriggerStay2D(Collider2D other)
     {
         base.OnTriggerStay2D(other);
+
+        if (TryStartGroundCollisionRecovery(other))
+            return;
+
         TryFinishChargeFromHit(other.gameObject);
     }
 
@@ -150,6 +210,62 @@ public class RocketPack : FlyingEnemy
         Vector3 scale = transform.localScale;
         scale.x = Mathf.Abs(scale.x);
         transform.localScale = scale;
+    }
+
+    protected override void ApplyIdleBob()
+    {
+        if (idleBobAmplitude <= 0f || idleBobFrequency <= 0f)
+        {
+            ApplyBrakingForce();
+            return;
+        }
+
+        float bobRadians = Time.time * idleBobFrequency * Mathf.PI * 2f + rocketBobPhaseOffset;
+        float targetY = rocketHoverCenterY + Mathf.Sin(bobRadians) * idleBobAmplitude;
+        float targetVelocityY = (targetY - rb2d.position.y) * idleBobResponsiveness;
+
+        ApplyVelocitySteering(Vector2.up * targetVelocityY, idleBobResponsiveness);
+    }
+
+    private void ApplyBrakingForce()
+    {
+        ApplyVelocitySteering(Vector2.zero, moveAcceleration);
+    }
+
+    private void ApplyStopImpulse()
+    {
+        if (rb2d == null)
+            return;
+
+        Debug.Log($"{gameObject.name} RocketPack move: stop impulse in {currentState}. Current velocity: {rb2d.linearVelocity}");
+        rb2d.AddForce(-rb2d.linearVelocity * rb2d.mass, ForceMode2D.Impulse);
+    }
+
+    private void ApplyForceTowardTimedPosition(Vector2 targetPosition, float remainingTime, float acceleration)
+    {
+        float safeRemainingTime = Mathf.Max(Time.fixedDeltaTime, remainingTime);
+        Vector2 targetVelocity = (targetPosition - rb2d.position) / safeRemainingTime;
+        ApplyVelocitySteering(targetVelocity, acceleration);
+    }
+
+    private void ApplyVelocitySteering(Vector2 targetVelocity, float acceleration)
+    {
+        if (rb2d == null)
+            return;
+
+        float safeFixedDeltaTime = Mathf.Max(Time.fixedDeltaTime, 0.0001f);
+        float maxVelocityChange = Mathf.Max(0f, acceleration) * safeFixedDeltaTime;
+        Vector2 velocityChange = Vector2.ClampMagnitude(
+            targetVelocity - rb2d.linearVelocity,
+            maxVelocityChange
+        );
+        Vector2 force = velocityChange * rb2d.mass / safeFixedDeltaTime;
+
+        Debug.Log(
+            $"{gameObject.name} RocketPack move: force in {currentState}. " +
+            $"Target velocity: {targetVelocity}, current velocity: {rb2d.linearVelocity}, force: {force}"
+        );
+        rb2d.AddForce(force, ForceMode2D.Force);
     }
 
     private void InitializeMasks()
@@ -179,7 +295,8 @@ public class RocketPack : FlyingEnemy
         currentState = RocketPackState.Idle;
         stateStartTime = Time.time;
         stateEndTime = Time.time + Mathf.Max(0f, idleDuration);
-        rb2d.linearVelocity = Vector2.zero;
+        rocketHoverCenterY = rb2d.position.y;
+        ApplyStopImpulse();
     }
 
     private void UpdateIdle()
@@ -214,30 +331,25 @@ public class RocketPack : FlyingEnemy
         currentState = RocketPackState.MoveAwayFromGround;
         stateStartTime = Time.time;
         stateEndTime = Time.time + Mathf.Max(0.01f, groundAvoidanceDuration);
-        groundAvoidanceStartPosition = rb2d.position;
-        groundAvoidanceTargetPosition = groundAvoidanceStartPosition
+        groundAvoidanceTargetPosition = rb2d.position
             + awayDirection * Mathf.Max(0f, groundAvoidanceDistance);
-        rb2d.linearVelocity = Vector2.zero;
+        ApplyStopImpulse();
         return true;
     }
 
     private void UpdateMoveAwayFromGround()
     {
-        float moveTime = Mathf.Max(0.01f, groundAvoidanceDuration);
-        float t = Mathf.Clamp01((Time.time - stateStartTime) / moveTime);
-        Vector2 nextPosition = Vector2.Lerp(
-            groundAvoidanceStartPosition,
-            groundAvoidanceTargetPosition,
-            Mathf.SmoothStep(0f, 1f, t)
-        );
-
-        rb2d.MovePosition(nextPosition);
-        rb2d.linearVelocity = Vector2.zero;
-
-        if (t >= 1f)
+        if (Time.time >= stateEndTime)
         {
             AimAfterGroundAvoidance();
+            return;
         }
+
+        ApplyForceTowardTimedPosition(
+            groundAvoidanceTargetPosition,
+            stateEndTime - Time.time,
+            moveAcceleration
+        );
     }
 
     private void AimAfterGroundAvoidance()
@@ -259,12 +371,12 @@ public class RocketPack : FlyingEnemy
         chargeDirection = directionToPlayer.normalized;
         aimStartRotation = transform.rotation;
         aimTargetRotation = GetRotationForDirection(chargeDirection);
-        rb2d.linearVelocity = Vector2.zero;
+        ApplyStopImpulse();
     }
 
     private void UpdateAimAtPlayer()
     {
-        rb2d.linearVelocity = Vector2.zero;
+        ApplyBrakingForce();
 
         float aimTime = Mathf.Max(0.01f, aimDuration);
         float t = Mathf.Clamp01((Time.time - stateStartTime) / aimTime);
@@ -284,21 +396,59 @@ public class RocketPack : FlyingEnemy
             ? Time.time + maxChargeDuration
             : float.PositiveInfinity;
         chargeDirection = transform.up.normalized;
-        rb2d.linearVelocity = Vector2.zero;
+        ApplyStopImpulse();
     }
 
     private void UpdateCharge()
     {
-        rb2d.linearVelocity += chargeDirection * chargeAcceleration * Time.fixedDeltaTime;
-
-        if (rb2d.linearVelocity.magnitude > maxChargeSpeed)
-        {
-            rb2d.linearVelocity = rb2d.linearVelocity.normalized * maxChargeSpeed;
-        }
+        ApplyVelocitySteering(chargeDirection * Mathf.Max(0f, maxChargeSpeed), chargeAcceleration);
 
         if (Time.time >= stateEndTime)
         {
-            EnterRetreatUp();
+            EnterTurnUpright();
+        }
+    }
+
+    private void EnterGroundCollisionRecovery(Vector2 collisionPoint)
+    {
+        currentState = RocketPackState.GroundCollisionRecovery;
+        stateStartTime = Time.time;
+        stateEndTime = Time.time + Mathf.Max(0.01f, groundCollisionRecoveryDuration);
+        groundCollisionRecoveryDirection = GetDirectionAwayFromPoint(collisionPoint);
+        ApplyStopImpulse();
+        ApplyVelocitySteering(
+            groundCollisionRecoveryDirection * Mathf.Max(0f, groundCollisionRecoverySpeed),
+            moveAcceleration
+        );
+    }
+
+    private void UpdateGroundCollisionRecovery()
+    {
+        if (Time.time >= stateEndTime)
+        {
+            EnterIdle();
+            return;
+        }
+
+        ApplyVelocitySteering(
+            groundCollisionRecoveryDirection * Mathf.Max(0f, groundCollisionRecoverySpeed),
+            moveAcceleration
+        );
+    }
+
+    private void EnterHitStun()
+    {
+        currentState = RocketPackState.HitStun;
+        stateStartTime = Time.time;
+        stateEndTime = Time.time + Mathf.Max(0.01f, hitStunDuration);
+        ApplyStopImpulse();
+    }
+
+    private void UpdateHitStun()
+    {
+        if (Time.time >= stateEndTime)
+        {
+            EnterIdle();
         }
     }
 
@@ -314,23 +464,18 @@ public class RocketPack : FlyingEnemy
             randomMoveDirection = Vector2.right;
         }
 
-        rb2d.linearVelocity = Vector2.zero;
+        ApplyStopImpulse();
     }
 
     private void UpdateRandomMove()
     {
-        Vector2 targetVelocity = randomMoveDirection * randomMoveSpeed;
-        rb2d.linearVelocity = Vector2.MoveTowards(
-            rb2d.linearVelocity,
-            targetVelocity,
-            moveAcceleration * Time.fixedDeltaTime
-        );
-
         if (Time.time >= stateEndTime)
         {
-            rb2d.linearVelocity = Vector2.zero;
             CheckPlayerLineOfSight();
+            return;
         }
+
+        ApplyVelocitySteering(randomMoveDirection * Mathf.Max(0f, randomMoveSpeed), moveAcceleration);
     }
 
     private void EnterRetreatUp()
@@ -338,25 +483,52 @@ public class RocketPack : FlyingEnemy
         currentState = RocketPackState.RetreatUp;
         stateStartTime = Time.time;
         stateEndTime = Time.time + Mathf.Max(0.01f, upwardRetreatDuration);
-        retreatStartPosition = rb2d.position;
-        retreatTargetPosition = retreatStartPosition + Vector2.up * GetUpwardRetreatDistance();
-        transform.rotation = GetRotationForDirection(Vector2.up);
-        rb2d.linearVelocity = Vector2.zero;
+        retreatTargetPosition = rb2d.position + Vector2.up * GetUpwardRetreatDistance();
+        ApplyStopImpulse();
+    }
+
+    private void EnterTurnUpright()
+    {
+        currentState = RocketPackState.TurnUpright;
+        stateStartTime = Time.time;
+        stateEndTime = Time.time + Mathf.Max(0.01f, uprightTurnDuration);
+        uprightStartRotation = transform.rotation;
+        uprightTargetRotation = GetRotationForDirection(Vector2.up);
+        ApplyStopImpulse();
+    }
+
+    private void UpdateTurnUpright()
+    {
+        ApplyBrakingForce();
+
+        float turnTime = Mathf.Max(0.01f, uprightTurnDuration);
+        float t = Mathf.Clamp01((Time.time - stateStartTime) / turnTime);
+        transform.rotation = Quaternion.Slerp(
+            uprightStartRotation,
+            uprightTargetRotation,
+            Mathf.SmoothStep(0f, 1f, t)
+        );
+
+        if (t >= 1f)
+        {
+            transform.rotation = uprightTargetRotation;
+            EnterRetreatUp();
+        }
     }
 
     private void UpdateRetreatUp()
     {
-        float retreatTime = Mathf.Max(0.01f, upwardRetreatDuration);
-        float t = Mathf.Clamp01((Time.time - stateStartTime) / retreatTime);
-        Vector2 nextPosition = Vector2.Lerp(retreatStartPosition, retreatTargetPosition, Mathf.SmoothStep(0f, 1f, t));
-
-        rb2d.MovePosition(nextPosition);
-        rb2d.linearVelocity = Vector2.zero;
-
-        if (t >= 1f)
+        if (Time.time >= stateEndTime)
         {
             EnterIdle();
+            return;
         }
+
+        ApplyForceTowardTimedPosition(
+            retreatTargetPosition,
+            stateEndTime - Time.time,
+            moveAcceleration
+        );
     }
 
     private bool CanRaycastToPlayer(out Vector2 directionToPlayer)
@@ -461,15 +633,39 @@ public class RocketPack : FlyingEnemy
 
         GameObject rootObject = hitObject.transform.root.gameObject;
 
-        if (IsPlayerObject(rootObject) || IsGroundObject(hitObject))
+        if (IsPlayerObject(rootObject))
         {
-            EnterRetreatUp();
+            EnterTurnUpright();
         }
     }
 
     private bool IsGroundObject(GameObject obj)
     {
         return obj != null && ((1 << obj.layer) & groundMask.value) != 0;
+    }
+
+    private bool TryStartGroundCollisionRecovery(Collision2D collision)
+    {
+        if (collision == null || currentState == RocketPackState.GroundCollisionRecovery)
+            return false;
+
+        if (!IsGroundObject(collision.gameObject))
+            return false;
+
+        EnterGroundCollisionRecovery(GetCollisionPoint(collision));
+        return true;
+    }
+
+    private bool TryStartGroundCollisionRecovery(Collider2D other)
+    {
+        if (other == null || currentState == RocketPackState.GroundCollisionRecovery)
+            return false;
+
+        if (!IsGroundObject(other.gameObject))
+            return false;
+
+        EnterGroundCollisionRecovery(GetColliderContactPoint(other));
+        return true;
     }
 
     private bool TryGetDirectionAwayFromClosestGround(out Vector2 awayDirection)
@@ -480,11 +676,9 @@ public class RocketPack : FlyingEnemy
             return false;
 
         Collider2D[] groundColliders = FindObjectsByType<Collider2D>();
-        Vector2 origin = GetRaycastOrigin();
-        Vector2 closestPoint = Vector2.zero;
-        Bounds closestBounds = default;
+        Collider2D closestGroundCollider = null;
         bool hasClosestGround = false;
-        float closestDistanceSqr = float.PositiveInfinity;
+        float closestDistance = float.PositiveInfinity;
 
         foreach (Collider2D groundCollider in groundColliders)
         {
@@ -497,26 +691,102 @@ public class RocketPack : FlyingEnemy
             if (((1 << groundCollider.gameObject.layer) & groundMask.value) == 0)
                 continue;
 
-            Vector2 point = groundCollider.ClosestPoint(origin);
-            float distanceSqr = (origin - point).sqrMagnitude;
+            if (!TryGetDirectionAwayFromGroundCollider(
+                groundCollider,
+                out Vector2 candidateAwayDirection,
+                out float candidateDistance
+            ))
+            {
+                continue;
+            }
 
-            if (distanceSqr >= closestDistanceSqr)
+            if (candidateDistance >= closestDistance)
                 continue;
 
             hasClosestGround = true;
-            closestDistanceSqr = distanceSqr;
-            closestPoint = point;
-            closestBounds = groundCollider.bounds;
+            closestDistance = candidateDistance;
+            awayDirection = candidateAwayDirection;
+            closestGroundCollider = groundCollider;
         }
 
         if (!hasClosestGround)
             return false;
 
+        Debug.Log(
+            $"{gameObject.name} RocketPack ground avoidance: closest ground is " +
+            $"{closestGroundCollider.gameObject.name} ({closestGroundCollider.GetType().Name}), " +
+            $"distance {closestDistance}, away direction {awayDirection}, body center {GetBodyCenter()}"
+        );
+
+        return true;
+    }
+
+    private bool TryGetDirectionAwayFromGroundCollider(
+        Collider2D groundCollider,
+        out Vector2 awayDirection,
+        out float signedDistance
+    )
+    {
+        awayDirection = Vector2.zero;
+        signedDistance = float.PositiveInfinity;
+
+        if (groundCollider == null)
+            return false;
+
+        if (bodyCollider != null && bodyCollider.enabled)
+        {
+            ColliderDistance2D colliderDistance = bodyCollider.Distance(groundCollider);
+
+            if (colliderDistance.isValid)
+            {
+                signedDistance = colliderDistance.distance;
+                Vector2 bodyCenter = GetBodyCenter();
+                float pointADistanceSqr = ((Vector2)colliderDistance.pointA - bodyCenter).sqrMagnitude;
+                float pointBDistanceSqr = ((Vector2)colliderDistance.pointB - bodyCenter).sqrMagnitude;
+                bool pointAIsBodyPoint = pointADistanceSqr <= pointBDistanceSqr;
+                Vector2 bodyPoint = pointAIsBodyPoint ? colliderDistance.pointA : colliderDistance.pointB;
+                Vector2 groundPoint = pointAIsBodyPoint ? colliderDistance.pointB : colliderDistance.pointA;
+
+                awayDirection = bodyPoint - groundPoint;
+
+                if (awayDirection.sqrMagnitude <= 0.0001f)
+                {
+                    awayDirection = bodyCenter - groundPoint;
+                }
+
+                if (awayDirection.sqrMagnitude <= 0.0001f && colliderDistance.normal.sqrMagnitude > 0.0001f)
+                {
+                    awayDirection = colliderDistance.normal;
+
+                    if (Vector2.Dot(awayDirection, bodyCenter - groundPoint) < 0f)
+                    {
+                        awayDirection *= -1f;
+                    }
+                }
+
+                if (awayDirection.sqrMagnitude > 0.0001f)
+                {
+                    awayDirection.Normalize();
+                    awayDirection = CorrectGroundEscapeDirection(awayDirection);
+                    Debug.Log(
+                        $"{gameObject.name} RocketPack ground avoidance distance points: " +
+                        $"pointA {colliderDistance.pointA}, pointB {colliderDistance.pointB}, " +
+                        $"bodyPoint {bodyPoint}, groundPoint {groundPoint}, " +
+                        $"normal {colliderDistance.normal}, away {awayDirection}"
+                    );
+                    return true;
+                }
+            }
+        }
+
+        Vector2 origin = GetRaycastOrigin();
+        Vector2 closestPoint = groundCollider.ClosestPoint(origin);
         awayDirection = origin - closestPoint;
+        signedDistance = awayDirection.magnitude;
 
         if (awayDirection.sqrMagnitude <= 0.0001f)
         {
-            awayDirection = origin - (Vector2)closestBounds.center;
+            awayDirection = origin - (Vector2)groundCollider.bounds.center;
         }
 
         if (awayDirection.sqrMagnitude <= 0.0001f)
@@ -525,7 +795,96 @@ public class RocketPack : FlyingEnemy
         }
 
         awayDirection.Normalize();
+        awayDirection = CorrectGroundEscapeDirection(awayDirection);
         return true;
+    }
+
+    private Vector2 CorrectGroundEscapeDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+            return Vector2.up;
+
+        direction.Normalize();
+
+        float forwardDistance = GetNearestGroundDistanceInDirection(direction);
+        float backwardDistance = GetNearestGroundDistanceInDirection(-direction);
+        bool forwardBlocked = !float.IsPositiveInfinity(forwardDistance);
+        bool backwardBlocked = !float.IsPositiveInfinity(backwardDistance);
+
+        if (forwardBlocked && (!backwardBlocked || forwardDistance < backwardDistance))
+        {
+            Debug.Log(
+                $"{gameObject.name} RocketPack ground avoidance: flipping away direction. " +
+                $"Forward {direction} hits ground at {forwardDistance}, " +
+                $"backward {-direction} hits ground at {backwardDistance}"
+            );
+            direction *= -1f;
+        }
+
+        return direction;
+    }
+
+    private float GetNearestGroundDistanceInDirection(Vector2 direction)
+    {
+        if (groundMask == 0 || direction.sqrMagnitude <= 0.0001f)
+            return float.PositiveInfinity;
+
+        float maxDistance = Mathf.Max(0.01f, groundDirectionProbeDistance);
+        RaycastHit2D[] hits = Physics2D.RaycastAll(GetBodyCenter(), direction.normalized, maxDistance, groundMask);
+        float nearestDistance = float.PositiveInfinity;
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null || hit.collider.transform.IsChildOf(transform))
+                continue;
+
+            if (hit.distance < nearestDistance)
+            {
+                nearestDistance = hit.distance;
+            }
+        }
+
+        return nearestDistance;
+    }
+
+    private Vector2 GetCollisionPoint(Collision2D collision)
+    {
+        if (collision.contactCount <= 0)
+            return collision.collider != null
+                ? GetColliderContactPoint(collision.collider)
+                : GetRaycastOrigin();
+
+        Vector2 collisionPoint = Vector2.zero;
+
+        for (int i = 0; i < collision.contactCount; i++)
+        {
+            collisionPoint += collision.GetContact(i).point;
+        }
+
+        return collisionPoint / collision.contactCount;
+    }
+
+    private Vector2 GetColliderContactPoint(Collider2D other)
+    {
+        Vector2 origin = GetRaycastOrigin();
+        Vector2 point = other.ClosestPoint(origin);
+
+        if ((origin - point).sqrMagnitude > 0.0001f)
+            return point;
+
+        return other.bounds.center;
+    }
+
+    private Vector2 GetDirectionAwayFromPoint(Vector2 point)
+    {
+        Vector2 direction = GetRaycastOrigin() - point;
+
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            direction = Vector2.up;
+        }
+
+        return direction.normalized;
     }
 
     private Vector2 GetRaycastOrigin()
@@ -533,6 +892,21 @@ public class RocketPack : FlyingEnemy
         if (raycastOrigin != null)
         {
             return raycastOrigin.position;
+        }
+
+        if (rb2d != null)
+        {
+            return rb2d.worldCenterOfMass;
+        }
+
+        return transform.position;
+    }
+
+    private Vector2 GetBodyCenter()
+    {
+        if (bodyCollider != null)
+        {
+            return bodyCollider.bounds.center;
         }
 
         if (rb2d != null)
