@@ -190,11 +190,13 @@ MonoBehaviour:
   aimDuration: 1
   randomMoveDuration: 2
   upwardRetreatDuration: 1
+  groundAvoidanceDistance: 1
+  groundAvoidanceDuration: 0.5
   randomMoveSpeed: 3
   chargeAcceleration: 40
   maxChargeSpeed: 14
   maxChargeDuration: 5
-  ceilingRetreatFraction: 0.75
+  ceilingRetreatFraction: 0.445
   fallbackCeilingDistance: 4
   raycastOrigin: {fileID: 0}
   groundMask:
