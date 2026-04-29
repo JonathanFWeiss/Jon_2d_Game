@@ -107,7 +107,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (jumpcutAction.triggered)
         {
-            Debug.Log("JumpCut action triggered from input system");
+          //  Debug.Log("JumpCut action triggered from input system");
         }
         characterController.JumpCut();
     }
@@ -116,7 +116,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (PogoAction.triggered)
         {
-            Debug.Log("Pogo action triggered from input system");
+          //  Debug.Log("Pogo action triggered from input system");
         }
         characterController.Pogo();
     }
@@ -125,7 +125,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (UpSlashAction.triggered)
         {
-            Debug.Log("UpSlash action triggered from input system");
+         //   Debug.Log("UpSlash action triggered from input system");
         }
         characterController.UpSlash();
     }
@@ -134,7 +134,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (SpellAction.triggered)
         {
-            Debug.Log("Spell action triggered from input system");
+         //   Debug.Log("Spell action triggered from input system");
         }
         characterController.Spell();
     }

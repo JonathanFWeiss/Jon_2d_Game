@@ -1,16 +1,22 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class PlayerData
 {
     public const int DefaultHP = 3;
+    public const string DashPickupItemName = "DashPickup";
+    public const string DoubleJumpPickupItemName = "DoubleJumpPickup";
+    public const string WallJumpPickupItemName = "WallJumpPickup";
     private const float RemoveHpCooldownSeconds = 1f;
     private const float HpRemovalPhysicsPauseSeconds = 0.5f;
 
     public static int Coins { get; private set; }
     public static int Energy { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
+    public static IReadOnlyDictionary<string, int> InventoryItems => inventoryItems;
 
+    private static readonly Dictionary<string, int> inventoryItems = new Dictionary<string, int>();
     private static float nextAllowedHpRemovalTime = 0f;
     private static PhysicsPauseRunner physicsPauseRunner;
 
@@ -38,12 +44,39 @@ public static class PlayerData
         Energy = Mathf.Max(Energy - amount, 0);
     }
 
+    public static void AddInventoryItem(string itemName, int amount = 1)
+    {
+        if (string.IsNullOrWhiteSpace(itemName) || amount <= 0)
+            return;
+
+        if (!inventoryItems.ContainsKey(itemName))
+        {
+            inventoryItems[itemName] = 0;
+        }
+
+        inventoryItems[itemName] += amount;
+    }
+
+    public static bool HasInventoryItem(string itemName)
+    {
+        return GetInventoryItemCount(itemName) > 0;
+    }
+
+    public static int GetInventoryItemCount(string itemName)
+    {
+        if (string.IsNullOrWhiteSpace(itemName))
+            return 0;
+
+        return inventoryItems.TryGetValue(itemName, out int count) ? count : 0;
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitializeOnPlayModeStart()
     {
         Coins = 0;
         Energy = 0;
         HP = DefaultHP;
+        inventoryItems.Clear();
         nextAllowedHpRemovalTime = 0f;
         physicsPauseRunner = null;
     }
@@ -51,7 +84,7 @@ public static class PlayerData
     public static void RemoveHP(int amount = 1)
     {// Prevent HP removal if the amount is not positive or if we're still in the cooldown period
 
-        Debug.Log("Current time: " + Time.time + ", Next allowed HP removal time: " + nextAllowedHpRemovalTime);
+//        Debug.Log("Current time: " + Time.time + ", Next allowed HP removal time: " + nextAllowedHpRemovalTime);
         if (amount <= 0 || Time.time < nextAllowedHpRemovalTime)
             return;
 
@@ -59,7 +92,7 @@ public static class PlayerData
         HP -= amount;
         HP = Mathf.Max(HP, 0);
         PausePhysicsAfterHpRemoval();
-        Debug.Log("Player HP: " + HP);
+//        Debug.Log("Player HP: " + HP);
 
     }
 
@@ -75,6 +108,7 @@ public static class PlayerData
         Coins = 0;
         Energy = 0;
         HP = DefaultHP;
+        inventoryItems.Clear();
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
 

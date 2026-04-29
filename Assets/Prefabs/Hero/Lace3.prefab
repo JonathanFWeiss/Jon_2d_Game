@@ -281,10 +281,10 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 962fed30cb2044e488376207e9cd60f3, type: 3}
   - {fileID: 8300000, guid: 940905f8a21c145119b64f16e7131c47, type: 3}
   attackVoiceAudioSource: {fileID: 0}
-  pogoDuration: 0.5
+  pogoDuration: 0.3
   pogoAttackBoxSize: {x: 3, y: 2}
   pogoAttackBoxOffset: {x: 0, y: -2.5}
-  pogoBounceCooldown: 0.2
+  pogoBounceCooldown: 0.15
   pogoSlashEffect: {fileID: 338097551858569047}
   UpSlashDuration: 0.5
   upSlashBoxSize: {x: 2.7, y: 3.3}
@@ -303,6 +303,28 @@ MonoBehaviour:
   wallJumpMovementLockTime: 0.15
   sameWallJumpLockTime: 0.2
   wallSlideMaxFallSpeed: 3
+  canLedgeGrab: 1
+  ledgeGrabLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  ledgeGrabRequiresForwardInput: 1
+  ledgeGrabInputThreshold: 0.2
+  ledgeGrabForwardDistance: 0.45
+  ledgeGrabWallRayHeight: 0.55
+  ledgeGrabClearRayHeight: 0.9
+  ledgeTopProbeHeight: 0.4
+  ledgeTopRayDistance: 1.1
+  ledgeTopProbeInset: 0.08
+  ledgeHangHorizontalOffset: 0.05
+  ledgeHangVerticalOffset: 0.12
+  ledgePullUpForwardOffset: 0.12
+  ledgePullUpGroundClearance: 0.03
+  ledgePullUpDuration: 0.16
+  LedgeClingMinumHangTime: 0.3
+  ledgeRegrabCooldown: 0.18
+  ledgeGrabMaxUpwardSpeed: 0.75
+  ledgeTopNormalMinY: 0.65
+  ledgeClearanceSkin: 0.04
   animator: {fileID: 0}
   spellEnergyCost: 5
   insufficientSpellEnergyClip: {fileID: 8300000, guid: d641206ba0efa41c2b13aeb52a842fae, type: 3}

@@ -28,6 +28,9 @@ public class Thrower : GroundStationaryEnemy
     [Tooltip("Speed applied to the thrown spike ball.")]
     [SerializeField] private float throwSpeed = 12f;
 
+    [Tooltip("Small distance to spawn the thrown spike ball away from the held ball in the throw direction.")]
+    [SerializeField] private float projectileSpawnOffset = 0.25f;
+
     [Tooltip("Delay before another spike ball is readied after a throw.")]
     [SerializeField] private float throwCooldown = 2f;
 
@@ -169,6 +172,7 @@ public class Thrower : GroundStationaryEnemy
         windupElapsed = 0f;
         throwState = ThrowState.MovingSpikeBall;
         PlayAnimationState(throwAnimationState);
+        Debug.Log($"{gameObject.name} started throw windup. SpikeBall: {GetSpikeBallDebugName()}, Player: {GetPlayerDebugName()}");
     }
 
     private void MoveSpikeBallToThrowPosition()
@@ -191,26 +195,31 @@ public class Thrower : GroundStationaryEnemy
         if (progress < 1f)
             return;
 
-        if (IsPlayerWithinRange())
-        {
-            ThrowSpikeBallAtPlayer();
-            BeginCooldown();
-            return;
-        }
-
-        ResetHeldSpikeBall();
-        PlayAnimationState(idleAnimationState);
+        Debug.Log(
+            $"{gameObject.name} windup complete. Throwing spike ball from {spikeBall.position}. " +
+            $"Player: {GetPlayerDebugName()}, ThrowSpeed: {throwSpeed}, SpikeBall active: {spikeBall.gameObject.activeInHierarchy}"
+        );
+        ThrowSpikeBallAtPlayer();
+        BeginCooldown();
     }
 
     private void ThrowSpikeBallAtPlayer()
     {
         Vector2 launchDirection = GetLaunchDirection();
-        Vector3 heldSpikeBallScale = spikeBall.lossyScale;
-        GameObject projectile = Instantiate(spikeBall.gameObject, spikeBall.position, spikeBall.rotation);
+        Vector2 launchVelocity = launchDirection * Mathf.Max(0f, throwSpeed);
+        Vector3 heldSpikeBallScale = GetPositiveWorldScale(spikeBall.lossyScale);
+        Vector3 projectilePosition = spikeBall.position + (Vector3)(launchDirection * Mathf.Max(0f, projectileSpawnOffset));
+        Collider2D[] ownerColliders = GetComponentsInChildren<Collider2D>(true);
+        Debug.Log(
+            $"{gameObject.name} preparing spike-ball projectile. " +
+            $"Direction: {launchDirection}, Velocity: {launchVelocity}, Spawn: {projectilePosition}, Scale: {heldSpikeBallScale}"
+        );
+
+        GameObject projectile = Instantiate(spikeBall.gameObject, projectilePosition, spikeBall.rotation, null);
         projectile.name = "SpikeBall Projectile";
         projectile.transform.localScale = heldSpikeBallScale;
-        projectile.transform.SetParent(null);
         projectile.SetActive(true);
+        Debug.Log($"{gameObject.name} instantiated {projectile.name} at {projectile.transform.position}.");
 
         foreach (EnemyBase projectileEnemy in projectile.GetComponentsInChildren<EnemyBase>(true))
         {
@@ -229,6 +238,14 @@ public class Thrower : GroundStationaryEnemy
             projectileRigidbody.gravityScale = Mathf.Max(0f, projectileGravityScale);
             projectileRigidbody.linearVelocity = Vector2.zero;
             projectileRigidbody.angularVelocity = 0f;
+            Debug.Log(
+                $"{projectile.name} Rigidbody2D ready. Simulated: {projectileRigidbody.simulated}, " +
+                $"BodyType: {projectileRigidbody.bodyType}, GravityScale: {projectileRigidbody.gravityScale}"
+            );
+        }
+        else
+        {
+            Debug.LogWarning($"{projectile.name} has no Rigidbody2D, so it cannot be launched.");
         }
 
         foreach (Collider2D projectileCollider in projectile.GetComponentsInChildren<Collider2D>(true))
@@ -238,6 +255,10 @@ public class Thrower : GroundStationaryEnemy
                 projectileCollider.enabled = true;
             }
         }
+        Debug.Log(
+            $"{projectile.name} visuals/colliders after spawn. " +
+            $"SpriteRenderers: {CountEnabledSpriteRenderers(projectile)}, Colliders: {CountEnabledColliders(projectile)}, Layer: {projectile.layer}"
+        );
 
         SyrupBallProjectile projectileDamage = projectile.GetComponent<SyrupBallProjectile>();
 
@@ -247,15 +268,18 @@ public class Thrower : GroundStationaryEnemy
         }
 
         projectileDamage.Initialize(
-            GetComponentsInChildren<Collider2D>(true),
+            ownerColliders,
             playerLayerMask,
             contactDamage,
             contactPushbackImpulse,
             projectileLifetime,
-            launchDirection * Mathf.Max(0f, throwSpeed)
+            launchVelocity,
+            gameObject
         );
+        Debug.Log($"{projectile.name} initialized with lifetime {projectileLifetime} and velocity {launchVelocity}.");
 
         ConfigureHeldSpikeBall(false);
+        Debug.Log($"{gameObject.name} hid held spike ball after spawning projectile.");
     }
 
     private void BeginCooldown()
@@ -305,12 +329,12 @@ public class Thrower : GroundStationaryEnemy
         return false;
     }
 
-    private void ResolvePlayerTransform()
+    private void ResolvePlayerTransform(bool forceSearch = false)
     {
         if (playerTransform != null)
             return;
 
-        if (Time.time < nextPlayerSearchTime)
+        if (!forceSearch && Time.time < nextPlayerSearchTime)
             return;
 
         nextPlayerSearchTime = Time.time + 0.5f;
@@ -354,7 +378,7 @@ public class Thrower : GroundStationaryEnemy
 
     private Vector2 GetLaunchDirection()
     {
-        ResolvePlayerTransform();
+        ResolvePlayerTransform(true);
 
         if (playerTransform != null && spikeBall != null)
         {
@@ -377,6 +401,63 @@ public class Thrower : GroundStationaryEnemy
         }
 
         return transform.position;
+    }
+
+    private string GetSpikeBallDebugName()
+    {
+        return spikeBall != null ? spikeBall.gameObject.name : "null";
+    }
+
+    private string GetPlayerDebugName()
+    {
+        return playerTransform != null ? playerTransform.gameObject.name : "null";
+    }
+
+    private Vector3 GetPositiveWorldScale(Vector3 scale)
+    {
+        return new Vector3(
+            Mathf.Abs(scale.x),
+            Mathf.Abs(scale.y),
+            Mathf.Approximately(scale.z, 0f) ? 1f : Mathf.Abs(scale.z)
+        );
+    }
+
+    private int CountEnabledSpriteRenderers(GameObject target)
+    {
+        if (target == null)
+            return 0;
+
+        int count = 0;
+        SpriteRenderer[] renderers = target.GetComponentsInChildren<SpriteRenderer>(true);
+
+        foreach (SpriteRenderer spriteRenderer in renderers)
+        {
+            if (spriteRenderer != null && spriteRenderer.enabled && spriteRenderer.gameObject.activeInHierarchy)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountEnabledColliders(GameObject target)
+    {
+        if (target == null)
+            return 0;
+
+        int count = 0;
+        Collider2D[] colliders = target.GetComponentsInChildren<Collider2D>(true);
+
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private void PlayAnimationState(string stateName)

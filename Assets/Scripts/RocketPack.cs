@@ -96,8 +96,6 @@ public class RocketPack : FlyingEnemy
     private Vector2 groundCollisionRecoveryDirection = Vector2.up;
     private Vector2 groundAvoidanceTargetPosition;
     private Vector2 retreatTargetPosition;
-    private float rocketHoverCenterY;
-    private float rocketBobPhaseOffset;
     private Quaternion aimStartRotation;
     private Quaternion aimTargetRotation;
     private Quaternion uprightStartRotation;
@@ -113,8 +111,6 @@ public class RocketPack : FlyingEnemy
         base.Awake();
 
         bodyCollider = GetComponent<Collider2D>();
-        rocketHoverCenterY = rb2d.position.y;
-        rocketBobPhaseOffset = Random.Range(0f, Mathf.PI * 2f);
         InitializeMasks();
         EnterIdle();
     }
@@ -212,60 +208,9 @@ public class RocketPack : FlyingEnemy
         transform.localScale = scale;
     }
 
-    protected override void ApplyIdleBob()
+    protected override string GetMovementDebugStateName()
     {
-        if (idleBobAmplitude <= 0f || idleBobFrequency <= 0f)
-        {
-            ApplyBrakingForce();
-            return;
-        }
-
-        float bobRadians = Time.time * idleBobFrequency * Mathf.PI * 2f + rocketBobPhaseOffset;
-        float targetY = rocketHoverCenterY + Mathf.Sin(bobRadians) * idleBobAmplitude;
-        float targetVelocityY = (targetY - rb2d.position.y) * idleBobResponsiveness;
-
-        ApplyVelocitySteering(Vector2.up * targetVelocityY, idleBobResponsiveness);
-    }
-
-    private void ApplyBrakingForce()
-    {
-        ApplyVelocitySteering(Vector2.zero, moveAcceleration);
-    }
-
-    private void ApplyStopImpulse()
-    {
-        if (rb2d == null)
-            return;
-
-        Debug.Log($"{gameObject.name} RocketPack move: stop impulse in {currentState}. Current velocity: {rb2d.linearVelocity}");
-        rb2d.AddForce(-rb2d.linearVelocity * rb2d.mass, ForceMode2D.Impulse);
-    }
-
-    private void ApplyForceTowardTimedPosition(Vector2 targetPosition, float remainingTime, float acceleration)
-    {
-        float safeRemainingTime = Mathf.Max(Time.fixedDeltaTime, remainingTime);
-        Vector2 targetVelocity = (targetPosition - rb2d.position) / safeRemainingTime;
-        ApplyVelocitySteering(targetVelocity, acceleration);
-    }
-
-    private void ApplyVelocitySteering(Vector2 targetVelocity, float acceleration)
-    {
-        if (rb2d == null)
-            return;
-
-        float safeFixedDeltaTime = Mathf.Max(Time.fixedDeltaTime, 0.0001f);
-        float maxVelocityChange = Mathf.Max(0f, acceleration) * safeFixedDeltaTime;
-        Vector2 velocityChange = Vector2.ClampMagnitude(
-            targetVelocity - rb2d.linearVelocity,
-            maxVelocityChange
-        );
-        Vector2 force = velocityChange * rb2d.mass / safeFixedDeltaTime;
-
-        Debug.Log(
-            $"{gameObject.name} RocketPack move: force in {currentState}. " +
-            $"Target velocity: {targetVelocity}, current velocity: {rb2d.linearVelocity}, force: {force}"
-        );
-        rb2d.AddForce(force, ForceMode2D.Force);
+        return currentState.ToString();
     }
 
     private void InitializeMasks()
@@ -295,7 +240,7 @@ public class RocketPack : FlyingEnemy
         currentState = RocketPackState.Idle;
         stateStartTime = Time.time;
         stateEndTime = Time.time + Mathf.Max(0f, idleDuration);
-        rocketHoverCenterY = rb2d.position.y;
+        SetHoverCenterToCurrentPosition();
         ApplyStopImpulse();
     }
 
@@ -712,11 +657,11 @@ public class RocketPack : FlyingEnemy
         if (!hasClosestGround)
             return false;
 
-        Debug.Log(
-            $"{gameObject.name} RocketPack ground avoidance: closest ground is " +
-            $"{closestGroundCollider.gameObject.name} ({closestGroundCollider.GetType().Name}), " +
-            $"distance {closestDistance}, away direction {awayDirection}, body center {GetBodyCenter()}"
-        );
+        // Debug.Log(
+        //     $"{gameObject.name} RocketPack ground avoidance: closest ground is " +
+        //     $"{closestGroundCollider.gameObject.name} ({closestGroundCollider.GetType().Name}), " +
+        //     $"distance {closestDistance}, away direction {awayDirection}, body center {GetBodyCenter()}"
+        // );
 
         return true;
     }
@@ -768,12 +713,12 @@ public class RocketPack : FlyingEnemy
                 {
                     awayDirection.Normalize();
                     awayDirection = CorrectGroundEscapeDirection(awayDirection);
-                    Debug.Log(
-                        $"{gameObject.name} RocketPack ground avoidance distance points: " +
-                        $"pointA {colliderDistance.pointA}, pointB {colliderDistance.pointB}, " +
-                        $"bodyPoint {bodyPoint}, groundPoint {groundPoint}, " +
-                        $"normal {colliderDistance.normal}, away {awayDirection}"
-                    );
+                    // Debug.Log(
+                    //     $"{gameObject.name} RocketPack ground avoidance distance points: " +
+                    //     $"pointA {colliderDistance.pointA}, pointB {colliderDistance.pointB}, " +
+                    //     $"bodyPoint {bodyPoint}, groundPoint {groundPoint}, " +
+                    //     $"normal {colliderDistance.normal}, away {awayDirection}"
+                    // );
                     return true;
                 }
             }

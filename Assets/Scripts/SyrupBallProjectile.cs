@@ -8,6 +8,7 @@ public class SyrupBallProjectile : MonoBehaviour
     private LayerMask playerMask;
     private int damageAmount;
     private Vector2 pushbackImpulse;
+    private GameObject ownerRoot;
     private bool hasHit;
 
     private void Awake()
@@ -21,13 +22,15 @@ public class SyrupBallProjectile : MonoBehaviour
         int contactDamage,
         Vector2 contactPushback,
         float lifetime,
-        Vector2 launchVelocity
+        Vector2 launchVelocity,
+        GameObject owner = null
     )
     {
         rb2d = rb2d != null ? rb2d : GetComponent<Rigidbody2D>();
         playerMask = playerLayerMask;
         damageAmount = contactDamage;
         pushbackImpulse = contactPushback;
+        ownerRoot = owner;
 
         Collider2D projectileCollider = GetComponent<Collider2D>();
 
@@ -47,6 +50,10 @@ public class SyrupBallProjectile : MonoBehaviour
             rb2d.linearVelocity = launchVelocity;
         }
 
+        Debug.Log(
+            $"{gameObject.name} projectile initialized. Owner: {GetDebugObjectName(ownerRoot)}, " +
+            $"Velocity: {launchVelocity}, Lifetime: {Mathf.Max(0.25f, lifetime)}"
+        );
         Destroy(gameObject, Mathf.Max(0.25f, lifetime));
     }
 
@@ -79,9 +86,16 @@ public class SyrupBallProjectile : MonoBehaviour
 
         GameObject rootObject = hitObject.transform.root.gameObject;
 
+        if (ownerRoot != null && (hitObject == ownerRoot || hitObject.transform.IsChildOf(ownerRoot.transform)))
+        {
+            Debug.Log($"{gameObject.name} ignored owner hit with {GetDebugObjectName(hitObject)}.");
+            return;
+        }
+
         if (IsPlayerObject(rootObject))
         {
             hasHit = true;
+            Debug.Log($"{gameObject.name} hit player object {GetDebugObjectName(hitObject)}.");
 
             if (damageAmount > 0)
             {
@@ -96,8 +110,14 @@ public class SyrupBallProjectile : MonoBehaviour
         if (!hitObject.transform.IsChildOf(transform))
         {
             hasHit = true;
+            Debug.Log($"{gameObject.name} hit non-player object {GetDebugObjectName(hitObject)} and will be destroyed.");
             Destroy(gameObject);
         }
+    }
+
+    private string GetDebugObjectName(GameObject obj)
+    {
+        return obj != null ? obj.name : "null";
     }
 
     private bool IsPlayerObject(GameObject obj)

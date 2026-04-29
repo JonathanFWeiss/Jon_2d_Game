@@ -25,6 +25,32 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private bool canDoubleJump = true;//for if the player can double jump or not, set in inspector
     [SerializeField] private bool canWallJump = true;//for if the player can wall jump or not, set in inspector
     private Rigidbody2D rb;
+    public bool CanDash
+    {
+        get => canDash;
+        set
+        {
+            canDash = value;
+            airDashAvailable = value;
+        }
+    }
+
+    public bool CanDoubleJump
+    {
+        get => canDoubleJump;
+        set
+        {
+            canDoubleJump = value;
+            doubleJumpAvailable = value;
+        }
+    }
+
+    public bool CanWallJump
+    {
+        get => canWallJump;
+        set => canWallJump = value;
+    }
+
     public bool isGrounded { get; private set; }
     private float canBeGroundedTime = 0f;
     //private float delayBeforeGrounded = 0.2f;
@@ -250,7 +276,7 @@ public class JonCharacterController : MonoBehaviour
             upSlashRequested = false; // Cancel upslash if pogo is performed
             SpellCastRequested = false; // Cancel spell cast if pogo is performed
             StartCoroutine(PogoAttackCoroutine(pogoDuration));
-            Debug.Log("Pogo executed with jump force: " + jumpForce);
+            //            Debug.Log("Pogo executed with jump force: " + jumpForce);
         }
         if (upSlashRequested && !isGettingHit)
         {
@@ -329,7 +355,7 @@ public class JonCharacterController : MonoBehaviour
             if (!usingGroundJump && doubleJumpAvailable)
             {
                 doubleJumpAvailable = false;
-                Debug.Log("Double jump used");
+              //  Debug.Log("Double jump used");
             }
 
 
@@ -388,7 +414,7 @@ public class JonCharacterController : MonoBehaviour
     public void Jump()
     {
         BufferJumpRequest();
-        Debug.Log("Jump input buffered");
+        //        Debug.Log("Jump input buffered");
         jumpcutRequested = false; // Reset jump cut request when a new jump is initiated
     }
 
@@ -587,7 +613,7 @@ public class JonCharacterController : MonoBehaviour
 
         // Implement pogo logic here, for example:
         pogoRequested = true; // Bounce up with jump force
-        Debug.Log("Pogo action triggered");
+        //        Debug.Log("Pogo action triggered");
     }
 
     public void UpSlash()
@@ -1374,7 +1400,7 @@ public class JonCharacterController : MonoBehaviour
 
     IEnumerator PogoAttackCoroutine(float seconds)
     {
-        Debug.Log("Starting pogo attack coroutine");
+        //        Debug.Log("Starting pogo attack coroutine");
         if (isPogoing) yield break;
 
 
@@ -1429,7 +1455,7 @@ public class JonCharacterController : MonoBehaviour
         isGettingHit = true;
         yield return new WaitForSeconds(seconds);
         isGettingHit = false;
-        Debug.Log("Finished getting hit state");
+//        Debug.Log("Finished getting hit state");
         gettingHitCoroutine = null;
     }
 
@@ -1471,7 +1497,7 @@ public class JonCharacterController : MonoBehaviour
 
         foreach (Collider2D hit in hits)
         {
-            Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
+            //            Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
             if (hit == null)
                 continue;
             if (hit.attachedRigidbody != null)
@@ -1480,7 +1506,7 @@ public class JonCharacterController : MonoBehaviour
                     rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset vertical velocity for consistent pogo bounces
                     rb.AddForce(new Vector2(0, 1.2f * jumpForce), ForceMode2D.Impulse);
                     nextPogoBounceTime = Time.time + pogoBounceCooldown;
-                    Debug.Log($"Pogo bounce applied to {rb.gameObject.name} with jump force: {1.2 * jumpForce}");
+                    //                    Debug.Log($"Pogo bounce applied to {rb.gameObject.name} with jump force: {1.2 * jumpForce}");
                 }
 
 
@@ -1497,7 +1523,7 @@ public class JonCharacterController : MonoBehaviour
 
             if (!TryDealDamage(hitRigidbody.gameObject))
                 continue;
-            Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
+            //            Debug.Log($"Damage successfully dealt to {hitRigidbody.gameObject.name}");
 
             ApplyPushback(hitRigidbody, attackCenter);
         }
@@ -1595,7 +1621,7 @@ public class JonCharacterController : MonoBehaviour
             }
 
             PlayerData.AddEnergy(energyGainPerSuccessfulHit);
-            Debug.Log($"Energy gained. Total energy: {PlayerData.Energy}");
+            //            Debug.Log($"Energy gained. Total energy: {PlayerData.Energy}");
             return true;
         }
 
@@ -1653,7 +1679,7 @@ public class JonCharacterController : MonoBehaviour
             horizontalDirection * attackPushbackImpulse.x,
             attackPushbackImpulse.y
         );
-        Debug.Log($"Applying pushback to {hitRigidbody.gameObject.name} with impulse {impulse}");
+        //        Debug.Log($"Applying pushback to {hitRigidbody.gameObject.name} with impulse {impulse}");
 
         hitRigidbody.AddForce(impulse, ForceMode2D.Impulse);
         //otherRb.AddForce(direction * pushForce, ForceMode2D.Impulse);

@@ -108,7 +108,7 @@ public class EnemyBase : MonoBehaviour
             TriggerHitFlash();
         }
 
-        Debug.Log($"{gameObject.name} lost {amount} hp, remaining {hp}");
+        //        Debug.Log($"{gameObject.name} lost {amount} hp, remaining {hp}");
     }
 
     protected virtual void OnCollisionEnter2D(Collision2D collision)
@@ -239,7 +239,7 @@ public class EnemyBase : MonoBehaviour
             playerController.StartGettingHit();
         }
 
-        Debug.Log($"Applying pushback impulse {impulse} to player from {gameObject.name}");
+//        Debug.Log($"Applying pushback impulse {impulse} to player from {gameObject.name}");
     }
 
     protected virtual void UpdateSpriteDirection()
@@ -310,7 +310,7 @@ public class EnemyBase : MonoBehaviour
             if (spriteRenderer != null)
             {
                 spriteRenderer.color = hitFlashColor;
-                Debug.Log($"Setting hit flash color {hitFlashColor} on {spriteRenderer.gameObject.name} for {gameObject.name}");
+                    //                Debug.Log($"Setting hit flash color {hitFlashColor} on {spriteRenderer.gameObject.name} for {gameObject.name}");
             }
         }
     }
