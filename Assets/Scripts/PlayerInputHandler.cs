@@ -69,7 +69,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     private void Jump(InputAction.CallbackContext context)
     {
-        Debug.Log("Jump action triggered from input system");
+//        Debug.Log("Jump action triggered from input system");
         characterController.Jump();
     }
 
@@ -83,7 +83,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (dashAction.triggered)
         {
-            Debug.Log("Dash action triggered from input system");
+//            Debug.Log("Dash action triggered from input system");
         }
         characterController.SetDashHeld(true);
         characterController.Dash();
@@ -98,7 +98,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (attackAction.triggered)
         {
-            Debug.Log("Attack action triggered from input system");
+  //          Debug.Log("Attack action triggered from input system");
         }
         characterController.Attack();
     }

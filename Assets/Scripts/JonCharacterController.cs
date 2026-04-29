@@ -349,7 +349,7 @@ public class JonCharacterController : MonoBehaviour
 
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
             jumpcutRequested = false;
-            Debug.Log("Jump cut applied");
+//            Debug.Log("Jump cut applied");
         }
 
 
@@ -551,7 +551,7 @@ public class JonCharacterController : MonoBehaviour
 
     IEnumerator DashCoroutine(float seconds)
     {
-        Debug.Log("Starting dash coroutine");
+//        Debug.Log("Starting dash coroutine");
         if (isDashing)
         {
             dashCoroutine = null;
@@ -636,7 +636,7 @@ public class JonCharacterController : MonoBehaviour
     public void JumpCut()
     {
         jumpcutRequested = true;
-        Debug.Log("JumpCut action triggered");
+//        Debug.Log("JumpCut action triggered");
     }
 
     public void StartGettingHit()
