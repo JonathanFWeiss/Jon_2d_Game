@@ -247,12 +247,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7792ecfc603133b4db93335f8cc66b84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterController
-  movementSpeed: 5
+  movementSpeed: 6
   jumpForce: 12
+  jumpSustainTime: 0.11
+  minimumJumpCutTime: 0.05
+  doubleJumpSpeedMultiplier: 1
+  groundedRecheckDelay: 0.08
+  airHangGravityMultiplier: 0.45
+  airHangGravityRestoreRate: 8
   dashSpeed: 10
   dashDuration: 0.2
   dashCooldown: 0.1
-  dashHeldSpeedMultiplier: 2.5
+  dashAirCarryDecay: 4
+  dashHeldSpeedMultiplier: 1.7
   dashHeldInputThreshold: 0.5
   dashHeldGroundedCarryTime: 0.25
   jumpCutMultiplier: 0.5
