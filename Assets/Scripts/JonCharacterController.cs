@@ -9,9 +9,16 @@ public class JonCharacterController : MonoBehaviour
     [Header("Movement Parameters")]
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private float jumpForce = 5f;
+    [SerializeField] private float jumpSustainTime = 0.11f;
+    [SerializeField] private float minimumJumpCutTime = 0.05f;
+    [SerializeField] private float doubleJumpSpeedMultiplier = 1f;
+    [SerializeField] private float groundedRecheckDelay = 0.08f;
+    [SerializeField][Range(0.05f, 1f)] private float airHangGravityMultiplier = 0.45f;
+    [SerializeField] private float airHangGravityRestoreRate = 8f;
     [SerializeField] private float dashSpeed = 10f;
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
+    [SerializeField] private float dashAirCarryDecay = 4f;
     [SerializeField] private float dashHeldSpeedMultiplier = 2f;
     [SerializeField][Range(0f, 1f)] private float dashHeldInputThreshold = 0.5f;
     [SerializeField] private float dashHeldGroundedCarryTime = 0.25f;
@@ -140,6 +147,10 @@ public class JonCharacterController : MonoBehaviour
     private float jumpBufferExpireTime = float.NegativeInfinity;
     private float lastGroundedTime = float.NegativeInfinity;
     private float defaultGravityScale = 3f;
+    private bool isJumpSustaining;
+    private float jumpSustainEndTime = float.NegativeInfinity;
+    private float earliestJumpCutTime = float.NegativeInfinity;
+    private bool didAirHang;
     private Vector3 lastGroundedPosition;
     private bool hasLastGroundedPosition;
     private Vector3 localScale;
@@ -164,6 +175,7 @@ public class JonCharacterController : MonoBehaviour
 
 
     private Vector2 movementVector;
+    private readonly List<DecayingMovementVelocity> extraHorizontalMovementVelocities = new List<DecayingMovementVelocity>();
     private bool isAttacking;
     private bool isPogoing;
     private bool isJumping = false;
@@ -210,7 +222,21 @@ public class JonCharacterController : MonoBehaviour
 
     public void Move(Vector2 move)
     {
-        movementVector = move;
+        movementVector = new Vector2(
+            Mathf.Clamp(move.x, -1f, 1f),
+            Mathf.Clamp(move.y, -1f, 1f)
+        );
+
+        if (Mathf.Abs(movementVector.x) < 0.01f)
+        {
+            movementVector.x = 0f;
+        }
+
+        if (Mathf.Abs(movementVector.y) < 0.01f)
+        {
+            movementVector.y = 0f;
+        }
+
         //Debug.Log("Move input from character controller: " + move);
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -253,6 +279,7 @@ public class JonCharacterController : MonoBehaviour
     {
         doGroundCheck();
         doWallCheck();
+        UpdateDecayingHorizontalMovementVelocities();
 
         if (isLedgePullingUp)
         {
@@ -316,7 +343,7 @@ public class JonCharacterController : MonoBehaviour
         // Don't apply normal movement during dash or attack
         if (!isDashing && !isAttacking && !isGettingHit && !wallJumpMovementLocked && !isSwimming)
         {
-            rb.linearVelocityX = movementVector.x * GetCurrentMovementSpeed();
+            ApplyHorizontalMovement();
         }
 
         if (isSwimming)
@@ -344,17 +371,8 @@ public class JonCharacterController : MonoBehaviour
         {
             bool usingGroundJump = hasGroundJumpAvailable;
 
-            if (rb.linearVelocity.y != 0)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
-            }
-
-            rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
-
-            canBeGroundedTime = Time.time + coyoteTime;
+            PerformJump(usingGroundJump);
             ClearBufferedJump();
-            isJumping = true;
-            lastGroundedTime = float.NegativeInfinity;
 
             if (!usingGroundJump && doubleJumpAvailable)
             {
@@ -365,22 +383,9 @@ public class JonCharacterController : MonoBehaviour
 
         }
 
-        if (isWallSliding && rb.linearVelocity.y < -wallSlideMaxFallSpeed)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideMaxFallSpeed);
-        }
-        else if (rb.linearVelocity.y < -maxFallSpeed)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
-        }
-
-        if (jumpcutRequested && rb.linearVelocity.y > 0)
-        {
-
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
-            jumpcutRequested = false;
-//            Debug.Log("Jump cut applied");
-        }
+        ApplyJumpSustainAndCut();
+        ApplyAirHangGravity();
+        ClampFallSpeed();
 
 
         if (dashRequested)
@@ -404,14 +409,15 @@ public class JonCharacterController : MonoBehaviour
         {
             if (Mathf.Abs(movementVector.x) > 0.1f)
             {
-                localScale = new Vector3(Mathf.Sign(movementVector.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+                float newFacingDirection = Mathf.Sign(movementVector.x);
+                if (Mathf.Sign(transform.localScale.x) != newFacingDirection)
+                {
+                    ClearExtraHorizontalMovementVelocities(true);
+                }
+
+                localScale = new Vector3(newFacingDirection * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
                 transform.localScale = localScale;
             }
-        }
-        if (rb.gravityScale < defaultGravityScale && !isDashing)
-        {
-            rb.gravityScale = defaultGravityScale;
-
         }
     }
 
@@ -568,6 +574,209 @@ public class JonCharacterController : MonoBehaviour
             : movementSpeed;
     }
 
+    private void ApplyHorizontalMovement()
+    {
+        Vector2 velocity = rb.linearVelocity;
+
+        if (!isWallSliding)
+        {
+            velocity.x = movementVector.x * GetCurrentMovementSpeed();
+        }
+
+        foreach (DecayingMovementVelocity extraVelocity in extraHorizontalMovementVelocities)
+        {
+            if (ShouldSkipExtraHorizontalMovement(extraVelocity))
+            {
+                continue;
+            }
+
+            velocity += extraVelocity.Velocity;
+        }
+
+        rb.linearVelocity = velocity;
+    }
+
+    private void UpdateDecayingHorizontalMovementVelocities()
+    {
+        for (int i = extraHorizontalMovementVelocities.Count - 1; i >= 0; i--)
+        {
+            DecayingMovementVelocity extraVelocity = extraHorizontalMovementVelocities[i];
+            extraVelocity.Velocity -= extraVelocity.Velocity * (extraVelocity.Decay * Time.fixedDeltaTime);
+
+            if (extraVelocity.Velocity.magnitude < 0.01f)
+            {
+                extraHorizontalMovementVelocities.RemoveAt(i);
+            }
+            else
+            {
+                extraHorizontalMovementVelocities[i] = extraVelocity;
+            }
+        }
+    }
+
+    private bool ShouldSkipExtraHorizontalMovement(DecayingMovementVelocity extraVelocity)
+    {
+        float inputX = movementVector.x;
+        float facing = GetSpriteFacingDirection();
+
+        switch (extraVelocity.SkipBehaviour)
+        {
+            case ExtraMovementSkipBehaviour.None:
+                return false;
+            case ExtraMovementSkipBehaviour.WhileMoving:
+                return Mathf.Abs(inputX) > Mathf.Epsilon;
+            case ExtraMovementSkipBehaviour.WhileMovingForward:
+                return inputX * facing > Mathf.Epsilon;
+            case ExtraMovementSkipBehaviour.WhileMovingBackward:
+                return inputX * facing < -Mathf.Epsilon;
+            default:
+                return false;
+        }
+    }
+
+    private void AddExtraHorizontalMovementVelocity(DecayingMovementVelocity extraVelocity)
+    {
+        if (extraVelocity.Velocity == Vector2.zero)
+        {
+            return;
+        }
+
+        extraHorizontalMovementVelocities.Add(extraVelocity);
+    }
+
+    private void ClearExtraHorizontalMovementVelocities(bool cancelOnTurnOnly = false)
+    {
+        if (!cancelOnTurnOnly)
+        {
+            extraHorizontalMovementVelocities.Clear();
+            return;
+        }
+
+        for (int i = extraHorizontalMovementVelocities.Count - 1; i >= 0; i--)
+        {
+            if (extraHorizontalMovementVelocities[i].CancelOnTurn)
+            {
+                extraHorizontalMovementVelocities.RemoveAt(i);
+            }
+        }
+    }
+
+    private float GetSpriteFacingDirection()
+    {
+        float facing = Mathf.Sign(transform.localScale.x);
+        return facing == 0f ? 1f : facing;
+    }
+
+    private void PerformJump(bool usingGroundJump)
+    {
+        float verticalSpeed = usingGroundJump || isSwimming
+            ? jumpForce
+            : jumpForce * doubleJumpSpeedMultiplier;
+
+        rb.gravityScale = defaultGravityScale;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, verticalSpeed);
+
+        canBeGroundedTime = Time.time + groundedRecheckDelay;
+        isGrounded = false;
+        isJumping = true;
+        isJumpSustaining = true;
+        jumpSustainEndTime = Time.time + jumpSustainTime;
+        earliestJumpCutTime = Time.time + minimumJumpCutTime;
+        lastGroundedTime = float.NegativeInfinity;
+        didAirHang = false;
+    }
+
+    private void ApplyJumpSustainAndCut()
+    {
+        bool jumpCutAllowed = jumpcutRequested && Time.time >= earliestJumpCutTime;
+
+        if (isJumpSustaining)
+        {
+            bool shouldSustainJump =
+                !jumpCutAllowed &&
+                Time.time < jumpSustainEndTime &&
+                rb.linearVelocity.y > 0f &&
+                !isDashing &&
+                !isGettingHit &&
+                !isWallSliding &&
+                !isSwimming;
+
+            if (shouldSustainJump)
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            }
+            else
+            {
+                isJumpSustaining = false;
+            }
+        }
+
+        if (!jumpcutRequested)
+        {
+            return;
+        }
+
+        if (rb.linearVelocity.y > 0f && jumpCutAllowed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
+            rb.gravityScale = defaultGravityScale;
+            isJumpSustaining = false;
+            jumpcutRequested = false;
+//            Debug.Log("Jump cut applied");
+        }
+        else if (rb.linearVelocity.y <= 0f && !HasBufferedJumpRequest())
+        {
+            jumpcutRequested = false;
+        }
+    }
+
+    private void ApplyAirHangGravity()
+    {
+        if (isGrounded)
+        {
+            didAirHang = false;
+
+            if (!isDashing && !isSwimming)
+            {
+                rb.gravityScale = defaultGravityScale;
+            }
+
+            return;
+        }
+
+        if (isDashing || isSwimming || isLedgeGrabbing || isLedgePullingUp || isWallSliding || isJumpSustaining)
+        {
+            return;
+        }
+
+        if (!didAirHang && rb.linearVelocity.y < 0f)
+        {
+            rb.gravityScale = defaultGravityScale * airHangGravityMultiplier;
+            didAirHang = true;
+        }
+
+        if (didAirHang && rb.gravityScale < defaultGravityScale)
+        {
+            rb.gravityScale = Mathf.MoveTowards(
+                rb.gravityScale,
+                defaultGravityScale,
+                airHangGravityRestoreRate * Time.fixedDeltaTime
+            );
+        }
+    }
+
+    private void ClampFallSpeed()
+    {
+        if (isWallSliding && rb.linearVelocity.y < -wallSlideMaxFallSpeed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideMaxFallSpeed);
+        }
+        else if (rb.linearVelocity.y < -maxFallSpeed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
+        }
+    }
+
     private float GetDashBoostDirection()
     {
         if (Mathf.Abs(movementVector.x) >= dashHeldInputThreshold)
@@ -588,11 +797,25 @@ public class JonCharacterController : MonoBehaviour
             yield break;
         }
         isDashing = true;
-        float prevGravity = rb.gravityScale;
+        isJumpSustaining = false;
+        didAirHang = false;
         rb.gravityScale = 0; // Disable gravity
         rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0); // Apply force
         yield return new WaitForSeconds(seconds); // Wait for dash duration
-        rb.gravityScale = prevGravity; // Restore gravity
+
+        Vector2 dashExitVelocity = rb.linearVelocity;
+        if (!isGrounded && Mathf.Abs(dashExitVelocity.x) > 0.01f)
+        {
+            AddExtraHorizontalMovementVelocity(new DecayingMovementVelocity
+            {
+                Velocity = new Vector2(dashExitVelocity.x, 0f),
+                Decay = dashAirCarryDecay,
+                CancelOnTurn = true,
+                SkipBehaviour = ExtraMovementSkipBehaviour.WhileMoving
+            });
+        }
+
+        rb.gravityScale = defaultGravityScale; // Restore gravity
         isDashing = false;
         dashCoroutine = null;
     }
@@ -673,6 +896,8 @@ public class JonCharacterController : MonoBehaviour
     {
         CancelDashSpeedBoost();
         CancelLedgeGrabAndPullUp(true);
+        isJumpSustaining = false;
+        ClearExtraHorizontalMovementVelocities();
 
         if (gettingHitCoroutine != null)
         {
@@ -739,12 +964,20 @@ public class JonCharacterController : MonoBehaviour
         {
             isGrounded = true;
             isJumping = false;
+            isJumpSustaining = false;
             isWallSliding = false;
+            didAirHang = false;
+            ClearExtraHorizontalMovementVelocities();
             lastGroundedTime = Time.time;
             lastGroundedPosition = transform.position;
             hasLastGroundedPosition = true;
             lastWallJumpedFromDirection = 0;
             sameWallJumpLockUntil = float.NegativeInfinity;
+
+            if (!isDashing && !isSwimming)
+            {
+                rb.gravityScale = defaultGravityScale;
+            }
         }
         else isGrounded = false;
     }
@@ -998,6 +1231,10 @@ public class JonCharacterController : MonoBehaviour
         isLedgeGrabbing = true;
         isLedgePullingUp = false;
         isWallSliding = false;
+        isJumpSustaining = false;
+        jumpcutRequested = false;
+        didAirHang = false;
+        ClearExtraHorizontalMovementVelocities();
         ledgeGrabDirection = ledgeGrabInfo.Direction;
         ledgeHangPosition = ledgeGrabInfo.HangPosition;
         ledgeClimbTargetPosition = ledgeGrabInfo.ClimbPosition;
@@ -1087,6 +1324,8 @@ public class JonCharacterController : MonoBehaviour
             rb.linearVelocity = Vector2.zero;
             isGrounded = true;
             isJumping = false;
+            isJumpSustaining = false;
+            didAirHang = false;
             lastGroundedTime = Time.time;
             lastGroundedPosition = transform.position;
             hasLastGroundedPosition = true;
@@ -1108,12 +1347,17 @@ public class JonCharacterController : MonoBehaviour
 
         Vector2 force = new Vector2(-jumpDirection * wallJumpImpulse.x, wallJumpImpulse.y);
         rb.gravityScale = defaultGravityScale;
-        rb.linearVelocity = Vector2.zero;
-        rb.AddForce(force, ForceMode2D.Impulse);
+        rb.linearVelocity = force;
 
+        isGrounded = false;
         isJumping = true;
+        isJumpSustaining = true;
+        isWallSliding = false;
+        jumpSustainEndTime = Time.time + jumpSustainTime;
+        earliestJumpCutTime = Time.time + minimumJumpCutTime;
         lastGroundedTime = float.NegativeInfinity;
-        canBeGroundedTime = Time.time + coyoteTime;
+        canBeGroundedTime = Time.time + groundedRecheckDelay;
+        didAirHang = false;
         lastWallJumpedFromDirection = jumpDirection;
         sameWallJumpLockUntil = Time.time + sameWallJumpLockTime;
         wallJumpMovementLockUntil = Time.time + wallJumpMovementLockTime;
@@ -1137,6 +1381,9 @@ public class JonCharacterController : MonoBehaviour
         ledgeGrabDirection = 0;
         ledgeGrabStartedTime = float.NegativeInfinity;
         isWallSliding = false;
+        isJumpSustaining = false;
+        didAirHang = false;
+        ClearExtraHorizontalMovementVelocities();
 
         if (restoreGravity)
         {
@@ -1153,6 +1400,10 @@ public class JonCharacterController : MonoBehaviour
         }
 
         isDashing = false;
+        if (!isLedgeGrabbing && !isLedgePullingUp && !isSwimming)
+        {
+            rb.gravityScale = defaultGravityScale;
+        }
     }
 
     private bool IsBodyClearAt(Vector2 targetPosition, Bounds currentBounds, LayerMask obstacleMask)
@@ -1202,10 +1453,27 @@ public class JonCharacterController : MonoBehaviour
         public Vector2 ClimbPosition;
     }
 
+    private struct DecayingMovementVelocity
+    {
+        public Vector2 Velocity;
+        public float Decay;
+        public bool CancelOnTurn;
+        public ExtraMovementSkipBehaviour SkipBehaviour;
+    }
+
+    private enum ExtraMovementSkipBehaviour
+    {
+        None,
+        WhileMoving,
+        WhileMovingForward,
+        WhileMovingBackward
+    }
+
     private bool HasGroundJumpAvailable()
     {
         //return isGrounded || Time.time <= lastGroundedTime + coyoteTime;
-        return isGrounded && Time.time > canBeGroundedTime || Time.time <= lastGroundedTime + coyoteTime && !isJumping;
+        return (isGrounded && Time.time > canBeGroundedTime) ||
+            (Time.time <= lastGroundedTime + coyoteTime && !isJumping);
         // This allows the player to still jump for a short time after leaving the ground, making the controls feel more responsive.
     }
 
@@ -1265,27 +1533,23 @@ public class JonCharacterController : MonoBehaviour
         Vector2 force = new Vector2(-wallDirection * wallJumpImpulse.x, wallJumpImpulse.y);
 
         jumpRequested = false;
+        isGrounded = false;
         isJumping = true;
+        isJumpSustaining = true;
         isWallSliding = false;
+        jumpSustainEndTime = Time.time + jumpSustainTime;
+        earliestJumpCutTime = Time.time + minimumJumpCutTime;
         lastGroundedTime = float.NegativeInfinity;
-        canBeGroundedTime = Time.time + coyoteTime;
+        canBeGroundedTime = Time.time + groundedRecheckDelay;
+        didAirHang = false;
         lastWallJumpedFromDirection = wallDirection;
         sameWallJumpLockUntil = Time.time + sameWallJumpLockTime;
         wallJumpMovementLockUntil = Time.time + wallJumpMovementLockTime;
         doubleJumpAvailable = canDoubleJump;
         airDashAvailable = canDash;
 
-        if (Mathf.Sign(rb.linearVelocity.x) != Mathf.Sign(force.x))
-        {
-            force.x -= rb.linearVelocity.x;
-        }
-
-        if (rb.linearVelocity.y < 0f)
-        {
-            force.y -= rb.linearVelocity.y;
-        }
-
-        rb.AddForce(force, ForceMode2D.Impulse);
+        rb.gravityScale = defaultGravityScale;
+        rb.linearVelocity = force;
 
         localScale = new Vector3(Mathf.Sign(force.x) * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
         transform.localScale = localScale;
@@ -1539,8 +1803,10 @@ public class JonCharacterController : MonoBehaviour
             if (hit.attachedRigidbody != null)
                 if (Time.time >= nextPogoBounceTime)
                 {
-                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset vertical velocity for consistent pogo bounces
-                    rb.AddForce(new Vector2(0, 1.2f * jumpForce), ForceMode2D.Impulse);
+                    rb.gravityScale = defaultGravityScale;
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 1.2f * jumpForce);
+                    isJumpSustaining = false;
+                    didAirHang = false;
                     nextPogoBounceTime = Time.time + pogoBounceCooldown;
                     //                    Debug.Log($"Pogo bounce applied to {rb.gameObject.name} with jump force: {1.2 * jumpForce}");
                 }
