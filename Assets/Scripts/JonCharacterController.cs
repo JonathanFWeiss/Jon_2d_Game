@@ -107,19 +107,23 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private bool canLedgeGrab = true;
     [SerializeField] private LayerMask ledgeGrabLayer;
     [SerializeField] private bool ledgeGrabRequiresForwardInput = true;
+    [SerializeField] private bool ledgeGrabAutoPullUpWhenPressingForward = true;
     [SerializeField][Range(0f, 1f)] private float ledgeGrabInputThreshold = 0.2f;
+    [SerializeField] private float ledgeGrabDashVelocityThreshold = 0.1f;
     [SerializeField] private float ledgeGrabForwardDistance = 0.45f;
     [SerializeField][Range(0.1f, 0.9f)] private float ledgeGrabWallRayHeight = 0.55f;
     [SerializeField][Range(0.5f, 1f)] private float ledgeGrabClearRayHeight = 0.9f;
     [SerializeField] private float ledgeTopProbeHeight = 0.4f;
     [SerializeField] private float ledgeTopRayDistance = 1.1f;
     [SerializeField] private float ledgeTopProbeInset = 0.08f;
+    [SerializeField] private float ledgeTopProbeSpacing = 0.4f;
+    [SerializeField] private float ledgeTopHeightTolerance = 0.1f;
     [SerializeField] private float ledgeHangHorizontalOffset = 0.05f;
     [SerializeField] private float ledgeHangVerticalOffset = 0.12f;
     [SerializeField] private float ledgePullUpForwardOffset = 0.12f;
     [SerializeField] private float ledgePullUpGroundClearance = 0.03f;
     [SerializeField] private float ledgePullUpDuration = 0.16f;
-    [SerializeField] private float LedgeClingMinumHangTime = 0.3f;
+    [SerializeField] private float LedgeClingMinumHangTime = 0.08f;
     [SerializeField] private float ledgeRegrabCooldown = 0.18f;
     [SerializeField] private float ledgeGrabMaxUpwardSpeed = 0.75f;
     [SerializeField][Range(0.1f, 1f)] private float ledgeTopNormalMinY = 0.65f;
@@ -823,9 +827,17 @@ public class JonCharacterController : MonoBehaviour
         transform.position = ledgeHangPosition;
         isWallSliding = false;
 
-        bool wantsAway = movementVector.x * ledgeGrabDirection < -ledgeGrabInputThreshold;
+        float ledgeInput = movementVector.x * ledgeGrabDirection;
+        bool wantsForward = ledgeInput > ledgeGrabInputThreshold;
+        bool wantsAway = ledgeInput < -ledgeGrabInputThreshold;
         bool wantsDown = movementVector.y < -ledgeGrabInputThreshold;
         bool canPullUp = CanPullUpFromLedge();
+
+        if (canPullUp && ledgeGrabAutoPullUpWhenPressingForward && wantsForward)
+        {
+            StartLedgePullUp();
+            return true;
+        }
 
         if (HasBufferedJumpRequest())
         {
@@ -923,6 +935,25 @@ public class JonCharacterController : MonoBehaviour
         );
         RaycastHit2D topHit = Physics2D.Raycast(topOrigin, Vector2.down, ledgeTopRayDistance, ledgeMask);
         if (topHit.collider == null || topHit.normal.y < ledgeTopNormalMinY)
+        {
+            return false;
+        }
+
+        Vector2 secondTopOrigin = topOrigin + Vector2.right * direction * Mathf.Max(0f, ledgeTopProbeSpacing);
+        RaycastHit2D secondTopHit = Physics2D.Raycast(secondTopOrigin, Vector2.down, ledgeTopRayDistance, ledgeMask);
+        if (secondTopHit.collider == null ||
+            secondTopHit.normal.y < ledgeTopNormalMinY ||
+            Mathf.Abs(topHit.point.y - secondTopHit.point.y) > Mathf.Max(0f, ledgeTopHeightTolerance))
+        {
+            return false;
+        }
+
+        float clearanceSkin = Mathf.Max(0.01f, ledgeClearanceSkin);
+        Vector2 firstClearOrigin = topHit.point + Vector2.up * clearanceSkin;
+        Vector2 secondClearOrigin = secondTopHit.point + Vector2.up * clearanceSkin;
+        float upwardClearance = Mathf.Max(0.01f, bounds.size.y - clearanceSkin);
+        if (Physics2D.Raycast(firstClearOrigin, Vector2.up, upwardClearance, ledgeMask).collider != null ||
+            Physics2D.Raycast(secondClearOrigin, Vector2.up, upwardClearance, ledgeMask).collider != null)
         {
             return false;
         }
@@ -1142,6 +1173,11 @@ public class JonCharacterController : MonoBehaviour
         if (Mathf.Abs(movementVector.x) >= ledgeGrabInputThreshold)
         {
             return (int)Mathf.Sign(movementVector.x);
+        }
+
+        if (isDashButtonHeld && Mathf.Abs(rb.linearVelocity.x) >= Mathf.Max(0f, ledgeGrabDashVelocityThreshold))
+        {
+            return (int)Mathf.Sign(rb.linearVelocity.x);
         }
 
         if (ledgeGrabRequiresForwardInput)
@@ -1756,6 +1792,7 @@ public class JonCharacterController : MonoBehaviour
             bounds.max.y + ledgeTopProbeHeight,
             transform.position.z
         );
+        Vector3 secondTopOrigin = topOrigin + Vector3.right * direction * Mathf.Max(0f, ledgeTopProbeSpacing);
 
         Gizmos.color = Color.magenta;
         Gizmos.DrawLine(wallOrigin, wallOrigin + rayDirection * ledgeGrabForwardDistance);
@@ -1763,6 +1800,7 @@ public class JonCharacterController : MonoBehaviour
         Gizmos.DrawLine(clearOrigin, clearOrigin + rayDirection * ledgeGrabForwardDistance);
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(topOrigin, topOrigin + Vector3.down * ledgeTopRayDistance);
+        Gizmos.DrawLine(secondTopOrigin, secondTopOrigin + Vector3.down * ledgeTopRayDistance);
 
         if (isLedgeGrabbing)
         {
