@@ -62,6 +62,19 @@ public class JonCharacterController : MonoBehaviour
     private float canBeGroundedTime = 0f;
     //private float delayBeforeGrounded = 0.2f;
 
+    [Header("Run Dust")]
+    [Tooltip("Prefab template to spawn under the hero at runtime.")]
+    [SerializeField] private ParticleSystem runDustParticlePrefab;
+    [Tooltip("Optional live scene instance. Leave empty when using a prefab template.")]
+    [SerializeField] private ParticleSystem runDustParticles;
+    [SerializeField] private Vector2 runDustLocalOffset = new Vector2(0f, -0.55f);
+    [SerializeField] private float runDustMinSpeed = 0.25f;
+    [SerializeField] private float runDustParticlesPerSecond = 24f;
+    [SerializeField] private float runDustStartLifetime = 0.28f;
+    [SerializeField] private float runDustStartSize = 0.18f;
+    [SerializeField] private Color runDustColor = new Color(0.8f, 0.76f, 0.65f, 0.55f);
+    private float runDustEmissionAccumulator;
+
     [Header("Melee Attack")]
     [SerializeField] private Vector2 attackBoxSize = new Vector2(1.25f, 0.85f);
     [SerializeField] private Vector2 attackBoxOffset = new Vector2(0.9f, 0f);
@@ -213,6 +226,7 @@ public class JonCharacterController : MonoBehaviour
         rb.freezeRotation = true;
         lastGroundedPosition = transform.position;
         hasLastGroundedPosition = true;
+        SetupRunDustParticles();
 
         if (attackLayerMask == 0)
         {
@@ -239,6 +253,172 @@ public class JonCharacterController : MonoBehaviour
 
         //Debug.Log("Move input from character controller: " + move);
     }
+
+    private void SetupRunDustParticles()
+    {
+        ParticleSystem runDustTemplate = null;
+        if (runDustParticles != null && !runDustParticles.gameObject.scene.IsValid())
+        {
+            runDustTemplate = runDustParticles;
+            runDustParticles = null;
+        }
+
+        if (runDustParticles == null)
+        {
+            runDustTemplate = runDustTemplate != null ? runDustTemplate : runDustParticlePrefab;
+            if (runDustTemplate != null)
+            {
+                runDustParticles = Instantiate(runDustTemplate, transform);
+                runDustParticles.name = runDustTemplate.name;
+                runDustParticles.transform.localPosition = runDustLocalOffset;
+            }
+            else
+            {
+                GameObject dustObject = new GameObject("Run Dust Particles");
+                dustObject.transform.SetParent(transform, false);
+                dustObject.transform.localPosition = runDustLocalOffset;
+                runDustParticles = dustObject.AddComponent<ParticleSystem>();
+            }
+        }
+        else
+        {
+            if (runDustParticles.transform.parent != transform)
+            {
+                runDustParticles.transform.SetParent(transform, false);
+            }
+
+            runDustParticles.transform.localPosition = runDustLocalOffset;
+        }
+
+        ParticleSystem.MainModule main = runDustParticles.main;
+        main.loop = true;
+        main.playOnAwake = false;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startSpeed = 0f;
+        main.startLifetime = runDustStartLifetime;
+        main.startSize = runDustStartSize;
+        main.startColor = runDustColor;
+        main.gravityModifier = 0.15f;
+
+        ParticleSystem.EmissionModule emission = runDustParticles.emission;
+        emission.enabled = true;
+        emission.rateOverTime = 0f;
+
+        ParticleSystem.ShapeModule shape = runDustParticles.shape;
+        shape.enabled = false;
+
+        ParticleSystem.ColorOverLifetimeModule colorOverLifetime = runDustParticles.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient fadeGradient = new Gradient();
+        fadeGradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(runDustColor, 0f),
+                new GradientColorKey(runDustColor, 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(runDustColor.a, 0f),
+                new GradientAlphaKey(0f, 1f)
+            }
+        );
+        colorOverLifetime.color = new ParticleSystem.MinMaxGradient(fadeGradient);
+
+        ParticleSystemRenderer renderer = runDustParticles.GetComponent<ParticleSystemRenderer>();
+        Material defaultParticleMaterial = Resources.GetBuiltinResource<Material>("Default-ParticleSystem.mat");
+        if (defaultParticleMaterial != null)
+        {
+            renderer.sharedMaterial = defaultParticleMaterial;
+        }
+
+        renderer.sortingLayerName = "Foreground";
+        renderer.sortingOrder = 2;
+
+        runDustParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
+
+    private void UpdateRunDustEffect()
+    {
+        if (!ShouldPlayRunDustEffect())
+        {
+            StopRunDustEffect();
+            return;
+        }
+
+        if (!runDustParticles.isPlaying)
+        {
+            runDustParticles.Play();
+        }
+
+        float speedPercent = Mathf.Clamp01(Mathf.Abs(rb.linearVelocity.x) / Mathf.Max(0.01f, movementSpeed));
+        runDustEmissionAccumulator += runDustParticlesPerSecond * speedPercent * Time.fixedDeltaTime;
+
+        int particleCount = Mathf.Min(4, Mathf.FloorToInt(runDustEmissionAccumulator));
+        if (particleCount <= 0)
+        {
+            return;
+        }
+
+        runDustEmissionAccumulator -= particleCount;
+
+        for (int i = 0; i < particleCount; i++)
+        {
+            EmitRunDustParticle();
+        }
+    }
+
+    private bool ShouldPlayRunDustEffect()
+    {
+        return runDustParticles != null &&
+            isGrounded &&
+            !isSwimming &&
+            !isDashing &&
+            !isAttacking &&
+            !isGettingHit &&
+            !isLedgeGrabbing &&
+            !isLedgePullingUp &&
+            Mathf.Abs(rb.linearVelocity.x) >= runDustMinSpeed;
+    }
+
+    private void EmitRunDustParticle()
+    {
+        float horizontalDirection = Mathf.Sign(rb.linearVelocity.x);
+        if (horizontalDirection == 0f)
+        {
+            horizontalDirection = GetSpriteFacingDirection();
+        }
+
+        Vector3 emitPosition = transform.TransformPoint(runDustLocalOffset);
+        emitPosition.x += Random.Range(-0.08f, 0.08f);
+        emitPosition.y += Random.Range(-0.02f, 0.03f);
+
+        ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams
+        {
+            position = emitPosition,
+            velocity = new Vector3(
+                -horizontalDirection * Random.Range(0.45f, 1.2f),
+                Random.Range(0.15f, 0.55f),
+                0f
+            ),
+            startLifetime = Random.Range(runDustStartLifetime * 0.75f, runDustStartLifetime * 1.25f),
+            startSize = Random.Range(runDustStartSize * 0.75f, runDustStartSize * 1.35f),
+            startColor = runDustColor,
+            rotation = Random.Range(0f, 360f)
+        };
+
+        runDustParticles.Emit(emitParams, 1);
+    }
+
+    private void StopRunDustEffect()
+    {
+        runDustEmissionAccumulator = 0f;
+
+        if (runDustParticles != null && runDustParticles.isPlaying)
+        {
+            runDustParticles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+    }
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -246,6 +426,11 @@ public class JonCharacterController : MonoBehaviour
         {
             animator = GetComponent<Animator>();
         }
+    }
+
+    private void OnDisable()
+    {
+        StopRunDustEffect();
     }
 
     // Update is called once per frame
@@ -283,6 +468,7 @@ public class JonCharacterController : MonoBehaviour
 
         if (isLedgePullingUp)
         {
+            StopRunDustEffect();
             return;
         }
 
@@ -290,11 +476,13 @@ public class JonCharacterController : MonoBehaviour
         {
             if (UpdateLedgeGrabState())
             {
+                StopRunDustEffect();
                 return;
             }
         }
         else if (TryStartLedgeGrab())
         {
+            StopRunDustEffect();
             return;
         }
 
@@ -419,6 +607,8 @@ public class JonCharacterController : MonoBehaviour
                 transform.localScale = localScale;
             }
         }
+
+        UpdateRunDustEffect();
     }
 
     public void Jump()

@@ -259,7 +259,7 @@ MonoBehaviour:
   dashDuration: 0.2
   dashCooldown: 0.1
   dashAirCarryDecay: 4
-  dashHeldSpeedMultiplier: 1.7
+  dashHeldSpeedMultiplier: 1.4
   dashHeldInputThreshold: 0.5
   dashHeldGroundedCarryTime: 0.25
   jumpCutMultiplier: 0.5
@@ -269,6 +269,14 @@ MonoBehaviour:
   canDash: 1
   canDoubleJump: 1
   canWallJump: 1
+  runDustParticlePrefab: {fileID: 1954232284038183574, guid: f63e3ceeda349154fa5e7d42ec0f204a, type: 3}
+  runDustParticles: {fileID: 0}
+  runDustLocalOffset: {x: 0, y: -1.74}
+  runDustMinSpeed: 0
+  runDustParticlesPerSecond: 48
+  runDustStartLifetime: 1.5
+  runDustStartSize: 1
+  runDustColor: {r: 0.8, g: 0.76, b: 0.65, a: 0.55}
   attackBoxSize: {x: 3.2, y: 1.5}
   attackBoxOffset: {x: 1.5, y: -0.4}
   attackLayerMask:
