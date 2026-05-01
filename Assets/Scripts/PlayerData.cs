@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,6 +16,7 @@ public static class PlayerData
     public static int Energy { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
     public static IReadOnlyDictionary<string, int> InventoryItems => inventoryItems;
+    public static event Action PlayerDied;
 
     private static readonly Dictionary<string, int> inventoryItems = new Dictionary<string, int>();
     private static float nextAllowedHpRemovalTime = 0f;
@@ -79,6 +81,7 @@ public static class PlayerData
         inventoryItems.Clear();
         nextAllowedHpRemovalTime = 0f;
         physicsPauseRunner = null;
+        PlayerDied = null;
     }
 
     public static void RemoveHP(int amount = 1)
@@ -89,9 +92,14 @@ public static class PlayerData
             return;
 
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
+        int previousHp = HP;
         HP -= amount;
         HP = Mathf.Max(HP, 0);
         PausePhysicsAfterHpRemoval();
+        if (previousHp > 0 && HP <= 0)
+        {
+            PlayerDied?.Invoke();
+        }
 //        Debug.Log("Player HP: " + HP);
 
     }
@@ -132,7 +140,7 @@ public static class PlayerData
 
         GameObject runnerObject = new GameObject("PlayerDataPhysicsPauseRunner");
         runnerObject.hideFlags = HideFlags.HideInHierarchy;
-        Object.DontDestroyOnLoad(runnerObject);
+        UnityEngine.Object.DontDestroyOnLoad(runnerObject);
         physicsPauseRunner = runnerObject.AddComponent<PhysicsPauseRunner>();
         return physicsPauseRunner;
     }

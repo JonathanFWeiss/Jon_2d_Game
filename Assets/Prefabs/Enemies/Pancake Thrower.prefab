@@ -361,8 +361,8 @@ MonoBehaviour:
   windupDuration: 0.5
   throwSpeed: 15
   projectileSpawnOffset: 0.25
-  throwCooldown: 5
-  projectileLifetime: 6
+  throwCooldown: 3
+  projectileLifetime: 10
   projectileGravityScale: 0
   throwAnimationState: ThrowerThrow
   idleAnimationState: ThrowerIdle
