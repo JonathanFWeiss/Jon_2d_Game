@@ -68,6 +68,11 @@ public class EnemyGauntletRoom : MonoBehaviour
     private bool isComplete;
     private bool warnedMissingUiDocument;
 
+    private void OnValidate()
+    {
+        LogLiveSceneEnemyPrefabReferenceError();
+    }
+
     private void Reset()
     {
         EnsureTriggerCollider();
@@ -75,6 +80,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void Awake()
     {
+        ThrowIfLiveSceneEnemyPrefabReferencesExist();
         EnsureTriggerCollider();
         ResolveSpawnArea();
     }
@@ -115,6 +121,8 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void StartGauntlet()
     {
+        ThrowIfLiveSceneEnemyPrefabReferencesExist();
+
         isRunning = true;
         currentWaveIndex = -1;
         defeatedEnemyCount = 0;
@@ -252,6 +260,72 @@ public class EnemyGauntletRoom : MonoBehaviour
         }
 
         return enemyCount;
+    }
+
+    private void LogLiveSceneEnemyPrefabReferenceError()
+    {
+        string errorMessage = BuildLiveSceneEnemyPrefabReferenceErrorMessage();
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            Debug.LogError(errorMessage, this);
+        }
+    }
+
+    private void ThrowIfLiveSceneEnemyPrefabReferencesExist()
+    {
+        string errorMessage = BuildLiveSceneEnemyPrefabReferenceErrorMessage();
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            throw new InvalidOperationException(errorMessage);
+        }
+    }
+
+    private string BuildLiveSceneEnemyPrefabReferenceErrorMessage()
+    {
+        if (waves == null)
+            return null;
+
+        List<string> invalidReferences = null;
+
+        for (int waveIndex = 0; waveIndex < waves.Count; waveIndex++)
+        {
+            EnemyWave wave = waves[waveIndex];
+            if (wave == null || wave.Enemies == null)
+                continue;
+
+            for (int enemySpawnIndex = 0; enemySpawnIndex < wave.Enemies.Count; enemySpawnIndex++)
+            {
+                EnemySpawn enemySpawn = wave.Enemies[enemySpawnIndex];
+                GameObject enemyPrefab = enemySpawn?.EnemyPrefab;
+
+                if (!IsLiveSceneObject(enemyPrefab))
+                    continue;
+
+                if (invalidReferences == null)
+                {
+                    invalidReferences = new List<string>();
+                }
+
+                invalidReferences.Add(
+                    $"waves[{waveIndex}].enemies[{enemySpawnIndex}] references " +
+                    $"scene object '{enemyPrefab.name}' from scene '{enemyPrefab.scene.name}'"
+                );
+            }
+        }
+
+        if (invalidReferences == null || invalidReferences.Count == 0)
+            return null;
+
+        return
+            $"{nameof(EnemyGauntletRoom)} on '{name}' has live scene objects assigned " +
+            "to enemyPrefab slots. Assign prefab assets instead so killed scene enemies " +
+            "cannot remove enemies from the gauntlet spawn list.\n" +
+            string.Join("\n", invalidReferences);
+    }
+
+    private static bool IsLiveSceneObject(GameObject gameObject)
+    {
+        return gameObject != null && gameObject.scene.IsValid();
     }
 
     private void ResolveSpawnPose(

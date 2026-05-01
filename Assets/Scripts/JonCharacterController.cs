@@ -325,11 +325,11 @@ public class JonCharacterController : MonoBehaviour
         colorOverLifetime.color = new ParticleSystem.MinMaxGradient(fadeGradient);
 
         ParticleSystemRenderer renderer = runDustParticles.GetComponent<ParticleSystemRenderer>();
-        Material defaultParticleMaterial = Resources.GetBuiltinResource<Material>("Default-ParticleSystem.mat");
-        if (defaultParticleMaterial != null)
-        {
-            renderer.sharedMaterial = defaultParticleMaterial;
-        }
+        // Material defaultParticleMaterial = Resources.GetBuiltinResource<Material>("Default-ParticleSystem.mat");
+        // if (defaultParticleMaterial != null)
+        // {
+        //     renderer.sharedMaterial = defaultParticleMaterial;
+        // }
 
         renderer.sortingLayerName = "Foreground";
         renderer.sortingOrder = 2;
