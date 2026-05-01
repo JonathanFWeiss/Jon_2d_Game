@@ -988,14 +988,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: 'Jetpack Pancake '
       objectReference: {fileID: 0}
-    - target: {fileID: 4159538567488080009, guid: c3a72547a10d1c44ea5cf4478197e8e5, type: 3}
-      propertyPath: groundMask.m_Bits
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 4159538567488080009, guid: c3a72547a10d1c44ea5cf4478197e8e5, type: 3}
-      propertyPath: fallbackCeilingDistance
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 7520078894344609930, guid: c3a72547a10d1c44ea5cf4478197e8e5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -62.6
@@ -17888,19 +17880,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8570403065870268929, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: m_Size.x
-      value: 16.694386
+      value: 16.862942
       objectReference: {fileID: 0}
     - target: {fileID: 8570403065870268929, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: m_Size.y
-      value: 10.636097
+      value: 10.695631
       objectReference: {fileID: 0}
     - target: {fileID: 8570403065870268929, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: m_Offset.x
-      value: 2.0647411
+      value: 2.1490192
       objectReference: {fileID: 0}
     - target: {fileID: 8570403065870268929, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: m_Offset.y
-      value: 1.2222788
+      value: 1.1925116
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
