@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3931795783097172615
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2598199185566539303}
+  m_Layer: 8
+  m_Name: FlameSource
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2598199185566539303
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3931795783097172615}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7520078894344609930}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4059959933960952876
 GameObject:
   m_ObjectHideFlags: 0
@@ -32,7 +63,8 @@ Transform:
   m_LocalPosition: {x: -70.47785, y: 7.809087, z: 0}
   m_LocalScale: {x: 0.2, y: 0.2, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2598199185566539303}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5405021645061645628
@@ -177,7 +209,7 @@ MonoBehaviour:
   contactDamageCooldown: 1
   playerLayerMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   contactPushbackImpulse: {x: 6, y: 6}
   coinPrefab: {fileID: 0}
   coinDropCount: 0
@@ -190,23 +222,33 @@ MonoBehaviour:
   aimDuration: 1
   randomMoveDuration: 2
   upwardRetreatDuration: 1
+  uprightTurnDuration: 0.25
   hitStunDuration: 0.35
-  groundCollisionRecoveryDuration: 0.5
-  groundCollisionRecoverySpeed: 1
+  groundCollisionRecoveryDuration: 0.25
+  groundCollisionRecoverySpeed: 4
+  groundDirectionProbeDistance: 2
   groundAvoidanceDistance: 0.5
-  groundAvoidanceDuration: 0.5
+  groundAvoidanceDuration: 0.25
   randomMoveSpeed: 1
   chargeAcceleration: 20
   maxChargeSpeed: 10
-  maxChargeDuration: 5
+  maxChargeDuration: 6
   ceilingRetreatFraction: 0.5
   fallbackCeilingDistance: 4
   raycastOrigin: {fileID: 0}
   groundMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   lineOfSightBlockerMask:
     serializedVersion: 2
     m_Bits: 0
   ceilingRaycastDistance: 12
   spriteForwardAngleOffset: 0
+  rocketTrailParticlePrefab: {fileID: 0}
+  rocketTrailParticles: {fileID: 1954232284038183574, guid: 94cd73f573f4d1d448d76f1ec93bddf0, type: 3}
+  particleOrigin: {fileID: 2598199185566539303}
+  rocketTrailMinSpeed: 1
+  rocketTrailParticlesPerSecond: 100
+  rocketTrailStartLifetime: 0.32
+  rocketTrailStartSize: 0.5
+  rocketTrailColor: {r: 1, g: 0.65, b: 0.22, a: 0.65}

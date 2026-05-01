@@ -85,6 +85,31 @@ public class RocketPack : FlyingEnemy
     [Tooltip("Degrees added after aligning the enemy's local up vector to its flight direction.")]
     public float spriteForwardAngleOffset = 0f;
 
+    [Header("Rocket Pack Particles")]
+    [Tooltip("Prefab template to spawn for the rocket trail at runtime.")]
+    public ParticleSystem rocketTrailParticlePrefab;
+
+    [Tooltip("Optional live scene instance. Leave empty when using a prefab template.")]
+    public ParticleSystem rocketTrailParticles;
+
+    [Tooltip("Optional transform used as the rocket trail emission origin. If empty, this enemy's transform is used.")]
+    public Transform particleOrigin;
+
+    [Tooltip("Minimum Rigidbody2D speed required before the rocket trail emits.")]
+    public float rocketTrailMinSpeed = 0.1f;
+
+    [Tooltip("How many rocket trail particles are emitted per second while moving.")]
+    public float rocketTrailParticlesPerSecond = 36f;
+
+    [Tooltip("How long each rocket trail particle lives.")]
+    public float rocketTrailStartLifetime = 0.32f;
+
+    [Tooltip("Base size for each rocket trail particle.")]
+    public float rocketTrailStartSize = 0.18f;
+
+    [Tooltip("Tint applied to emitted rocket trail particles.")]
+    public Color rocketTrailColor = new Color(1f, 0.65f, 0.22f, 0.65f);
+
     private RocketPackState currentState;
     private Transform playerTransform;
     private Collider2D bodyCollider;
@@ -100,10 +125,12 @@ public class RocketPack : FlyingEnemy
     private Quaternion aimTargetRotation;
     private Quaternion uprightStartRotation;
     private Quaternion uprightTargetRotation;
+    private float rocketTrailEmissionAccumulator;
 
     private void Reset()
     {
         moveSpeed = 0f;
+        particleOrigin = transform;
     }
 
     protected override void Awake()
@@ -111,8 +138,21 @@ public class RocketPack : FlyingEnemy
         base.Awake();
 
         bodyCollider = GetComponent<Collider2D>();
+        SetupRocketTrailParticles();
         InitializeMasks();
         EnterIdle();
+    }
+
+    protected override void FixedUpdate()
+    {
+        if (isDead)
+        {
+            StopRocketTrailEffect();
+            return;
+        }
+
+        base.FixedUpdate();
+        UpdateRocketTrailEffect();
     }
 
     protected override void Move()
@@ -147,6 +187,11 @@ public class RocketPack : FlyingEnemy
                 UpdateRetreatUp();
                 break;
         }
+    }
+
+    private void OnDisable()
+    {
+        StopRocketTrailEffect();
     }
 
     public override void TakeDamage(int amount)
@@ -233,6 +278,170 @@ public class RocketPack : FlyingEnemy
         {
             lineOfSightBlockerMask = groundMask;
         }
+    }
+
+    private void SetupRocketTrailParticles()
+    {
+        ParticleSystem rocketTrailTemplate = null;
+        if (rocketTrailParticles != null && !rocketTrailParticles.gameObject.scene.IsValid())
+        {
+            rocketTrailTemplate = rocketTrailParticles;
+            rocketTrailParticles = null;
+        }
+
+        Transform emitterParent = GetRocketTrailParent();
+
+        if (rocketTrailParticles == null)
+        {
+            rocketTrailTemplate = rocketTrailTemplate != null ? rocketTrailTemplate : rocketTrailParticlePrefab;
+            if (rocketTrailTemplate != null)
+            {
+                rocketTrailParticles = Instantiate(rocketTrailTemplate, emitterParent);
+                rocketTrailParticles.name = rocketTrailTemplate.name;
+                rocketTrailParticles.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                GameObject trailObject = new GameObject("Rocket Trail Particles");
+                trailObject.transform.SetParent(emitterParent, false);
+                trailObject.transform.localPosition = Vector3.zero;
+                rocketTrailParticles = trailObject.AddComponent<ParticleSystem>();
+            }
+        }
+        else
+        {
+            if (rocketTrailParticles.transform.parent != emitterParent)
+            {
+                rocketTrailParticles.transform.SetParent(emitterParent, false);
+            }
+
+            rocketTrailParticles.transform.localPosition = Vector3.zero;
+        }
+
+        ParticleSystem.MainModule main = rocketTrailParticles.main;
+        main.loop = true;
+        main.playOnAwake = false;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startSpeed = 0f;
+        main.startLifetime = rocketTrailStartLifetime;
+        main.startSize = rocketTrailStartSize;
+        main.startColor = rocketTrailColor;
+        main.gravityModifier = 0.05f;
+
+        ParticleSystem.EmissionModule emission = rocketTrailParticles.emission;
+        emission.enabled = true;
+        emission.rateOverTime = 0f;
+
+        ParticleSystem.ShapeModule shape = rocketTrailParticles.shape;
+        shape.enabled = false;
+
+        ParticleSystem.ColorOverLifetimeModule colorOverLifetime = rocketTrailParticles.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient fadeGradient = new Gradient();
+        fadeGradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(rocketTrailColor, 0f),
+                new GradientColorKey(rocketTrailColor, 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(rocketTrailColor.a, 0f),
+                new GradientAlphaKey(0f, 1f)
+            }
+        );
+        colorOverLifetime.color = new ParticleSystem.MinMaxGradient(fadeGradient);
+
+        ParticleSystemRenderer renderer = rocketTrailParticles.GetComponent<ParticleSystemRenderer>();
+        if (renderer != null)
+        {
+            renderer.sortingLayerName = "Foreground";
+            renderer.sortingOrder = 2;
+        }
+
+        rocketTrailParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
+
+    private void UpdateRocketTrailEffect()
+    {
+        if (!ShouldPlayRocketTrailEffect(out Vector2 velocity))
+        {
+            StopRocketTrailEffect();
+            return;
+        }
+
+        if (!rocketTrailParticles.isPlaying)
+        {
+            rocketTrailParticles.Play();
+        }
+
+        rocketTrailEmissionAccumulator += rocketTrailParticlesPerSecond * Time.fixedDeltaTime;
+
+        int particleCount = Mathf.Min(6, Mathf.FloorToInt(rocketTrailEmissionAccumulator));
+        if (particleCount <= 0)
+        {
+            return;
+        }
+
+        rocketTrailEmissionAccumulator -= particleCount;
+
+        for (int i = 0; i < particleCount; i++)
+        {
+            EmitRocketTrailParticle(velocity);
+        }
+    }
+
+    private bool ShouldPlayRocketTrailEffect(out Vector2 velocity)
+    {
+        velocity = rb2d != null ? rb2d.linearVelocity : Vector2.zero;
+
+        return rocketTrailParticles != null &&
+            velocity.sqrMagnitude >= rocketTrailMinSpeed * rocketTrailMinSpeed;
+    }
+
+    private void EmitRocketTrailParticle(Vector2 velocity)
+    {
+        Vector2 movementDirection = velocity.normalized;
+        Vector2 sideDirection = new Vector2(-movementDirection.y, movementDirection.x);
+        Vector3 emitPosition = GetRocketTrailOriginPosition();
+        emitPosition += (Vector3)(sideDirection * Random.Range(-0.05f, 0.05f));
+        emitPosition += (Vector3)(-movementDirection * Random.Range(0f, 0.08f));
+
+        ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams
+        {
+            position = emitPosition,
+            velocity = new Vector3(
+                -movementDirection.x * Random.Range(0.8f, 2.2f) + sideDirection.x * Random.Range(-0.35f, 0.35f),
+                -movementDirection.y * Random.Range(0.8f, 2.2f) + sideDirection.y * Random.Range(-0.35f, 0.35f),
+                0f
+            ),
+            startLifetime = Random.Range(rocketTrailStartLifetime * 0.75f, rocketTrailStartLifetime * 1.25f),
+            startSize = Random.Range(rocketTrailStartSize * 0.75f, rocketTrailStartSize * 1.35f),
+            startColor = rocketTrailColor,
+            rotation = Random.Range(0f, 360f)
+        };
+
+        rocketTrailParticles.Emit(emitParams, 1);
+    }
+
+    private void StopRocketTrailEffect()
+    {
+        rocketTrailEmissionAccumulator = 0f;
+
+        if (rocketTrailParticles != null && rocketTrailParticles.isPlaying)
+        {
+            rocketTrailParticles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+    }
+
+    private Transform GetRocketTrailParent()
+    {
+        return particleOrigin != null ? particleOrigin : transform;
+    }
+
+    private Vector3 GetRocketTrailOriginPosition()
+    {
+        return particleOrigin != null ? particleOrigin.position : transform.position;
     }
 
     private void EnterIdle()

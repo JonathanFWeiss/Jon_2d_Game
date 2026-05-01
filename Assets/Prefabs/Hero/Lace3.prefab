@@ -265,7 +265,7 @@ MonoBehaviour:
   jumpCutMultiplier: 0.5
   maxFallSpeed: 20
   coyoteTime: 0.5
-  jumpBufferTime: 2
+  jumpBufferTime: 0.2
   canDash: 1
   canDoubleJump: 1
   canWallJump: 1
