@@ -196,6 +196,12 @@ public class GameMaster : MonoBehaviour
         return false;
     }
 
+    public void SetFallbackRespawnPosition(Vector3 newRespawnPosition)
+    {
+        fallbackRespawnPosition = newRespawnPosition;
+        hasFallbackRespawnPosition = true;
+    }
+
     public bool TrySetCheckpointRespawnPosition(Vector3 newRespawnPosition, float minimumDistance = 0f)
     {
         if (minimumDistance > 0f &&
