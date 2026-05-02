@@ -227,11 +227,19 @@ public class JonCharacterController : MonoBehaviour
         lastGroundedPosition = transform.position;
         hasLastGroundedPosition = true;
         SetupRunDustParticles();
+        SyncAbilityUnlocksFromInventory();
 
         if (attackLayerMask == 0)
         {
             attackLayerMask = LayerMask.GetMask("Player", "NPCs", "Enemy");
         }
+    }
+
+    private void SyncAbilityUnlocksFromInventory()
+    {
+        CanDash = PlayerData.HasInventoryItem(PlayerData.DashPickupItemName);
+        CanDoubleJump = PlayerData.HasInventoryItem(PlayerData.DoubleJumpPickupItemName);
+        CanWallJump = PlayerData.HasInventoryItem(PlayerData.WallJumpPickupItemName);
     }
 
     public void Move(Vector2 move)
