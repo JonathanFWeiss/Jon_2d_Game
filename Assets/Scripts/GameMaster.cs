@@ -10,6 +10,9 @@ public class GameMaster : MonoBehaviour
 {
     private const string DeathMessageText = "Try Again!";
     private const string DeathMessageLabelName = "DeathMessage";
+    private const string PauseMenuText = "paused";
+    private const string PauseMenuRootName = "PauseMenu";
+    private const string PauseMenuLabelName = "PauseMenuLabel";
     private const string HeartIconsRootName = "HeartIcons";
     private const float HeartIconSpacing = 1f;
 
@@ -23,7 +26,8 @@ public class GameMaster : MonoBehaviour
         "Attack",
         "JumpCut",
         "Pogo",
-        "UpSlash"
+        "UpSlash",
+        "Spell"
     };
     private static readonly string[] JonCharacterInputRequestFieldNames =
     {
@@ -66,12 +70,17 @@ public class GameMaster : MonoBehaviour
     private bool warnedMissingPlayer;
     private bool warnedMissingHeartIconPrefab;
     private bool warnedMissingMainCamera;
+    private bool warnedMissingPauseAction;
     private bool isRespawningPlayer;
+    private bool isPaused;
+    private bool pauseActionEnabledByGameMaster;
+    private float timeScaleBeforePause = 1f;
     private Vector3 checkpointRespawnPosition;
     private bool hasCheckpointRespawnPosition;
     private Vector3 fallbackRespawnPosition;
     private bool hasFallbackRespawnPosition;
     private Transform heartIconsRoot;
+    private InputAction pauseAction;
     public Animator transitionAnim;
 
     private void Awake()
@@ -84,8 +93,20 @@ public class GameMaster : MonoBehaviour
         Application.targetFrameRate = 60;
     }
 
+    private void OnEnable()
+    {
+        SubscribePauseAction();
+    }
+
     private void OnDisable()
     {
+        UnsubscribePauseAction();
+
+        if (isPaused)
+        {
+            SetPaused(false);
+        }
+
         if (isRespawningPlayer)
         {
             SetPlayerInputEnabled(true);
@@ -94,6 +115,11 @@ public class GameMaster : MonoBehaviour
 
     private void Update()
     {
+        if (pauseAction == null)
+        {Debug.LogWarning("Trying to pause.");
+            SubscribePauseAction();
+        }
+
         ResolvePlayer();
 
         if (!isRespawningPlayer && PlayerData.HP <= 0)
@@ -111,6 +137,92 @@ public class GameMaster : MonoBehaviour
         }
 
         RefreshCounters();
+    }
+
+    private void SubscribePauseAction()
+    {
+        if (pauseAction != null)
+            return;
+
+        InputActionAsset inputActions = InputSystem.actions;
+        if (inputActions == null)
+        {
+            WarnMissingPauseAction();
+            return;
+        }
+
+        pauseAction = inputActions.FindAction("Pause", throwIfNotFound: false);
+        if (pauseAction == null)
+        {
+            WarnMissingPauseAction();
+            return;
+        }
+
+        pauseAction.performed += OnPausePerformed;
+
+        pauseActionEnabledByGameMaster = !pauseAction.enabled;
+        if (pauseActionEnabledByGameMaster)
+        {
+            pauseAction.Enable();
+        }
+    }
+
+    private void UnsubscribePauseAction()
+    {
+        if (pauseAction == null)
+            return;
+
+        pauseAction.performed -= OnPausePerformed;
+
+        if (pauseActionEnabledByGameMaster)
+        {
+            pauseAction.Disable();
+        }
+
+        pauseAction = null;
+        pauseActionEnabledByGameMaster = false;
+    }
+
+    private void WarnMissingPauseAction()
+    {
+        if (warnedMissingPauseAction)
+            return;
+
+        warnedMissingPauseAction = true;
+        Debug.LogWarning("GameMaster could not find an Input Action named 'Pause' in InputSystem.actions.");
+    }
+
+    private void OnPausePerformed(InputAction.CallbackContext context)
+    {
+        if (isRespawningPlayer || PlayerData.HP <= 0)
+            return;
+
+        SetPaused(!isPaused);
+    }
+
+    private void SetPaused(bool shouldPause)
+    {
+        if (isPaused == shouldPause)
+            return;
+
+        isPaused = shouldPause;
+
+        if (isPaused)
+        {
+            timeScaleBeforePause = Time.timeScale > 0f ? Time.timeScale : 1f;
+            Time.timeScale = 0f;
+            SetPlayerInputEnabled(false);
+            ShowPauseMenu();
+            return;
+        }
+
+        Time.timeScale = timeScaleBeforePause > 0f ? timeScaleBeforePause : 1f;
+        HidePauseMenu();
+
+        if (!isRespawningPlayer)
+        {
+            SetPlayerInputEnabled(true);
+        }
     }
 
     private void ResolveUiDocument()
@@ -426,6 +538,60 @@ public class GameMaster : MonoBehaviour
         root.Add(deathMessage);
     }
 
+    private void ShowPauseMenu()
+    {
+        ResolveUiDocument();
+        if (uiDocument == null)
+            return;
+
+        VisualElement root = uiDocument.rootVisualElement;
+        if (root == null)
+            return;
+
+        VisualElement existingMenu = root.Q<VisualElement>(PauseMenuRootName);
+        if (existingMenu != null)
+        {
+            existingMenu.RemoveFromHierarchy();
+        }
+
+        VisualElement pauseMenu = new VisualElement
+        {
+            name = PauseMenuRootName,
+            pickingMode = PickingMode.Ignore
+        };
+
+        pauseMenu.style.position = Position.Absolute;
+        pauseMenu.style.top = 0f;
+        pauseMenu.style.left = 0f;
+        pauseMenu.style.right = 0f;
+        pauseMenu.style.bottom = 0f;
+        pauseMenu.style.alignItems = Align.Center;
+        pauseMenu.style.justifyContent = Justify.Center;
+
+        Label pausedLabel = new Label(PauseMenuText)
+        {
+            name = PauseMenuLabelName,
+            pickingMode = PickingMode.Ignore
+        };
+
+        pausedLabel.style.paddingLeft = 18f;
+        pausedLabel.style.paddingRight = 18f;
+        pausedLabel.style.paddingTop = 10f;
+        pausedLabel.style.paddingBottom = 10f;
+        pausedLabel.style.backgroundColor = new Color(0f, 0f, 0f, 0.72f);
+        pausedLabel.style.color = Color.white;
+        pausedLabel.style.fontSize = 22f;
+        pausedLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+        pausedLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+        pausedLabel.style.borderTopLeftRadius = 8f;
+        pausedLabel.style.borderTopRightRadius = 8f;
+        pausedLabel.style.borderBottomLeftRadius = 8f;
+        pausedLabel.style.borderBottomRightRadius = 8f;
+
+        pauseMenu.Add(pausedLabel);
+        root.Add(pauseMenu);
+    }
+
     private void HideDeathMessage()
     {
         if (uiDocument == null)
@@ -439,6 +605,22 @@ public class GameMaster : MonoBehaviour
         if (existingMessage != null)
         {
             existingMessage.RemoveFromHierarchy();
+        }
+    }
+
+    private void HidePauseMenu()
+    {
+        if (uiDocument == null)
+            return;
+
+        VisualElement root = uiDocument.rootVisualElement;
+        if (root == null)
+            return;
+
+        VisualElement existingMenu = root.Q<VisualElement>(PauseMenuRootName);
+        if (existingMenu != null)
+        {
+            existingMenu.RemoveFromHierarchy();
         }
     }
 

@@ -23,5 +23,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Castle2.unity
     guid: 4647873a5430f3b4cba63cab057d029f
+  - enabled: 1
+    path: Assets/Castle3.unity
+    guid: 557a62e0a8529574b90d0d7a40e545bd
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
