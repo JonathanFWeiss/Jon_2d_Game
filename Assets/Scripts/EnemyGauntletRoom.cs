@@ -75,6 +75,10 @@ public class EnemyGauntletRoom : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float spawnBlockerPadding = 0.05f;
 
+    [Header("Persistence")]
+    [Tooltip("Optional stable completion key. If left empty, scene, bounds, and object hierarchy keys are used.")]
+    [SerializeField] private string completionLogKey;
+
     [Header("UI")]
     [Tooltip("If left empty, the first UIDocument in the scene is used.")]
     [SerializeField] private UIDocument uiDocument;
@@ -114,6 +118,7 @@ public class EnemyGauntletRoom : MonoBehaviour
         ResolveSpawnArea();
         ThrowIfLiveSceneEnemyPrefabReferencesExist();
         ThrowIfGauntletBoundsIntersectGroundColliders();
+        ApplyLoggedCompletionIfNeeded();
     }
 
     private void OnEnable()
@@ -306,6 +311,7 @@ public class EnemyGauntletRoom : MonoBehaviour
         isComplete = true;
         activeEnemyBoundsCheckUpdateCounter = 0;
 
+        LogGauntletCompletion();
         DestroyDoors();
         RemoveCounterLabel();
     }
@@ -319,9 +325,128 @@ public class EnemyGauntletRoom : MonoBehaviour
         {
             if (door != null)
             {
+                door.SetActive(false);
                 Destroy(door);
             }
         }
+    }
+
+    private void ApplyLoggedCompletionIfNeeded()
+    {
+        if (!IsGauntletCompletionLogged())
+            return;
+
+        isRunning = false;
+        isComplete = true;
+        currentWaveIndex = -1;
+        defeatedEnemyCount = 0;
+        totalEnemyCount = 0;
+        nextSpawnPointIndex = 0;
+        activeEnemyBoundsCheckUpdateCounter = 0;
+        playerTransform = null;
+        DestroyActiveWaveEnemies();
+
+        Debug.Log(
+            $"{nameof(EnemyGauntletRoom)} on '{name}' was already completed; restoring completed state.",
+            this
+        );
+        DestroyDoors();
+        RemoveCounterLabel();
+    }
+
+    private void LogGauntletCompletion()
+    {
+        List<string> keys = GetCompletionLogKeys();
+        int addedCount = PlayerData.MarkGauntletCompleted(keys);
+        if (addedCount > 0)
+        {
+            Debug.Log(
+                $"{nameof(EnemyGauntletRoom)} on '{name}' successfully completed and logged as " +
+                $"'{GetPrimaryCompletionLogKey(keys)}'.",
+                this
+            );
+        }
+    }
+
+    private bool IsGauntletCompletionLogged()
+    {
+        return PlayerData.HasCompletedGauntlet(GetCompletionLogKeys());
+    }
+
+    private List<string> GetCompletionLogKeys()
+    {
+        List<string> keys = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(completionLogKey))
+        {
+            AddCompletionLogKey(keys, completionLogKey.Trim());
+        }
+
+        UnityEngine.SceneManagement.Scene scene = gameObject.scene;
+        string sceneName = !string.IsNullOrWhiteSpace(scene.name)
+            ? scene.name
+            : "UnloadedScene";
+        string scenePath = !string.IsNullOrWhiteSpace(scene.path)
+            ? scene.path
+            : sceneName;
+        string hierarchyKey = GetTransformPath(transform);
+        string positionKey = GetPositionCompletionKey();
+
+        AddCompletionLogKey(keys, $"{sceneName}/{positionKey}");
+        AddCompletionLogKey(keys, $"{scenePath}/{positionKey}");
+        AddCompletionLogKey(keys, $"{sceneName}/{hierarchyKey}");
+        AddCompletionLogKey(keys, $"{scenePath}/{hierarchyKey}");
+
+        return keys;
+    }
+
+    private static void AddCompletionLogKey(List<string> keys, string key)
+    {
+        if (keys == null || string.IsNullOrWhiteSpace(key) || keys.Contains(key))
+            return;
+
+        keys.Add(key);
+    }
+
+    private static string GetPrimaryCompletionLogKey(List<string> keys)
+    {
+        return keys != null && keys.Count > 0
+            ? keys[0]
+            : "UnknownGauntlet";
+    }
+
+    private string GetPositionCompletionKey()
+    {
+        Collider2D boundsSource = GetResolvedSpawnArea();
+        Bounds bounds = boundsSource != null
+            ? boundsSource.bounds
+            : new Bounds(transform.position, Vector3.zero);
+
+        return
+            $"{name}@" +
+            $"center({FormatCompletionCoordinate(bounds.center.x)}," +
+            $"{FormatCompletionCoordinate(bounds.center.y)})/" +
+            $"size({FormatCompletionCoordinate(bounds.size.x)}," +
+            $"{FormatCompletionCoordinate(bounds.size.y)})";
+    }
+
+    private static string FormatCompletionCoordinate(float value)
+    {
+        return value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string GetTransformPath(Transform targetTransform)
+    {
+        if (targetTransform == null)
+            return string.Empty;
+
+        string path = $"{targetTransform.name}[{targetTransform.GetSiblingIndex()}]";
+        for (Transform parent = targetTransform.parent; parent != null; parent = parent.parent)
+        {
+            path = $"{parent.name}[{parent.GetSiblingIndex()}]/{path}";
+        }
+
+        return path;
     }
 
     private void RestoreDoorsToPreGauntletState()

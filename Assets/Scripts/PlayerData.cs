@@ -16,9 +16,11 @@ public static class PlayerData
     public static int Energy { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
     public static IReadOnlyDictionary<string, int> InventoryItems => inventoryItems;
+    public static IReadOnlyCollection<string> CompletedGauntletKeys => completedGauntletKeys;
     public static event Action PlayerDied;
 
     private static readonly Dictionary<string, int> inventoryItems = new Dictionary<string, int>();
+    private static readonly HashSet<string> completedGauntletKeys = new HashSet<string>();
     private static float nextAllowedHpRemovalTime = 0f;
     private static PhysicsPauseRunner physicsPauseRunner;
 
@@ -72,6 +74,56 @@ public static class PlayerData
         return inventoryItems.TryGetValue(itemName, out int count) ? count : 0;
     }
 
+    public static bool HasCompletedGauntlet(IEnumerable<string> gauntletKeys)
+    {
+        if (gauntletKeys == null)
+            return false;
+
+        foreach (string gauntletKey in gauntletKeys)
+        {
+            string normalizedGauntletKey = NormalizeGauntletKey(gauntletKey);
+            if (normalizedGauntletKey != null &&
+                completedGauntletKeys.Contains(normalizedGauntletKey))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static int MarkGauntletCompleted(IEnumerable<string> gauntletKeys)
+    {
+        if (gauntletKeys == null)
+            return 0;
+
+        int addedCount = 0;
+        foreach (string gauntletKey in gauntletKeys)
+        {
+            string normalizedGauntletKey = NormalizeGauntletKey(gauntletKey);
+            if (normalizedGauntletKey != null &&
+                completedGauntletKeys.Add(normalizedGauntletKey))
+            {
+                addedCount++;
+            }
+        }
+
+        return addedCount;
+    }
+
+    public static void SetCompletedGauntlets(IEnumerable<string> gauntletKeys)
+    {
+        completedGauntletKeys.Clear();
+        MarkGauntletCompleted(gauntletKeys);
+    }
+
+    private static string NormalizeGauntletKey(string gauntletKey)
+    {
+        return string.IsNullOrWhiteSpace(gauntletKey)
+            ? null
+            : gauntletKey.Trim();
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitializeOnPlayModeStart()
     {
@@ -79,6 +131,7 @@ public static class PlayerData
         Energy = 0;
         HP = DefaultHP;
         inventoryItems.Clear();
+        completedGauntletKeys.Clear();
         nextAllowedHpRemovalTime = 0f;
         physicsPauseRunner = null;
         PlayerDied = null;
@@ -117,6 +170,7 @@ public static class PlayerData
         Energy = 0;
         HP = DefaultHP;
         inventoryItems.Clear();
+        completedGauntletKeys.Clear();
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
 
