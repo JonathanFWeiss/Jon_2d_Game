@@ -264,7 +264,7 @@ MonoBehaviour:
   dashHeldGroundedCarryTime: 0.25
   jumpCutMultiplier: 0.5
   maxFallSpeed: 20
-  coyoteTime: 0.5
+  coyoteTime: 0.2
   jumpBufferTime: 0.2
   canDash: 1
   canDoubleJump: 1

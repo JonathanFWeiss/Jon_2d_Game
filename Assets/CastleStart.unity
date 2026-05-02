@@ -810,18 +810,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Lace3
       objectReference: {fileID: 0}
-    - target: {fileID: 4057874902980130363, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
-      propertyPath: canDash
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4057874902980130363, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
-      propertyPath: canWallJump
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4057874902980130363, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
-      propertyPath: canDoubleJump
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 8934753579426604325, guid: a026c076bffc30e4cac77666349e98b5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -80.7
