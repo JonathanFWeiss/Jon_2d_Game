@@ -9,12 +9,14 @@ public static class PlayerData
     public const string DashPickupItemName = "DashPickup";
     public const string DoubleJumpPickupItemName = "DoubleJumpPickup";
     public const string WallJumpPickupItemName = "WallJumpPickup";
+    public const string MaxHealthPickupItemName = "MaxHealthPickup";
     private const float RemoveHpCooldownSeconds = 1f;
     private const float HpRemovalPhysicsPauseSeconds = 0.5f;
 
     public static int Coins { get; private set; }
     public static int Energy { get; private set; }
     public static int HP { get; private set; } = DefaultHP;
+    public static int MaxHP => DefaultHP + GetInventoryItemCount(MaxHealthPickupItemName);
     public static IReadOnlyDictionary<string, int> InventoryItems => inventoryItems;
     public static IReadOnlyCollection<string> CompletedGauntletKeys => completedGauntletKeys;
     public static event Action PlayerDied;
@@ -72,6 +74,15 @@ public static class PlayerData
             return 0;
 
         return inventoryItems.TryGetValue(itemName, out int count) ? count : 0;
+    }
+
+    public static void AddMaxHealthPickup(int amount = 1)
+    {
+        if (amount <= 0)
+            return;
+
+        AddInventoryItem(MaxHealthPickupItemName, amount);
+        HP = Mathf.Min(HP + amount, MaxHP);
     }
 
     public static bool HasCompletedGauntlet(IEnumerable<string> gauntletKeys)
@@ -159,7 +170,7 @@ public static class PlayerData
 
     public static void RestoreFullHP()
     {
-        HP = DefaultHP;
+        HP = MaxHP;
         Debug.Log("Player HP restored to: " + HP);
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
