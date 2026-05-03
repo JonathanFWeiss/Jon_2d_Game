@@ -15841,7 +15841,7 @@ MonoBehaviour:
   deathRespawnDelay: 1
   uiDocument: {fileID: 0}
   countersLabelName: Counters
-  heartIconPrefab: {fileID: 3590932436896681316, guid: 702cbf876d816e94ea7c7a6cfa2c7aeb, type: 3}
+  heartIconPrefab: {fileID: 3590932436896681316, guid: 4ea56a2ae6e1c914d95eba74976676f0, type: 3}
   transitionAnim: {fileID: 1305968726}
 --- !u!82 &1771316582
 AudioSource:
