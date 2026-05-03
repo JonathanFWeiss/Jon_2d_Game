@@ -22,6 +22,9 @@ public class Thrower : GroundStationaryEnemy
     [Tooltip("How close the player must be before the thrower attacks.")]
     [SerializeField] private float attackRange = 8f;
 
+    [Tooltip("Minimum delay after Start before this enemy can begin its first throw.")]
+    [SerializeField] private float initialAttackDelay = 1.5f;
+
     [Tooltip("How long the held spike ball takes to move to the throw position.")]
     [SerializeField] private float windupDuration = 0.45f;
 
@@ -73,6 +76,11 @@ public class Thrower : GroundStationaryEnemy
         startingSpikeBallLocalPosition = spikeBall != null ? spikeBall.localPosition : Vector3.zero;
         ConfigureHeldSpikeBall(true);
         PlayAnimationState(idleAnimationState);
+    }
+
+    private void Start()
+    {
+        nextThrowTime = Mathf.Max(nextThrowTime, Time.time + Mathf.Max(0f, initialAttackDelay));
     }
 
     protected override void FixedUpdate()
