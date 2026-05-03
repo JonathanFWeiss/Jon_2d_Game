@@ -17932,6 +17932,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 288644889054469405, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: m_Size.x
+      value: 0.99917626
+      objectReference: {fileID: 0}
+    - target: {fileID: 288644889054469405, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: m_Offset.x
+      value: 0.0004117489
+      objectReference: {fileID: 0}
+    - target: {fileID: 516457645683203150, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.5351775
+      objectReference: {fileID: 0}
+    - target: {fileID: 516457645683203150, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 11.4722
+      objectReference: {fileID: 0}
     - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: waves.Array.data[0].enemies.Array.data[0].enemyPrefab
       value: 
