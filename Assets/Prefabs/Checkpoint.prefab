@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 555737738098170020}
   - component: {fileID: 7232043926111319831}
-  m_Layer: 7
+  m_Layer: 11
   m_Name: Pentagram_Activated
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -103,7 +103,7 @@ GameObject:
   - component: {fileID: 8855034512893310169}
   - component: {fileID: 5365119022710813717}
   - component: {fileID: 3993290481630764033}
-  m_Layer: 7
+  m_Layer: 11
   m_Name: Checkpoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}

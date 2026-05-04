@@ -27,11 +27,24 @@ public class EnemyBase : MonoBehaviour
     public Vector2 contactPushbackImpulse = new Vector2(6f, 6f);
 
     [Header("Drops")]
+    [Tooltip("Prefab to spawn when this enemy dies. Leave empty for no corpse.")]
+    public GameObject CorpsePrefab;
+
     [Tooltip("Prefab to spawn on death.")]
     public GameObject coinPrefab;
 
     [Tooltip("How many coins this enemy drops.")]
     public int coinDropCount = 0;
+
+    [Header("Drop Motion")]
+    [Tooltip("Maximum random horizontal velocity applied to coins and corpse pieces on death.")]
+    public float deathDropHorizontalVelocity = 2f;
+
+    [Tooltip("Random upward velocity range applied to coins and corpse pieces on death.")]
+    public Vector2 deathDropUpwardVelocityRange = new Vector2(1.5f, 3.5f);
+
+    [Tooltip("Maximum random spin speed in degrees per second applied to coins and corpse pieces on death.")]
+    public float deathDropAngularVelocity = 240f;
 
     [Header("Hit Flash")]
     [Tooltip("How long enemies flash white after taking damage.")]
@@ -143,8 +156,18 @@ public class EnemyBase : MonoBehaviour
             hitFlashCoroutine = null;
         }
 
+        SpawnCorpse();
         DropCoins();
         Destroy(gameObject);
+    }
+
+    protected virtual void SpawnCorpse()
+    {
+        if (CorpsePrefab == null)
+            return;
+
+        GameObject corpse = Instantiate(CorpsePrefab, transform.position, transform.rotation);
+        ApplyDeathDropMotion(corpse);
     }
 
     protected virtual void DropCoins()
@@ -154,8 +177,41 @@ public class EnemyBase : MonoBehaviour
 
         for (int i = 0; i < coinDropCount; i++)
         {
-            Instantiate(coinPrefab, transform.position, Quaternion.identity);
+            GameObject coin = Instantiate(coinPrefab, transform.position, Quaternion.identity);
+            ApplyDeathDropMotion(coin);
         }
+    }
+
+    protected virtual void ApplyDeathDropMotion(GameObject drop)
+    {
+        if (drop == null)
+            return;
+
+        Rigidbody2D[] dropRigidbodies = drop.GetComponentsInChildren<Rigidbody2D>(true);
+
+        foreach (Rigidbody2D dropRigidbody in dropRigidbodies)
+        {
+            if (dropRigidbody == null || dropRigidbody.bodyType == RigidbodyType2D.Static)
+                continue;
+
+            dropRigidbody.linearVelocity += GetRandomDeathDropVelocity();
+            dropRigidbody.angularVelocity += Random.Range(
+                -Mathf.Abs(deathDropAngularVelocity),
+                Mathf.Abs(deathDropAngularVelocity)
+            );
+        }
+    }
+
+    protected virtual Vector2 GetRandomDeathDropVelocity()
+    {
+        float horizontalVelocity = Mathf.Abs(deathDropHorizontalVelocity);
+        float minUpwardVelocity = Mathf.Min(deathDropUpwardVelocityRange.x, deathDropUpwardVelocityRange.y);
+        float maxUpwardVelocity = Mathf.Max(deathDropUpwardVelocityRange.x, deathDropUpwardVelocityRange.y);
+
+        return new Vector2(
+            Random.Range(-horizontalVelocity, horizontalVelocity),
+            Random.Range(minUpwardVelocity, maxUpwardVelocity)
+        );
     }
 
     protected virtual void TurnAround()

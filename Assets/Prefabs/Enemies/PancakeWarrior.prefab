@@ -70,7 +70,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 5
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 1
@@ -212,17 +212,27 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   contactPushbackImpulse: {x: 6, y: 6}
+  CorpsePrefab: {fileID: 8067000853203120188, guid: df40af9540b807945a5f12cfaceeb8dd, type: 3}
   coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
-  coinDropCount: 2
+  coinDropCount: 4
+  deathDropHorizontalVelocity: 2
+  deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
+  deathDropAngularVelocity: 240
   hitFlashDuration: 0.25
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   obstacleMask:
     serializedVersion: 2
     m_Bits: 0
-  ledgeCheck: {fileID: 0}
-  ledgeCheckX: 1.5
   ledgeCheckY: -0.75
-  ledgeCheckRadius: 0.5
+  ledgeCheckX: 1.5
+  wallCheckX: 0.05
+  wallCheckY: 0
   turnAtLedges: 1
   turnAtWalls: 1
   turnAroundCooldown: 1
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 0
+  ledgeCheckDistance: 1
+  ledgeCheckRaySpacing: 0.25
+  wallCheckDistance: 0.25

@@ -18,7 +18,7 @@ public abstract class DiscoverableVisibilityTrigger : MonoBehaviour
     [Header("Discovery")]
     [Tooltip("Layer mask used to identify the player. Leave empty to also allow controller/tag detection.")]
     [SerializeField] private LayerMask playerLayer;
-    [SerializeField] private bool rememberTriggered = true;
+     private bool rememberTriggered = false; // this is not working right. removing from inspector.
     [Tooltip("Optional stable save key. Leave blank to derive one from scene and hierarchy path.")]
     [SerializeField] private string persistentKey;
     [SerializeField] private bool disableTriggerAfterActivation = true;

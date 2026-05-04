@@ -1966,7 +1966,7 @@ public class JonCharacterController : MonoBehaviour
         foreach (Collider2D hit in hits)
         {
             Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
-            if (hit == null||hit.isTrigger == true)
+            if (hit == null)//||hit.isTrigger == true)
                 continue;
 
             Rigidbody2D hitRigidbody = hit.attachedRigidbody;
@@ -1996,7 +1996,7 @@ public class JonCharacterController : MonoBehaviour
         foreach (Collider2D hit in hits)
         {
             //            Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
-            if (hit == null||hit.isTrigger == true)
+            if (hit == null)//||hit.isTrigger == true)
                 continue;
             if (hit.attachedRigidbody != null)
                 if (Time.time >= nextPogoBounceTime)
@@ -2039,7 +2039,7 @@ public class JonCharacterController : MonoBehaviour
         foreach (Collider2D hit in hits)
         {
             Debug.Log($"Attack hit detected on {hit.gameObject.name} at position {hit.transform.position}");
-            if (hit == null||hit.isTrigger == true)
+            if (hit == null)//||hit.isTrigger == true)
                 continue;
 
             Rigidbody2D hitRigidbody = hit.attachedRigidbody;

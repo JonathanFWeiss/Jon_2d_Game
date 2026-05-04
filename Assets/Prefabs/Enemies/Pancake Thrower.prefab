@@ -143,8 +143,12 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   contactPushbackImpulse: {x: 6, y: 6}
+  CorpsePrefab: {fileID: 0}
   coinPrefab: {fileID: 0}
   coinDropCount: 0
+  deathDropHorizontalVelocity: 2
+  deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
+  deathDropAngularVelocity: 240
   hitFlashDuration: 0.25
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!58 &5155441613569353481
@@ -313,7 +317,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 2
+  m_Mass: 4
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 1
@@ -350,8 +354,12 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   contactPushbackImpulse: {x: 6, y: 6}
+  CorpsePrefab: {fileID: 5519173552726463938, guid: dfbc00d1104f929418ff8a1470329700, type: 3}
   coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
   coinDropCount: 2
+  deathDropHorizontalVelocity: 2
+  deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
+  deathDropAngularVelocity: 240
   hitFlashDuration: 0.25
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   spikeBall: {fileID: 5665724903669006289}

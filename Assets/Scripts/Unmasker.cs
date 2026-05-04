@@ -10,6 +10,7 @@ public class Unmasker : DiscoverableVisibilityTrigger
     public void Reveal()
     {
         Activate();
+        Debug.Log("object revealed!");
     }
 
     public void Hide()
