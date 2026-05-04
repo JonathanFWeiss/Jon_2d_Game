@@ -4,6 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class EnemyBase : MonoBehaviour
 {
+    private const string HitFlashMaterialResourcePath = "Materials/AllWhiteMaterial";
+
     [Header("Stats")]
     public int hp = 3;
 
@@ -50,7 +52,7 @@ public class EnemyBase : MonoBehaviour
     [Tooltip("How long enemies flash white after taking damage.")]
     public float hitFlashDuration = 0.25f;
 
-    [Tooltip("Tint applied while the enemy is flashing from damage.")]
+    [HideInInspector]
     public Color hitFlashColor = Color.red;
 
     protected Rigidbody2D rb2d;
@@ -58,9 +60,10 @@ public class EnemyBase : MonoBehaviour
     protected bool isDead = false;
     protected float lastContactDamageTime = -Mathf.Infinity;
     protected SpriteRenderer[] hitFlashRenderers;
-    protected Color[] hitFlashOriginalColors;
+    protected Material[] hitFlashOriginalMaterials;
     protected Coroutine hitFlashCoroutine;
     protected float hitFlashEndTime = -Mathf.Infinity;
+    private static Material hitFlashMaterial;
 
     protected virtual void Awake()
     {
@@ -142,6 +145,17 @@ public class EnemyBase : MonoBehaviour
     protected virtual void OnTriggerStay2D(Collider2D other)
     {
         TryDamagePlayer(other.gameObject);
+    }
+
+    protected virtual void OnDisable()
+    {
+        if (hitFlashCoroutine != null)
+        {
+            StopCoroutine(hitFlashCoroutine);
+            hitFlashCoroutine = null;
+        }
+
+        RestoreHitFlashMaterials();
     }
 
     protected virtual void Die()
@@ -315,6 +329,10 @@ public class EnemyBase : MonoBehaviour
         if (hitFlashDuration <= 0f)
             return;
 
+        Material flashMaterial = GetHitFlashMaterial();
+        if (flashMaterial == null)
+            return;
+
         if (hitFlashRenderers == null || hitFlashRenderers.Length == 0)
         {
             CacheHitFlashRenderers();
@@ -327,53 +345,73 @@ public class EnemyBase : MonoBehaviour
 
         if (hitFlashCoroutine == null)
         {
-            CacheHitFlashOriginalColors();
+            CacheHitFlashOriginalMaterials();
             hitFlashCoroutine = StartCoroutine(HitFlashRoutine());
             return;
         }
 
-        SetHitFlashColor();
+        SetHitFlashMaterial(flashMaterial);
     }
 
-    protected virtual void CacheHitFlashOriginalColors()
+    protected virtual Material GetHitFlashMaterial()
     {
-        hitFlashOriginalColors = new Color[hitFlashRenderers.Length];
+        if (hitFlashMaterial == null)
+        {
+            hitFlashMaterial = Resources.Load<Material>(HitFlashMaterialResourcePath);
+
+            if (hitFlashMaterial == null)
+            {
+                Debug.LogWarning(
+                    $"Missing hit flash material at Assets/Resources/{HitFlashMaterialResourcePath}.mat",
+                    this
+                );
+            }
+        }
+
+        return hitFlashMaterial;
+    }
+
+    protected virtual void CacheHitFlashOriginalMaterials()
+    {
+        hitFlashOriginalMaterials = new Material[hitFlashRenderers.Length];
 
         for (int i = 0; i < hitFlashRenderers.Length; i++)
         {
             SpriteRenderer spriteRenderer = hitFlashRenderers[i];
-            hitFlashOriginalColors[i] = spriteRenderer != null ? spriteRenderer.color : Color.white;
+            hitFlashOriginalMaterials[i] = spriteRenderer != null ? spriteRenderer.sharedMaterial : null;
         }
     }
 
     protected virtual IEnumerator HitFlashRoutine()
     {
-        SetHitFlashColor();
+        SetHitFlashMaterial(GetHitFlashMaterial());
 
         while (Time.time < hitFlashEndTime)
         {
             yield return null;
         }
 
-        RestoreHitFlashColors();
+        RestoreHitFlashMaterials();
         hitFlashCoroutine = null;
     }
 
-    protected virtual void SetHitFlashColor()
+    protected virtual void SetHitFlashMaterial(Material flashMaterial)
     {
+        if (flashMaterial == null)
+            return;
+
         foreach (SpriteRenderer spriteRenderer in hitFlashRenderers)
         {
             if (spriteRenderer != null)
             {
-                spriteRenderer.color = hitFlashColor;
-                    //                Debug.Log($"Setting hit flash color {hitFlashColor} on {spriteRenderer.gameObject.name} for {gameObject.name}");
+                spriteRenderer.sharedMaterial = flashMaterial;
             }
         }
     }
 
-    protected virtual void RestoreHitFlashColors()
+    protected virtual void RestoreHitFlashMaterials()
     {
-        if (hitFlashRenderers == null || hitFlashOriginalColors == null)
+        if (hitFlashRenderers == null || hitFlashOriginalMaterials == null)
             return;
 
         for (int i = 0; i < hitFlashRenderers.Length; i++)
@@ -381,10 +419,10 @@ public class EnemyBase : MonoBehaviour
             SpriteRenderer spriteRenderer = hitFlashRenderers[i];
             if (spriteRenderer != null)
             {
-                spriteRenderer.color = hitFlashOriginalColors[i];
+                spriteRenderer.sharedMaterial = hitFlashOriginalMaterials[i];
             }
         }
 
-        hitFlashOriginalColors = null;
+        hitFlashOriginalMaterials = null;
     }
 }
