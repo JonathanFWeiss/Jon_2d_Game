@@ -218,7 +218,7 @@ MonoBehaviour:
   deathDropHorizontalVelocity: 2
   deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
   deathDropAngularVelocity: 240
-  hitFlashDuration: 0.25
+  hitFlashDuration: 0.1
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   obstacleMask:
     serializedVersion: 2

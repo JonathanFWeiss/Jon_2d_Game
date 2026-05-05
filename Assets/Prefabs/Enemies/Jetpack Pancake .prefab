@@ -214,7 +214,7 @@ MonoBehaviour:
   CorpsePrefab: {fileID: 378381464188932325, guid: a1fb76f1d398be34ea5b04862c5ef064, type: 3}
   coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
   coinDropCount: 3
-  hitFlashDuration: 0.25
+  hitFlashDuration: 0.1
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   idleBobAmplitude: 0.25
   idleBobFrequency: 1

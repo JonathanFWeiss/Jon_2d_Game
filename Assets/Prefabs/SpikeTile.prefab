@@ -199,5 +199,5 @@ MonoBehaviour:
   contactPushbackImpulse: {x: 2, y: 2}
   coinPrefab: {fileID: 0}
   coinDropCount: 0
-  hitFlashDuration: 0.08
+  hitFlashDuration: 0.1
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}

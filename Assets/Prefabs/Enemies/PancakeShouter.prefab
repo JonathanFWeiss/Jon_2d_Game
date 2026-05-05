@@ -214,7 +214,7 @@ MonoBehaviour:
   contactPushbackImpulse: {x: 6, y: 6}
   coinPrefab: {fileID: 0}
   coinDropCount: 2
-  hitFlashDuration: 0.25
+  hitFlashDuration: 0.1
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   shoutInterval: 2
   shoutDuration: 1

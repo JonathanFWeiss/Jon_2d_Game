@@ -121,7 +121,7 @@ MonoBehaviour:
   contactPushbackImpulse: {x: 6, y: 6}
   coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
   coinDropCount: 0
-  hitFlashDuration: 0.25
+  hitFlashDuration: 0.1
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   obstacleMask:
     serializedVersion: 2

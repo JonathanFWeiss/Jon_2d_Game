@@ -53,7 +53,7 @@ public class EnemyBase : MonoBehaviour
 
     [Header("Hit Flash")]
     [Tooltip("How long enemies flash white after taking damage.")]
-    public float hitFlashDuration = 0.25f;
+    public float hitFlashDuration = 0.1f;
 
     [HideInInspector]
     public Color hitFlashColor = Color.red;
