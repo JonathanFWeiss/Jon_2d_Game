@@ -54,6 +54,9 @@ public class SlashPushback : MonoBehaviour
         {
             TryRemoveHp(targetObject);
 
+            if (ShouldIgnorePlayerAttackPushback(targetObject))
+                return;
+
             Vector2 direction = otherRb.position - (Vector2)transform.position;
             if (horizontalOnly)
                 direction.y = 0;
@@ -75,6 +78,11 @@ public class SlashPushback : MonoBehaviour
                 ownerRigidbody.linearVelocity = heroVel;
             }
         }
+    }
+
+    bool ShouldIgnorePlayerAttackPushback(GameObject targetObject)
+    {
+        return targetObject != null && targetObject.GetComponentInParent<BossBase>() != null;
     }
 
     bool IsNpcSortingLayer(GameObject obj)

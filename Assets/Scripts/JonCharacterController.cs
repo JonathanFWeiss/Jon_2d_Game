@@ -658,6 +658,11 @@ public class JonCharacterController : MonoBehaviour
 
     public void Dash()
     {
+        if (!canDash)
+        {
+            return;
+        }
+
         if (isSwimming)
         {
             QueueSwimSprint();
@@ -742,6 +747,12 @@ public class JonCharacterController : MonoBehaviour
             return;
         }
 
+        if (!canDash)
+        {
+            CancelDashSpeedBoost();
+            return;
+        }
+
         if (isSwimming)
         {
             CancelDashSpeedBoost();
@@ -799,7 +810,8 @@ public class JonCharacterController : MonoBehaviour
 
     private bool CanStartDashSpeedBoost()
     {
-        return isGrounded &&
+        return canDash &&
+            isGrounded &&
             isDashSpeedBoostArmed &&
             !isSwimming &&
             Mathf.Abs(movementVector.x) >= dashHeldInputThreshold;
@@ -2433,6 +2445,9 @@ public class JonCharacterController : MonoBehaviour
 
     private void ApplyPushback(Rigidbody2D hitRigidbody, Vector2 attackCenter)
     {
+        if (ShouldIgnorePlayerAttackPushback(hitRigidbody))
+            return;
+
         Vector2 direction = hitRigidbody.worldCenterOfMass - attackCenter;
         float horizontalDirection = Mathf.Sign(direction.x);
 
@@ -2449,6 +2464,11 @@ public class JonCharacterController : MonoBehaviour
 
         hitRigidbody.AddForce(impulse, ForceMode2D.Impulse);
         //otherRb.AddForce(direction * pushForce, ForceMode2D.Impulse);
+    }
+
+    private bool ShouldIgnorePlayerAttackPushback(Rigidbody2D hitRigidbody)
+    {
+        return hitRigidbody != null && hitRigidbody.GetComponentInParent<BossBase>() != null;
     }
 
 
