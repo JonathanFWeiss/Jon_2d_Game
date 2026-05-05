@@ -307,106 +307,28 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 4088856215554375809, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
   m_PrefabInstance: {fileID: 1821671975}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &387709749
-MonoBehaviour:
+--- !u!95 &387709754
+Animator:
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 387709748}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c6e8d8cc01840f7a1a1fb02a2b0d5c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossBase
-  hp: 30
-  moveSpeed: 2
-  moveAcceleration: 5
-  startFacingRight: 1
-  contactDamage: 1
-  contactDamageCooldown: 1
-  playerLayerMask:
-    serializedVersion: 2
-    m_Bits: 0
-  contactPushbackImpulse: {x: 6, y: 6}
-  CorpsePrefab: {fileID: 0}
-  coinPrefab: {fileID: 0}
-  coinDropCount: 0
-  deathDropHorizontalVelocity: 2
-  deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
-  deathDropAngularVelocity: 240
-  hitFlashDuration: 0.1
-  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
-  startsActive: 1
-  activationDelay: 0
-  phases:
-  - phaseName: Phase 1
-    enterAtHealthPercent: 1
-    selectionMode: 0
-    avoidRandomRepeats: 1
-    behaviorLoop:
-    - state: 3
-      duration: 1.25
-      facePlayerOnEnter: 1
-    - state: 5
-      duration: 0.75
-      facePlayerOnEnter: 0
-    - state: 4
-      duration: 1
-      facePlayerOnEnter: 1
-    - state: 5
-      duration: 1
-      facePlayerOnEnter: 0
-  - phaseName: Phase 2
-    enterAtHealthPercent: 0.65
-    selectionMode: 0
-    avoidRandomRepeats: 1
-    behaviorLoop:
-    - state: 3
-      duration: 1
-      facePlayerOnEnter: 1
-    - state: 4
-      duration: 1
-      facePlayerOnEnter: 1
-    - state: 5
-      duration: 0.6
-      facePlayerOnEnter: 0
-    - state: 6
-      duration: 0.75
-      facePlayerOnEnter: 1
-    - state: 5
-      duration: 0.8
-      facePlayerOnEnter: 0
-  - phaseName: Phase 3
-    enterAtHealthPercent: 0.33
-    selectionMode: 1
-    avoidRandomRepeats: 1
-    behaviorLoop:
-    - state: 3
-      duration: 0.85
-      facePlayerOnEnter: 1
-    - state: 4
-      duration: 0.9
-      facePlayerOnEnter: 1
-    - state: 6
-      duration: 0.65
-      facePlayerOnEnter: 1
-    - state: 5
-      duration: 0.45
-      facePlayerOnEnter: 0
-  restartBehaviorOnPhaseChange: 1
-  allowPhaseRegression: 0
-  playerTargetOverride: {fileID: 0}
-  playerSearchInterval: 0.5
-  useDefaultJumpAttackImpulse: 1
-  jumpAttackImpulse: {x: 8, y: 30}
-  resetVelocityBeforeJumpAttack: 1
-  helperPrefabs: []
-  helperSpawnPoints: []
-  helpersPerSummon: 2
-  fallbackHelperSpawnOffset: {x: 2, y: 0}
-  stopHorizontalVelocityDuringRecovery: 1
-  logStateChanges: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: ab9c2d6e098a1a944a509ac1860836ed, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 1
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &457148597
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -767,6 +689,7 @@ MonoBehaviour:
     m_Bits: 0
   contactPushbackImpulse: {x: 6, y: 6}
   CorpsePrefab: {fileID: 0}
+  corpseLifetime: 15
   coinPrefab: {fileID: 0}
   coinDropCount: 0
   deathDropHorizontalVelocity: 2
@@ -6015,13 +5938,33 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 3216368936493161670, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0.5
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: maxActiveHelpers
+      value: 3
       objectReference: {fileID: 0}
-    - target: {fileID: 3216368936493161670, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.5
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: phases.Array.data[1].phaseTint.b
+      value: 0.20188677
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: phases.Array.data[1].phaseTint.g
+      value: 0.6275472
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: phases.Array.data[1].phaseTint.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: phases.Array.data[2].phaseTint.b
+      value: 0.2470273
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: phases.Array.data[2].phaseTint.g
+      value: 0.2470273
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: phases.Array.data[2].phaseTint.r
+      value: 0.96981126
       objectReference: {fileID: 0}
     - target: {fileID: 3216368936493161670, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6067,16 +6010,13 @@ PrefabInstance:
       propertyPath: m_Name
       value: StackWarrior
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 2002763670981521889, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-    - {fileID: 46226793652892409, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-    - {fileID: 1952539560342916180, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4088856215554375809, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 387709749}
+      addedObject: {fileID: 387709754}
   m_SourcePrefab: {fileID: 100100000, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
 --- !u!1 &2119723727
 GameObject:

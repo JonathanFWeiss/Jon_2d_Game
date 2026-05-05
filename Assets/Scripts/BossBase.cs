@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BossBase : EnemyBase
@@ -35,15 +36,24 @@ public class BossBase : EnemyBase
         [Tooltip("Face the player when this state begins.")]
         public bool facePlayerOnEnter = true;
 
+        [Tooltip("Optional Animator trigger fired when this step starts. If empty, the default trigger for this state is used.")]
+        public string animatorTrigger;
+
         public BossStateStep()
         {
         }
 
-        public BossStateStep(BossBehaviorState state, float duration, bool facePlayerOnEnter = true)
+        public BossStateStep(
+            BossBehaviorState state,
+            float duration,
+            bool facePlayerOnEnter = true,
+            string animatorTrigger = ""
+        )
         {
             this.state = state;
             this.duration = duration;
             this.facePlayerOnEnter = facePlayerOnEnter;
+            this.animatorTrigger = animatorTrigger;
         }
     }
 
@@ -56,6 +66,9 @@ public class BossBase : EnemyBase
         [Tooltip("This phase starts when current HP percent is at or below this value.")]
         [Range(0f, 1f)]
         public float enterAtHealthPercent = 1f;
+
+        [Tooltip("Tint multiplied into the boss sprite colors while this phase is active.")]
+        public Color phaseTint = Color.white;
 
         [Tooltip("How this phase chooses its next behavior state.")]
         public BossPhaseSelectionMode selectionMode = BossPhaseSelectionMode.OrderedLoop;
@@ -86,6 +99,18 @@ public class BossBase : EnemyBase
             this.selectionMode = selectionMode;
             this.behaviorLoop = behaviorLoop;
         }
+
+        public BossPhase(
+            string phaseName,
+            float enterAtHealthPercent,
+            Color phaseTint,
+            BossPhaseSelectionMode selectionMode,
+            BossStateStep[] behaviorLoop
+        )
+            : this(phaseName, enterAtHealthPercent, selectionMode, behaviorLoop)
+        {
+            this.phaseTint = phaseTint;
+        }
     }
 
     [Header("Boss Activation")]
@@ -102,6 +127,7 @@ public class BossBase : EnemyBase
         new BossPhase(
             "Phase 1",
             1f,
+            Color.white,
             BossPhaseSelectionMode.OrderedLoop,
             new[]
             {
@@ -114,6 +140,7 @@ public class BossBase : EnemyBase
         new BossPhase(
             "Phase 2",
             0.65f,
+            new Color(1f, 0.85f, 0.7f, 1f),
             BossPhaseSelectionMode.OrderedLoop,
             new[]
             {
@@ -127,6 +154,7 @@ public class BossBase : EnemyBase
         new BossPhase(
             "Phase 3",
             0.33f,
+            new Color(1f, 0.55f, 0.55f, 1f),
             BossPhaseSelectionMode.Random,
             new[]
             {
@@ -143,6 +171,22 @@ public class BossBase : EnemyBase
 
     [Tooltip("Allow the boss to move back to an earlier phase if it is healed above a phase threshold.")]
     [SerializeField] private bool allowPhaseRegression = false;
+
+    [Header("Animation")]
+    [Tooltip("Animator used for boss state triggers. If empty, one is searched for on this object or its children.")]
+    [SerializeField] private Animator bossAnimator;
+
+    [Tooltip("Fire the matching default trigger when a state step does not provide its own trigger name.")]
+    [SerializeField] private bool useDefaultAnimatorTriggers = true;
+
+    [SerializeField] private string introTrigger = "Intro";
+    [SerializeField] private string idleTrigger = "Idle";
+    [SerializeField] private string attackTrigger = "Attack";
+    [SerializeField] private string jumpAttackTrigger = "JumpAttack";
+    [SerializeField] private string recoveryTrigger = "Recovery";
+    [SerializeField] private string summonHelpersTrigger = "SummonHelpers";
+    [SerializeField] private string phaseTransitionTrigger = "PhaseTransition";
+    [SerializeField] private string stunnedTrigger = "Stunned";
 
     [Header("Boss Targeting")]
     [Tooltip("Optional player target. If empty, the boss searches for JonCharacterController or Hero.")]
@@ -171,6 +215,11 @@ public class BossBase : EnemyBase
     [Tooltip("How many helpers are spawned each time SummonHelpers begins.")]
     [SerializeField] private int helpersPerSummon = 2;
 
+   
+
+    [Tooltip("Maximum active helpers spawned by this boss. Set to 0 for no cap.")]
+    public int maxActiveHelpers = 6;
+
     [Tooltip("Fallback offset used when no helper spawn points are assigned.")]
     [SerializeField] private Vector2 fallbackHelperSpawnOffset = new Vector2(2f, 0f);
 
@@ -189,6 +238,9 @@ public class BossBase : EnemyBase
     private int maxHp;
     private int currentPhaseIndex = -1;
     private int currentStateStepIndex = -1;
+    private readonly List<GameObject> activeHelpers = new List<GameObject>();
+    private SpriteRenderer[] phaseTintRenderers;
+    private Color[] phaseTintBaseColors;
     private bool isBossActive;
     private bool currentStateCompleted;
     private BossBehaviorState currentState = BossBehaviorState.Inactive;
@@ -210,6 +262,8 @@ public class BossBase : EnemyBase
     {
         base.Awake();
         maxHp = Mathf.Max(1, hp);
+        ResolveAnimator();
+        CachePhaseTintRenderers();
     }
 
     protected virtual void Start()
@@ -217,6 +271,7 @@ public class BossBase : EnemyBase
         maxHp = Mathf.Max(Mathf.Max(maxHp, hp), 1);
         EnsurePhaseConfiguration();
         currentPhaseIndex = GetPhaseIndexForHealth();
+        ApplyCurrentPhaseTint();
 
         if (startsActive)
         {
@@ -273,6 +328,7 @@ public class BossBase : EnemyBase
         isBossActive = true;
         currentPhaseIndex = GetPhaseIndexForHealth();
         phaseStartTime = Time.time;
+        ApplyCurrentPhaseTint();
         OnBossActivated();
 
         if (activationDelay > 0f)
@@ -391,6 +447,11 @@ public class BossBase : EnemyBase
 
         facingDirection = newFacingDirection;
         UpdateSpriteDirection();
+    }
+
+    public void RefreshPhaseTint()
+    {
+        ApplyCurrentPhaseTint();
     }
 
     protected virtual void OnBossActivated()
@@ -572,7 +633,14 @@ public class BossBase : EnemyBase
         if (helperPrefabs == null || helperPrefabs.Length == 0 || helpersPerSummon <= 0)
             return;
 
-        for (int i = 0; i < helpersPerSummon; i++)
+        PruneDestroyedHelpers();
+
+        int spawnCount = GetAvailableHelperSpawnCount();
+
+        if (spawnCount <= 0)
+            return;
+
+        for (int i = 0; i < spawnCount; i++)
         {
             GameObject helperPrefab = GetHelperPrefab(i);
 
@@ -581,7 +649,8 @@ public class BossBase : EnemyBase
 
             Vector3 spawnPosition = GetHelperSpawnPosition(i);
             Quaternion spawnRotation = helperPrefab.transform.rotation;
-            Instantiate(helperPrefab, spawnPosition, spawnRotation);
+            GameObject helper = Instantiate(helperPrefab, spawnPosition, spawnRotation);
+            activeHelpers.Add(helper);
         }
     }
 
@@ -606,6 +675,7 @@ public class BossBase : EnemyBase
             new BossPhase(
                 "Phase 1",
                 1f,
+                Color.white,
                 BossPhaseSelectionMode.OrderedLoop,
                 new[]
                 {
@@ -632,6 +702,7 @@ public class BossBase : EnemyBase
         int previousPhaseIndex = currentPhaseIndex;
         currentPhaseIndex = nextPhaseIndex;
         phaseStartTime = Time.time;
+        ApplyCurrentPhaseTint();
         OnBossPhaseChanged(previousPhaseIndex, currentPhaseIndex, CurrentPhase);
 
         if (logStateChanges)
@@ -690,10 +761,15 @@ public class BossBase : EnemyBase
             return;
         }
 
-        EnterState(step.state, step.duration, step.facePlayerOnEnter);
+        EnterState(step.state, step.duration, step.facePlayerOnEnter, step.animatorTrigger);
     }
 
-    private void EnterState(BossBehaviorState nextState, float duration, bool facePlayerOnEnter)
+    private void EnterState(
+        BossBehaviorState nextState,
+        float duration,
+        bool facePlayerOnEnter,
+        string animatorTrigger = ""
+    )
     {
         currentState = nextState;
         currentStateCompleted = false;
@@ -710,6 +786,7 @@ public class BossBase : EnemyBase
             Debug.Log($"{gameObject.name} boss state: {currentState} ({GetCurrentPhaseName()}).");
         }
 
+        FireAnimatorTrigger(currentState, animatorTrigger);
         OnBossStateEntered(currentState);
         DispatchStateEntered(currentState);
     }
@@ -839,6 +916,122 @@ public class BossBase : EnemyBase
         return phases != null && phaseIndex >= 0 && phaseIndex < phases.Length && phases[phaseIndex] != null;
     }
 
+    private void ResolveAnimator()
+    {
+        if (bossAnimator != null)
+            return;
+
+        bossAnimator = GetComponent<Animator>();
+
+        if (bossAnimator == null)
+        {
+            bossAnimator = GetComponentInChildren<Animator>();
+        }
+    }
+
+    private void FireAnimatorTrigger(BossBehaviorState state, string overrideTrigger)
+    {
+        ResolveAnimator();
+
+        if (bossAnimator == null)
+            return;
+
+        string triggerName = !string.IsNullOrWhiteSpace(overrideTrigger)
+            ? overrideTrigger
+            : GetDefaultAnimatorTrigger(state);
+
+        if (string.IsNullOrWhiteSpace(triggerName))
+            return;
+
+        bossAnimator.SetTrigger(triggerName);
+    }
+
+    private string GetDefaultAnimatorTrigger(BossBehaviorState state)
+    {
+        if (!useDefaultAnimatorTriggers)
+            return string.Empty;
+
+        switch (state)
+        {
+            case BossBehaviorState.Intro:
+                return introTrigger;
+            case BossBehaviorState.Idle:
+                return idleTrigger;
+            case BossBehaviorState.Attack:
+                return attackTrigger;
+            case BossBehaviorState.JumpAttack:
+                return jumpAttackTrigger;
+            case BossBehaviorState.Recovery:
+                return recoveryTrigger;
+            case BossBehaviorState.SummonHelpers:
+                return summonHelpersTrigger;
+            case BossBehaviorState.PhaseTransition:
+                return phaseTransitionTrigger;
+            case BossBehaviorState.Stunned:
+                return stunnedTrigger;
+            default:
+                return string.Empty;
+        }
+    }
+
+    private void CachePhaseTintRenderers()
+    {
+        if (hitFlashRenderers == null || hitFlashRenderers.Length == 0)
+        {
+            CacheHitFlashRenderers();
+        }
+
+        phaseTintRenderers = hitFlashRenderers;
+
+        if (phaseTintRenderers == null)
+            return;
+
+        phaseTintBaseColors = new Color[phaseTintRenderers.Length];
+
+        for (int i = 0; i < phaseTintRenderers.Length; i++)
+        {
+            SpriteRenderer spriteRenderer = phaseTintRenderers[i];
+            phaseTintBaseColors[i] = spriteRenderer != null ? spriteRenderer.color : Color.white;
+        }
+    }
+
+    private void ApplyCurrentPhaseTint()
+    {
+        BossPhase phase = CurrentPhase;
+        ApplyPhaseTint(phase != null ? phase.phaseTint : Color.white);
+    }
+
+    private void ApplyPhaseTint(Color tint)
+    {
+        if (phaseTintRenderers == null || phaseTintBaseColors == null)
+        {
+            CachePhaseTintRenderers();
+        }
+
+        if (phaseTintRenderers == null || phaseTintBaseColors == null)
+            return;
+
+        for (int i = 0; i < phaseTintRenderers.Length; i++)
+        {
+            SpriteRenderer spriteRenderer = phaseTintRenderers[i];
+
+            if (spriteRenderer == null)
+                continue;
+
+            spriteRenderer.color = MultiplyColors(phaseTintBaseColors[i], tint);
+        }
+    }
+
+    private Color MultiplyColors(Color baseColor, Color tint)
+    {
+        return new Color(
+            baseColor.r * tint.r,
+            baseColor.g * tint.g,
+            baseColor.b * tint.b,
+            baseColor.a * tint.a
+        );
+    }
+
     private void ResolvePlayerTransform(bool forceSearch = false)
     {
         if (playerTargetOverride != null)
@@ -886,6 +1079,22 @@ public class BossBase : EnemyBase
 
         int prefabIndex = Mathf.Abs(helperIndex) % helperPrefabs.Length;
         return helperPrefabs[prefabIndex];
+    }
+
+    private int GetAvailableHelperSpawnCount()
+    {
+        int requestedCount = Mathf.Max(0, helpersPerSummon);
+
+        if (maxActiveHelpers <= 0)
+            return requestedCount;
+
+        int remainingHelperSlots = Mathf.Max(0, maxActiveHelpers - activeHelpers.Count);
+        return Mathf.Min(requestedCount, remainingHelperSlots);
+    }
+
+    private void PruneDestroyedHelpers()
+    {
+        activeHelpers.RemoveAll(helper => helper == null);
     }
 
     private Vector3 GetHelperSpawnPosition(int helperIndex)
@@ -1049,6 +1258,7 @@ public class BossBase : EnemyBase
         activationDelay = Mathf.Max(0f, activationDelay);
         playerSearchInterval = Mathf.Max(0.05f, playerSearchInterval);
         helpersPerSummon = Mathf.Max(0, helpersPerSummon);
+        maxActiveHelpers = Mathf.Max(0, maxActiveHelpers);
 
         if (phases == null)
             return;
