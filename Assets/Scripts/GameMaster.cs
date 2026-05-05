@@ -136,6 +136,7 @@ public class GameMaster : MonoBehaviour
         if (pauseAction == null)
         {
             SubscribePauseAction();
+            Debug.Log("GameMaster subscribed to Pause action in Update because it was missing during OnEnable.");
         }
 
         ResolvePlayer();
@@ -212,10 +213,15 @@ public class GameMaster : MonoBehaviour
 
     private void OnPausePerformed(InputAction.CallbackContext context)
     {
+        Debug.Log(
+            $"Pause pressed. isPaused={isPaused}, isRespawningPlayer={isRespawningPlayer}, HP={PlayerData.HP}, timeScale={Time.timeScale}, actionEnabled={(pauseAction != null && pauseAction.enabled)}"
+        );
+
         if (isRespawningPlayer || PlayerData.HP <= 0)
             return;
 
         SetPaused(!isPaused);
+        Debug.Log($"GameMaster {(isPaused ? "paused" : "unpaused")} the game in response to Pause action.");
     }
 
     private void SetPaused(bool shouldPause)
