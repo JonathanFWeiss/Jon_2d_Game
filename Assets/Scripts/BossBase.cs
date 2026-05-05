@@ -120,6 +120,15 @@ public class BossBase : EnemyBase
     [Tooltip("Delay after activation before the first behavior begins.")]
     [SerializeField] private float activationDelay = 0f;
 
+    [Tooltip("When Start Active is off, activate the boss when the player enters this radius.")]
+    [SerializeField] private bool useActivationZone = true;
+
+    [Tooltip("How close the player must be before an inactive boss activates.")]
+    [SerializeField] private float activationRadius = 8f;
+
+    [Tooltip("Optional point to measure activation distance from. If empty, the boss transform is used.")]
+    [SerializeField] private Transform activationCheck;
+
     [Header("Boss Phases")]
     [Tooltip("Phases are selected from HP percentage. Lower thresholds represent later phases.")]
     [SerializeField] private BossPhase[] phases =
@@ -195,6 +204,13 @@ public class BossBase : EnemyBase
     [Tooltip("How often the boss searches for the player if no target is assigned.")]
     [SerializeField] private float playerSearchInterval = 0.5f;
 
+    [Header("Attack")]
+    [Tooltip("Optional extra collider enabled during the Attack state.")]
+    [SerializeField] private Collider2D attackCollider;
+
+    [Tooltip("Delay after entering Attack before the attack collider becomes active.")]
+    [SerializeField] private float attackColliderActivationDelay = 0.2f;
+
     [Header("Jump Attack")]
     [Tooltip("Use this generic jump impulse when entering JumpAttack. Override OnJumpAttackStateEntered for custom jumps.")]
     [SerializeField] private bool useDefaultJumpAttackImpulse = true;
@@ -241,6 +257,8 @@ public class BossBase : EnemyBase
     private readonly List<GameObject> activeHelpers = new List<GameObject>();
     private SpriteRenderer[] phaseTintRenderers;
     private Color[] phaseTintBaseColors;
+    private float attackColliderActivationTime = float.PositiveInfinity;
+    private bool attackColliderIsActive;
     private bool isBossActive;
     private bool currentStateCompleted;
     private BossBehaviorState currentState = BossBehaviorState.Inactive;
@@ -264,6 +282,7 @@ public class BossBase : EnemyBase
         maxHp = Mathf.Max(1, hp);
         ResolveAnimator();
         CachePhaseTintRenderers();
+        SetAttackColliderActive(false);
     }
 
     protected virtual void Start()
@@ -308,8 +327,18 @@ public class BossBase : EnemyBase
 
     protected override void FixedUpdate()
     {
-        if (isDead || !isBossActive)
+        if (isDead)
             return;
+
+        if (!isBossActive)
+        {
+            if (!startsActive && useActivationZone && IsPlayerInActivationZone())
+            {
+                ActivateBoss();
+            }
+
+            return;
+        }
 
         FixedUpdateCurrentState(Time.fixedDeltaTime);
         Move();
@@ -516,10 +545,12 @@ public class BossBase : EnemyBase
 
     protected virtual void OnAttackStateEntered()
     {
+        BeginAttackColliderWindow();
     }
 
     protected virtual void OnAttackStateUpdated(float deltaTime)
     {
+        UpdateAttackColliderWindow();
     }
 
     protected virtual void OnAttackStateFixedUpdated(float fixedDeltaTime)
@@ -528,6 +559,7 @@ public class BossBase : EnemyBase
 
     protected virtual void OnAttackStateExited()
     {
+        EndAttackColliderWindow();
     }
 
     protected virtual void OnJumpAttackStateEntered()
@@ -812,6 +844,11 @@ public class BossBase : EnemyBase
         OnBossStateExited(currentState);
     }
 
+    private void OnDisable()
+    {
+        EndAttackColliderWindow();
+    }
+
     private bool ShouldAdvanceCurrentState()
     {
         if (currentState == BossBehaviorState.Inactive || currentState == BossBehaviorState.Dead)
@@ -1064,12 +1101,80 @@ public class BossBase : EnemyBase
         }
     }
 
+    private bool IsPlayerInActivationZone()
+    {
+        Vector2 checkPosition = activationCheck != null
+            ? activationCheck.position
+            : transform.position;
+
+        Collider2D[] nearbyColliders = Physics2D.OverlapCircleAll(
+            checkPosition,
+            Mathf.Max(0f, activationRadius)
+        );
+
+        foreach (Collider2D nearbyCollider in nearbyColliders)
+        {
+            if (nearbyCollider == null)
+                continue;
+
+            GameObject rootObject = nearbyCollider.transform.root.gameObject;
+
+            if (IsPlayerObject(rootObject))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void StopHorizontalVelocityForRecovery()
     {
         if (!stopHorizontalVelocityDuringRecovery || rb2d == null)
             return;
 
         rb2d.linearVelocity = new Vector2(0f, rb2d.linearVelocity.y);
+    }
+
+    private void BeginAttackColliderWindow()
+    {
+        attackColliderIsActive = false;
+        attackColliderActivationTime = Time.time + Mathf.Max(0f, attackColliderActivationDelay);
+        SetAttackColliderActive(false);
+
+        if (attackColliderActivationDelay <= 0f)
+        {
+            ActivateAttackCollider();
+        }
+    }
+
+    private void UpdateAttackColliderWindow()
+    {
+        if (attackColliderIsActive || Time.time < attackColliderActivationTime)
+            return;
+
+        ActivateAttackCollider();
+    }
+
+    private void EndAttackColliderWindow()
+    {
+        attackColliderIsActive = false;
+        attackColliderActivationTime = float.PositiveInfinity;
+        SetAttackColliderActive(false);
+    }
+
+    private void ActivateAttackCollider()
+    {
+        attackColliderIsActive = true;
+        SetAttackColliderActive(true);
+    }
+
+    private void SetAttackColliderActive(bool active)
+    {
+        if (attackCollider != null)
+        {
+            attackCollider.enabled = active;
+        }
     }
 
     private GameObject GetHelperPrefab(int helperIndex)
@@ -1256,7 +1361,9 @@ public class BossBase : EnemyBase
     private void OnValidate()
     {
         activationDelay = Mathf.Max(0f, activationDelay);
+        activationRadius = Mathf.Max(0f, activationRadius);
         playerSearchInterval = Mathf.Max(0.05f, playerSearchInterval);
+        attackColliderActivationDelay = Mathf.Max(0f, attackColliderActivationDelay);
         helpersPerSummon = Mathf.Max(0, helpersPerSummon);
         maxActiveHelpers = Mathf.Max(0, maxActiveHelpers);
 
@@ -1281,5 +1388,19 @@ public class BossBase : EnemyBase
                 }
             }
         }
+    }
+
+    protected virtual void OnDrawGizmosSelected()
+    {
+        if (startsActive || !useActivationZone)
+            return;
+
+        Gizmos.color = isBossActive ? Color.red : Color.yellow;
+
+        Vector3 checkPosition = activationCheck != null
+            ? activationCheck.position
+            : transform.position;
+
+        Gizmos.DrawWireSphere(checkPosition, Mathf.Max(0f, activationRadius));
     }
 }

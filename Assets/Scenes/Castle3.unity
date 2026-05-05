@@ -271,6 +271,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!60 &212551932 stripped
+PolygonCollider2D:
+  m_CorrespondingSourceObject: {fileID: 8113280453154918103, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+  m_PrefabInstance: {fileID: 1821671975}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &291224229
 GameObject:
   m_ObjectHideFlags: 0
@@ -302,33 +307,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 668865775}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &387709748 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4088856215554375809, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-  m_PrefabInstance: {fileID: 1821671975}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &387709754
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 387709748}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: ab9c2d6e098a1a944a509ac1860836ed, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 1
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &457148597
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -503,6 +481,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4010c53ab8b46d04094449f087cb05ea, type: 3}
+--- !u!4 &562636773 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6916187399567105484, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+  m_PrefabInstance: {fileID: 1821671975}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &602897910 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6663247182622735040, guid: 7a5fa66fdfe418f4ca7c22b076ab4226, type: 3}
@@ -700,6 +683,8 @@ MonoBehaviour:
   rotationSpeed: {x: 0, y: 0, z: 180}
   speed: 2
   arrivalDistance: 0.02
+  respawnOffset: {x: 0, y: 0}
+  teleportDelay: 0.5
   snapToFirstWaypointOnStart: 0
   waypoint1: {fileID: 0}
   waypoint2: {fileID: 0}
@@ -5739,7 +5724,7 @@ AudioSource:
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -5939,6 +5924,22 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: startsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: attackCollider
+      value: 
+      objectReference: {fileID: 212551932}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: activationCheck
+      value: 
+      objectReference: {fileID: 562636773}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: activationRadius
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
       propertyPath: maxActiveHelpers
       value: 3
       objectReference: {fileID: 0}
@@ -5949,10 +5950,6 @@ PrefabInstance:
     - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
       propertyPath: phases.Array.data[1].phaseTint.g
       value: 0.6275472
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-      propertyPath: phases.Array.data[1].phaseTint.r
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2789439567168442427, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
       propertyPath: phases.Array.data[2].phaseTint.b
@@ -6010,13 +6007,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: StackWarrior
       objectReference: {fileID: 0}
+    - target: {fileID: 6916187399567105484, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -13
+      objectReference: {fileID: 0}
+    - target: {fileID: 6916187399567105484, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -7.87
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4088856215554375809, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 387709754}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 91949e58426503a47bc8cc31b3c7b603, type: 3}
 --- !u!1 &2119723727
 GameObject:

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9152497184478089830}
   - component: {fileID: 5077929626280993258}
   - component: {fileID: 5285178755098245367}
-  - component: {fileID: 5531579955182560103}
+  - component: {fileID: 6640931105781258247}
   m_Layer: 8
   m_Name: SpikeTile
   m_TagString: Untagged
@@ -175,7 +175,7 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &5531579955182560103
+--- !u!114 &6640931105781258247
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -184,9 +184,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 296672763217885605}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c84dab87e4a4bcaa44db0d69ccfdcd2, type: 3}
+  m_Script: {fileID: 11500000, guid: 8e66224301e64ed9a3ec4d8d0f749e4f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Spikes
+  m_EditorClassIdentifier: Assembly-CSharp::SpikeHazard
   hp: 3
   moveSpeed: 2
   moveAcceleration: 20
@@ -196,8 +196,14 @@ MonoBehaviour:
   playerLayerMask:
     serializedVersion: 2
     m_Bits: 0
-  contactPushbackImpulse: {x: 2, y: 2}
+  contactPushbackImpulse: {x: 6, y: 6}
+  CorpsePrefab: {fileID: 0}
+  corpseLifetime: 15
   coinPrefab: {fileID: 0}
   coinDropCount: 0
-  hitFlashDuration: 0.1
+  deathDropHorizontalVelocity: 2
+  deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
+  deathDropAngularVelocity: 240
+  hitFlashDuration: 0
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  respawnOffset: {x: 0, y: 0}

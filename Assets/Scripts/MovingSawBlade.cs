@@ -1,5 +1,6 @@
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class MovingSawBlade : EnemyBase
@@ -13,6 +14,10 @@ public class MovingSawBlade : EnemyBase
 
     [Tooltip("How close the saw blade must get to a waypoint before moving to the next one.")]
     public float arrivalDistance = 0.02f;
+
+    [Header("Hazard Response")]
+    [SerializeField] private Vector2 respawnOffset = Vector2.zero;
+    [SerializeField] private float teleportDelay = 0.5f;
 
     [Tooltip("Move the saw blade to Waypoint 1 immediately when play starts.")]
     public bool snapToFirstWaypointOnStart = false;
@@ -39,12 +44,15 @@ public class MovingSawBlade : EnemyBase
     private readonly bool[] cachedWaypointIsAssigned = new bool[MaxWaypointCount];
     private readonly HashSet<Rigidbody2D> passengerRigidbodies = new HashSet<Rigidbody2D>();
     private readonly List<Rigidbody2D> passengerRemovalBuffer = new List<Rigidbody2D>();
+    private readonly Dictionary<JonCharacterController, float> nextAllowedDamageTimes =
+        new Dictionary<JonCharacterController, float>();
     private int currentWaypointIndex;
 
     protected override void Awake()
     {
         base.Awake();
         hp = Mathf.Max(hp, 1);
+        contactDamage = 1;
         coinDropCount = 0;
         ConfigureRigidbody();
         CacheWaypointPositions();
@@ -69,6 +77,7 @@ public class MovingSawBlade : EnemyBase
     {
         speed = Mathf.Max(0f, speed);
         arrivalDistance = Mathf.Max(0.001f, arrivalDistance);
+        teleportDelay = Mathf.Max(0f, teleportDelay);
     }
 
     protected override void FixedUpdate()
@@ -242,6 +251,70 @@ public class MovingSawBlade : EnemyBase
         passengerRigidbodies.Add(collision.rigidbody);
     }
 
+    private void HandleHazardCollision(Collision2D collision)
+    {
+        JonCharacterController playerController = GetPlayerController(collision);
+        if (playerController == null)
+            return;
+
+        if (nextAllowedDamageTimes.TryGetValue(playerController, out float nextAllowedTime) &&
+            Time.time < nextAllowedTime)
+        {
+            return;
+        }
+
+        nextAllowedDamageTimes[playerController] =
+            Time.time + Mathf.Max(contactDamageCooldown, teleportDelay);
+
+        PlayerData.RemoveHP(contactDamage);
+        StartCoroutine(TeleportAfterDelay(playerController));
+    }
+
+    private IEnumerator TeleportAfterDelay(JonCharacterController playerController)
+    {
+        if (teleportDelay > 0f)
+        {
+            yield return new WaitForSeconds(teleportDelay);
+        }
+
+        if (playerController != null)
+        {
+            playerController.TeleportToLastGroundedPosition(respawnOffset);
+        }
+    }
+
+    private static JonCharacterController GetPlayerController(Collision2D collision)
+    {
+        if (collision == null)
+            return null;
+
+        if (TryGetPlayerController(collision.rigidbody, out JonCharacterController rigidbodyController))
+            return rigidbodyController;
+
+        if (TryGetPlayerController(collision.otherRigidbody, out JonCharacterController otherRigidbodyController))
+            return otherRigidbodyController;
+
+        if (TryGetPlayerController(collision.collider, out JonCharacterController colliderController))
+            return colliderController;
+
+        if (TryGetPlayerController(collision.otherCollider, out JonCharacterController otherColliderController))
+            return otherColliderController;
+
+        return null;
+    }
+
+    private static bool TryGetPlayerController(Rigidbody2D body, out JonCharacterController playerController)
+    {
+        playerController = body != null ? body.GetComponent<JonCharacterController>() : null;
+        return playerController != null;
+    }
+
+    private static bool TryGetPlayerController(Collider2D collider, out JonCharacterController playerController)
+    {
+        playerController = collider != null ? collider.GetComponentInParent<JonCharacterController>() : null;
+        return playerController != null;
+    }
+
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
@@ -284,13 +357,13 @@ public class MovingSawBlade : EnemyBase
 
     protected override void OnCollisionEnter2D(Collision2D collision)
     {
-        base.OnCollisionEnter2D(collision);
+        HandleHazardCollision(collision);
         TrackPassenger(collision);
     }
 
     protected override void OnCollisionStay2D(Collision2D collision)
     {
-        base.OnCollisionStay2D(collision);
+        HandleHazardCollision(collision);
         TrackPassenger(collision);
     }
 

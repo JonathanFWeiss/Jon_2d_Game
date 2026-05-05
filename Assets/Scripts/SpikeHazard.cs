@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +7,7 @@ public class SpikeHazard : FixedPositionEnemy
 {
   
     [SerializeField] private Vector2 respawnOffset = Vector2.zero;
+    [SerializeField] private float teleportDelay = 0.5f;
     
 
     private readonly Dictionary<JonCharacterController, float> nextAllowedDamageTimes =
@@ -45,9 +47,24 @@ public class SpikeHazard : FixedPositionEnemy
             return;
         }
 
-        playerController.TeleportToLastGroundedPosition(respawnOffset);
+        nextAllowedDamageTimes[playerController] =
+            Time.time + Mathf.Max(contactDamageCooldown, teleportDelay);
 
-       
+        PlayerData.RemoveHP(contactDamage);
+        StartCoroutine(TeleportAfterDelay(playerController));
+    }
+
+    private IEnumerator TeleportAfterDelay(JonCharacterController playerController)
+    {
+        if (teleportDelay > 0f)
+        {
+            yield return new WaitForSeconds(teleportDelay);
+        }
+
+        if (playerController != null)
+        {
+            playerController.TeleportToLastGroundedPosition(respawnOffset);
+        }
     }
 
     private static JonCharacterController GetPlayerController(Collision2D collision)
