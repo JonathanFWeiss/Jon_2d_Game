@@ -370,11 +370,11 @@ MonoBehaviour:
   attackRange: 8
   initialAttackDelay: 1.5
   windupDuration: 0.5
-  throwSpeed: 15
+  throwSpeed: 18
   projectileSpawnOffset: 0.25
   throwCooldown: 3
   projectileLifetime: 10
-  projectileGravityScale: 0
+  projectileGravityScale: 1
   throwAnimationState: ThrowerThrow
   idleAnimationState: ThrowerIdle
 --- !u!58 &5928099042250707495
