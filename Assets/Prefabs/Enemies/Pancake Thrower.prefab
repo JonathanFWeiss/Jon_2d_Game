@@ -106,10 +106,10 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 0.25
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 0
+  m_GravityScale: 1
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -150,7 +150,7 @@ MonoBehaviour:
   deathDropHorizontalVelocity: 2
   deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
   deathDropAngularVelocity: 240
-  hitFlashDuration: 0.1
+  hitFlashDuration: 0
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!58 &5155441613569353481
 CircleCollider2D:
