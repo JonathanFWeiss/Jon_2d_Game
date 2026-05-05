@@ -7,6 +7,7 @@ using UnityEngine.UIElements;
 public class EnemyGauntletRoom : MonoBehaviour
 {
     private const string DefaultCounterLabelName = "GauntletDefeatedCounter";
+    private const string BannerLabelName = "GauntletBannerMessage";
     private const int ActiveEnemyBoundsCheckUpdateInterval = 10;
 
     [Serializable]
@@ -82,10 +83,15 @@ public class EnemyGauntletRoom : MonoBehaviour
     [Header("UI")]
     [Tooltip("If left empty, the first UIDocument in the scene is used.")]
     [SerializeField] private UIDocument uiDocument;
+    [Tooltip("Optional banner text shown briefly when the gauntlet starts. Leave empty to disable.")]
+    [SerializeField] private string bannerText;
+    [SerializeField] private float bannerDuration = 1.5f;
+    [SerializeField] private float bannerTopOffset = 86f;
     [SerializeField] private string counterLabelName = DefaultCounterLabelName;
     [SerializeField] private float counterTopOffset = 86f;
 
     private readonly List<GameObject> activeWaveEnemies = new List<GameObject>();
+    private Label bannerLabel;
     private Label counterLabel;
     private Transform playerTransform;
     private Collider2D triggerCollider;
@@ -151,6 +157,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void OnDestroy()
     {
+        RemoveBannerLabel();
         RemoveCounterLabel();
     }
 
@@ -182,6 +189,7 @@ public class EnemyGauntletRoom : MonoBehaviour
         ActivateDoors();
         ShowCounterLabel();
         RefreshCounterLabel();
+        ShowBannerMessage();
         StartNextWaveOrComplete();
     }
 
@@ -197,6 +205,7 @@ public class EnemyGauntletRoom : MonoBehaviour
     {
         DestroyActiveWaveEnemies();
         RestoreDoorsToPreGauntletState();
+        RemoveBannerLabel();
         RemoveCounterLabel();
 
         isRunning = false;
@@ -1179,6 +1188,12 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void ShowCounterLabel()
     {
+        if (!ShouldShowDefeatedCounter())
+        {
+            RemoveCounterLabel();
+            return;
+        }
+
         UIDocument resolvedUiDocument = ResolveUiDocument();
         if (resolvedUiDocument == null || resolvedUiDocument.rootVisualElement == null)
             return;
@@ -1195,28 +1210,67 @@ public class EnemyGauntletRoom : MonoBehaviour
             pickingMode = PickingMode.Ignore
         };
 
-        counterLabel.style.position = Position.Absolute;
-        counterLabel.style.top = counterTopOffset;
-        counterLabel.style.left = 0f;
-        counterLabel.style.right = 0f;
-        counterLabel.style.marginLeft = StyleKeyword.Auto;
-        counterLabel.style.marginRight = StyleKeyword.Auto;
-        counterLabel.style.paddingLeft = 14f;
-        counterLabel.style.paddingRight = 14f;
-        counterLabel.style.paddingTop = 8f;
-        counterLabel.style.paddingBottom = 8f;
-        counterLabel.style.backgroundColor = new Color(0f, 0f, 0f, 0.65f);
-        counterLabel.style.color = Color.white;
-        counterLabel.style.fontSize = 22f;
-        counterLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-        counterLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-        counterLabel.style.borderTopLeftRadius = 8f;
-        counterLabel.style.borderTopRightRadius = 8f;
-        counterLabel.style.borderBottomLeftRadius = 8f;
-        counterLabel.style.borderBottomRightRadius = 8f;
-        counterLabel.style.alignSelf = Align.Center;
+        ApplyGauntletLabelStyle(counterLabel, counterTopOffset);
 
         resolvedUiDocument.rootVisualElement.Add(counterLabel);
+    }
+
+    private void ShowBannerMessage()
+    {
+        if (string.IsNullOrWhiteSpace(bannerText))
+            return;
+
+        UIDocument resolvedUiDocument = ResolveUiDocument();
+        if (resolvedUiDocument == null || resolvedUiDocument.rootVisualElement == null)
+            return;
+
+        VisualElement root = resolvedUiDocument.rootVisualElement;
+
+        RemoveBannerLabel();
+
+        Label existingMessage = root.Q<Label>(BannerLabelName);
+        if (existingMessage != null)
+        {
+            existingMessage.RemoveFromHierarchy();
+        }
+
+        bannerLabel = new Label(bannerText.Trim())
+        {
+            name = BannerLabelName,
+            pickingMode = PickingMode.Ignore
+        };
+
+        ApplyGauntletLabelStyle(bannerLabel, bannerTopOffset);
+
+        root.Add(bannerLabel);
+        ScheduleBannerRemoval(root, bannerLabel);
+    }
+
+    private static void ApplyGauntletLabelStyle(Label label, float topOffset)
+    {
+        if (label == null)
+            return;
+
+        label.style.position = Position.Absolute;
+        label.style.top = topOffset;
+        label.style.left = 0f;
+        label.style.right = 0f;
+        label.style.marginLeft = StyleKeyword.Auto;
+        label.style.marginRight = StyleKeyword.Auto;
+        label.style.paddingLeft = 14f;
+        label.style.paddingRight = 14f;
+        label.style.paddingTop = 8f;
+        label.style.paddingBottom = 8f;
+        label.style.backgroundColor = new Color(0f, 0f, 0f, 0.65f);
+        label.style.color = Color.white;
+        label.style.fontSize = 22f;
+        label.style.unityFontStyleAndWeight = FontStyle.Bold;
+        label.style.unityTextAlign = TextAnchor.MiddleCenter;
+        label.style.borderTopLeftRadius = 8f;
+        label.style.borderTopRightRadius = 8f;
+        label.style.borderBottomLeftRadius = 8f;
+        label.style.borderBottomRightRadius = 8f;
+        label.style.alignSelf = Align.Center;
     }
 
     private UIDocument ResolveUiDocument()
@@ -1231,7 +1285,7 @@ public class EnemyGauntletRoom : MonoBehaviour
         if (!warnedMissingUiDocument)
         {
             warnedMissingUiDocument = true;
-            Debug.LogWarning("EnemyGauntletRoom could not find a UIDocument for the defeated counter.");
+            Debug.LogWarning("EnemyGauntletRoom could not find a UIDocument for the gauntlet UI.");
         }
 
         return null;
@@ -1239,10 +1293,21 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void RefreshCounterLabel()
     {
+        if (!ShouldShowDefeatedCounter())
+        {
+            RemoveCounterLabel();
+            return;
+        }
+
         if (counterLabel != null)
         {
             counterLabel.text = $"{defeatedEnemyCount}/{totalEnemyCount} Defeated";
         }
+    }
+
+    private bool ShouldShowDefeatedCounter()
+    {
+        return totalEnemyCount != 1;
     }
 
     private void RemoveCounterLabel()
@@ -1251,6 +1316,36 @@ public class EnemyGauntletRoom : MonoBehaviour
         {
             counterLabel.RemoveFromHierarchy();
             counterLabel = null;
+        }
+    }
+
+    private void ScheduleBannerRemoval(VisualElement root, Label messageLabel)
+    {
+        int delayMilliseconds = Mathf.RoundToInt(Mathf.Max(0f, bannerDuration) * 1000f);
+        if (delayMilliseconds <= 0)
+        {
+            RemoveBannerLabel(messageLabel);
+            return;
+        }
+
+        root.schedule.Execute(() => RemoveBannerLabel(messageLabel)).StartingIn(delayMilliseconds);
+    }
+
+    private void RemoveBannerLabel()
+    {
+        RemoveBannerLabel(bannerLabel);
+    }
+
+    private void RemoveBannerLabel(Label messageLabel)
+    {
+        if (messageLabel != null && messageLabel.parent != null)
+        {
+            messageLabel.RemoveFromHierarchy();
+        }
+
+        if (bannerLabel == messageLabel)
+        {
+            bannerLabel = null;
         }
     }
 

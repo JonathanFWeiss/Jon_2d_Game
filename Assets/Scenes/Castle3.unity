@@ -767,6 +767,14 @@ PrefabInstance:
       value: -3.34
       objectReference: {fileID: 0}
     - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: bannerText
+      value: Boss Fight
+      objectReference: {fileID: 0}
+    - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: bannerTopOffset
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: waves.Array.data[0].enemies.Array.data[0].count
       value: 1
       objectReference: {fileID: 0}
