@@ -225,6 +225,9 @@ public class BossBase : EnemyBase
     [Tooltip("Helper prefabs spawned by the default SummonHelpers state.")]
     [SerializeField] private GameObject[] helperPrefabs;
 
+    [Tooltip("Graphic to spawn behind helpers when they are summoned. This is optional and can be used for effects like a shadow or spawn flash.")]
+    [SerializeField] private GameObject[] helperSpawnEffects;
+
     [Tooltip("Spawn points used by the default SummonHelpers state. If empty, helpers spawn beside the boss.")]
     [SerializeField] private Transform[] helperSpawnPoints;
 
@@ -674,6 +677,9 @@ public class BossBase : EnemyBase
 
         for (int i = 0; i < spawnCount; i++)
         {
+
+
+
             GameObject helperPrefab = GetHelperPrefab(i);
 
             if (helperPrefab == null)
@@ -683,6 +689,13 @@ public class BossBase : EnemyBase
             Quaternion spawnRotation = helperPrefab.transform.rotation;
             GameObject helper = Instantiate(helperPrefab, spawnPosition, spawnRotation);
             activeHelpers.Add(helper);
+
+
+            GameObject spawnEffect = GetHelperSpawnEffect(i);
+            if (spawnEffect != null)
+            {
+                Instantiate(spawnEffect, spawnPosition, spawnRotation);
+            }
         }
     }
 
@@ -1184,6 +1197,16 @@ public class BossBase : EnemyBase
 
         int prefabIndex = Mathf.Abs(helperIndex) % helperPrefabs.Length;
         return helperPrefabs[prefabIndex];
+    }
+    private GameObject GetHelperSpawnEffect(int helperIndex)
+    {
+        if (helperSpawnEffects == null || helperSpawnEffects.Length == 0)
+            return null;
+
+        int effectIndex = Mathf.Abs(helperIndex) % helperSpawnEffects.Length;
+        return helperSpawnEffects[effectIndex];
+        Debug.Log($"Spawning helper effect {effectIndex} for helper {helperIndex}");
+        
     }
 
     private int GetAvailableHelperSpawnCount()

@@ -288,6 +288,9 @@ MonoBehaviour:
   hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   startsActive: 1
   activationDelay: 0
+  useActivationZone: 1
+  activationRadius: 8
+  activationCheck: {fileID: 6916187399567105484}
   phases:
   - phaseName: Phase 1
     enterAtHealthPercent: 1
@@ -380,10 +383,12 @@ MonoBehaviour:
   resetVelocityBeforeJumpAttack: 1
   helperPrefabs:
   - {fileID: 4059959933960952876, guid: c3a72547a10d1c44ea5cf4478197e8e5, type: 3}
+  helperSpawnEffects:
+  - {fileID: 1656151400369918607, guid: 15ba606a6e8cd274389c41b0f5480445, type: 3}
   helperSpawnPoints: []
   helpersPerSummon: 1
-  maxActiveHelpers: 3
-  fallbackHelperSpawnOffset: {x: 4, y: 4}
+  maxActiveHelpers: 2
+  fallbackHelperSpawnOffset: {x: 0.5, y: 4}
   stopHorizontalVelocityDuringRecovery: 1
   logStateChanges: 1
 --- !u!95 &3469953027103181960
@@ -433,7 +438,7 @@ Transform:
   m_GameObject: {fileID: 5889485133877964862}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -14.68, y: 4.02, z: 0}
+  m_LocalPosition: {x: -13, y: -7.87, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

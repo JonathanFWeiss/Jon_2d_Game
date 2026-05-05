@@ -5,6 +5,7 @@ using UnityEngine;
 public class EnemyBase : MonoBehaviour
 {
     private const string HitFlashMaterialResourcePath = "Materials/AllWhiteMaterial";
+    private const string GroundLayerName = "Ground";
 
     [Header("Stats")]
     public int hp = 3;
@@ -184,6 +185,13 @@ public class EnemyBase : MonoBehaviour
             return;
 
         GameObject corpse = Instantiate(CorpsePrefab, transform.position, transform.rotation);
+
+        if (IsDropInsideGroundCollider(corpse))
+        {
+            Destroy(corpse);
+            return;
+        }
+
         ApplyDeathDropMotion(corpse);
 
         if (corpseLifetime > 0f)
@@ -200,8 +208,45 @@ public class EnemyBase : MonoBehaviour
         for (int i = 0; i < coinDropCount; i++)
         {
             GameObject coin = Instantiate(coinPrefab, transform.position, Quaternion.identity);
+
+            if (IsDropInsideGroundCollider(coin))
+            {
+                Destroy(coin);
+                continue;
+            }
+
             ApplyDeathDropMotion(coin);
         }
+    }
+
+    protected virtual bool IsDropInsideGroundCollider(GameObject drop)
+    {
+        if (drop == null)
+            return false;
+
+        int groundLayerMask = LayerMask.GetMask(GroundLayerName);
+
+        if (groundLayerMask == 0)
+            return false;
+
+        Collider2D[] dropColliders = drop.GetComponentsInChildren<Collider2D>(true);
+        Collider2D[] groundOverlapResults = new Collider2D[1];
+        ContactFilter2D groundFilter = new ContactFilter2D();
+        groundFilter.SetLayerMask(groundLayerMask);
+        groundFilter.useTriggers = true;
+
+        foreach (Collider2D dropCollider in dropColliders)
+        {
+            if (dropCollider == null || !dropCollider.enabled || !dropCollider.gameObject.activeInHierarchy)
+                continue;
+
+            if (dropCollider.Overlap(groundFilter, groundOverlapResults) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected virtual void ApplyDeathDropMotion(GameObject drop)
