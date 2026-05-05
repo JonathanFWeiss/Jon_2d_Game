@@ -208,10 +208,27 @@ public class JonCharacterController : MonoBehaviour
 
     [Header("Swimming Parameters")]
     [SerializeField] private float swimSpeed = 5f;
+    [SerializeField] private float swimAcceleration = 35f;
+    [SerializeField] private float swimDeceleration = 25f;
+    [SerializeField] private float sprintSwimSpeed = 8f;
+    [SerializeField] private float sprintSwimAcceleration = 24f;
+    [SerializeField] private float sprintBurstSwimSpeed = 10f;
+    [SerializeField] private float sprintBurstSwimDuration = 0.12f;
+    [SerializeField] private float sprintEndSwimAcceleration = 18f;
+    [SerializeField][Range(0f, 1f)] private float swimInputThreshold = 0.1f;
+    [SerializeField] private float swimJumpReentryDelay = 0.08f;
     [SerializeField] private float buoyancy = 6f;
     [SerializeField] private float waterDrag = 3f;
     public bool isSwimming;
     private float normalDrag;
+    private bool wasSwimming;
+    private bool isSwimSprinting;
+    private bool swimSprintRequested;
+    private bool decelerateFromSwimSprint;
+    private float currentSwimSpeed;
+    private float swimSprintDirection = 1f;
+    private float swimSprintBurstEndTime = float.NegativeInfinity;
+    private float swimReentryDisabledUntil = float.NegativeInfinity;
 
 
     private void Awake()
@@ -223,6 +240,7 @@ public class JonCharacterController : MonoBehaviour
 
         //        Debug.Log("Rigidbody2D component found: " + rb);
         defaultGravityScale = rb.gravityScale;
+        normalDrag = rb.linearDamping;
         rb.freezeRotation = true;
         lastGroundedPosition = transform.position;
         hasLastGroundedPosition = true;
@@ -439,6 +457,12 @@ public class JonCharacterController : MonoBehaviour
     private void OnDisable()
     {
         StopRunDustEffect();
+        if (rb != null && wasSwimming)
+        {
+            isSwimming = false;
+            EndSwimming();
+            wasSwimming = false;
+        }
     }
 
     // Update is called once per frame
@@ -449,7 +473,11 @@ public class JonCharacterController : MonoBehaviour
         if (animator == null)
             return;
 
-        animator.SetFloat("xSpeedABS", Mathf.Abs(movementVector.x));
+        float xSpeedAbs = isSwimming
+            ? Mathf.Abs(rb.linearVelocity.x) / Mathf.Max(0.01f, swimSpeed)
+            : Mathf.Abs(movementVector.x);
+
+        animator.SetFloat("xSpeedABS", xSpeedAbs);
         animator.SetFloat("ySpeed", rb.linearVelocity.y);
         animator.SetBool("isGrounded", isGrounded);
         animator.SetBool("isAttacking", isAttacking);
@@ -473,6 +501,7 @@ public class JonCharacterController : MonoBehaviour
         doGroundCheck();
         doWallCheck();
         UpdateDecayingHorizontalMovementVelocities();
+        SyncSwimmingState();
 
         if (isLedgePullingUp)
         {
@@ -544,7 +573,7 @@ public class JonCharacterController : MonoBehaviour
 
         if (isSwimming)
         {
-            rb.linearVelocity = new Vector2(movementVector.x * swimSpeed, movementVector.y * swimSpeed);
+            ApplySwimmingMovement();
         }
         //Debug.Log("Current velocity: " + rb.linearVelocityX);
 
@@ -566,11 +595,12 @@ public class JonCharacterController : MonoBehaviour
         else if (hasBufferedJumpRequest && !isDashing && !isGettingHit && (hasGroundJumpAvailable || doubleJumpAvailable || isSwimming))
         {
             bool usingGroundJump = hasGroundJumpAvailable;
+            bool usingSwimmingJump = isSwimming;
 
             PerformJump(usingGroundJump);
             ClearBufferedJump();
 
-            if (!usingGroundJump && doubleJumpAvailable)
+            if (!usingGroundJump && !usingSwimmingJump && doubleJumpAvailable)
             {
                 doubleJumpAvailable = false;
               //  Debug.Log("Double jump used");
@@ -584,7 +614,7 @@ public class JonCharacterController : MonoBehaviour
         ClampFallSpeed();
 
 
-        if (dashRequested)
+        if (dashRequested && !isSwimming)
         {
             // Store current direction before starting dash
             if (movementVector.x != 0)
@@ -628,6 +658,12 @@ public class JonCharacterController : MonoBehaviour
 
     public void Dash()
     {
+        if (isSwimming)
+        {
+            QueueSwimSprint();
+            return;
+        }
+
         if (isDashing || Time.time < nextDashTime)
         {
             return;
@@ -662,6 +698,10 @@ public class JonCharacterController : MonoBehaviour
         if (isDashButtonHeld)
         {
             isDashSpeedBoostArmed = true;
+            if (isSwimming)
+            {
+                QueueSwimSprint();
+            }
         }
         else
         {
@@ -794,6 +834,225 @@ public class JonCharacterController : MonoBehaviour
         rb.linearVelocity = velocity;
     }
 
+    public void SetSwimming(bool shouldSwim)
+    {
+        if (shouldSwim && Time.time < swimReentryDisabledUntil)
+        {
+            return;
+        }
+
+        if (isSwimming == shouldSwim && wasSwimming == shouldSwim)
+        {
+            return;
+        }
+
+        isSwimming = shouldSwim;
+        SyncSwimmingState();
+    }
+
+    private void SyncSwimmingState()
+    {
+        if (isSwimming == wasSwimming)
+        {
+            return;
+        }
+
+        if (isSwimming)
+        {
+            BeginSwimming();
+        }
+        else
+        {
+            EndSwimming();
+        }
+
+        wasSwimming = isSwimming;
+    }
+
+    private void BeginSwimming()
+    {
+        CancelDash();
+        CancelDashSpeedBoost();
+        CancelLedgeGrabAndPullUp(false);
+        ClearExtraHorizontalMovementVelocities();
+
+        rb.linearDamping = Mathf.Max(0f, waterDrag);
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+
+        dashRequested = false;
+        isJumpSustaining = false;
+        didAirHang = false;
+        isWallSliding = false;
+        isSwimSprinting = false;
+        decelerateFromSwimSprint = false;
+        currentSwimSpeed = 0f;
+        doubleJumpAvailable = canDoubleJump;
+        airDashAvailable = canDash;
+
+        if (isDashButtonHeld)
+        {
+            QueueSwimSprint();
+        }
+    }
+
+    private void EndSwimming()
+    {
+        rb.linearDamping = normalDrag;
+
+        if (!isDashing && !isLedgeGrabbing && !isLedgePullingUp)
+        {
+            rb.gravityScale = defaultGravityScale;
+        }
+
+        isSwimSprinting = false;
+        swimSprintRequested = false;
+        decelerateFromSwimSprint = false;
+        currentSwimSpeed = 0f;
+    }
+
+    private void ApplySwimmingMovement()
+    {
+        dashRequested = false;
+        rb.gravityScale = 0f;
+
+        if (swimSprintRequested && !isSwimSprinting && CanStartSwimSprint())
+        {
+            StartSwimSprint();
+        }
+
+        if (!isDashButtonHeld && swimSprintRequested)
+        {
+            swimSprintRequested = false;
+        }
+
+        bool isInSprintBurst = isSwimSprinting && Time.time < swimSprintBurstEndTime;
+        if (isSwimSprinting && !isDashButtonHeld && !isInSprintBurst)
+        {
+            StopSwimSprint();
+        }
+
+        int inputDirection = GetSwimInputDirection();
+        float targetSpeed;
+        float acceleration;
+
+        if (isSwimSprinting)
+        {
+            if (!isInSprintBurst && inputDirection != 0)
+            {
+                swimSprintDirection = inputDirection;
+            }
+
+            targetSpeed = swimSprintDirection * (isInSprintBurst ? sprintBurstSwimSpeed : sprintSwimSpeed);
+            acceleration = sprintSwimAcceleration;
+            FaceSwimDirection(swimSprintDirection);
+        }
+        else
+        {
+            targetSpeed = inputDirection * swimSpeed;
+            acceleration = decelerateFromSwimSprint
+                ? sprintEndSwimAcceleration
+                : (inputDirection == 0 ? swimDeceleration : swimAcceleration);
+
+            if (inputDirection != 0)
+            {
+                FaceSwimDirection(inputDirection);
+            }
+        }
+
+        currentSwimSpeed = Mathf.MoveTowards(
+            currentSwimSpeed,
+            targetSpeed,
+            Mathf.Max(0f, acceleration) * Time.fixedDeltaTime
+        );
+
+        if (decelerateFromSwimSprint && Mathf.Abs(currentSwimSpeed - targetSpeed) <= 0.01f)
+        {
+            decelerateFromSwimSprint = false;
+        }
+
+        rb.linearVelocity = new Vector2(currentSwimSpeed, 0f);
+    }
+
+    private void QueueSwimSprint()
+    {
+        if (!canDash || isSwimSprinting)
+        {
+            return;
+        }
+
+        swimSprintRequested = true;
+    }
+
+    private bool CanStartSwimSprint()
+    {
+        return canDash &&
+            !isGettingHit &&
+            Time.time >= nextDashTime;
+    }
+
+    private void StartSwimSprint()
+    {
+        swimSprintRequested = false;
+        isSwimSprinting = true;
+        decelerateFromSwimSprint = false;
+        swimSprintDirection = GetSwimSprintStartDirection();
+        swimSprintBurstEndTime = Time.time + Mathf.Max(0f, sprintBurstSwimDuration);
+        nextDashTime = swimSprintBurstEndTime + dashCooldown;
+        currentSwimSpeed = swimSprintDirection * sprintBurstSwimSpeed;
+        FaceSwimDirection(swimSprintDirection);
+    }
+
+    private void StopSwimSprint()
+    {
+        isSwimSprinting = false;
+        decelerateFromSwimSprint = true;
+    }
+
+    private int GetSwimInputDirection()
+    {
+        if (movementVector.x > swimInputThreshold)
+        {
+            return 1;
+        }
+
+        if (movementVector.x < -swimInputThreshold)
+        {
+            return -1;
+        }
+
+        return 0;
+    }
+
+    private float GetSwimSprintStartDirection()
+    {
+        int inputDirection = GetSwimInputDirection();
+        if (inputDirection != 0)
+        {
+            return inputDirection;
+        }
+
+        if (Mathf.Abs(currentSwimSpeed) > 0.01f)
+        {
+            return Mathf.Sign(currentSwimSpeed);
+        }
+
+        return GetSpriteFacingDirection();
+    }
+
+    private void FaceSwimDirection(float direction)
+    {
+        if (Mathf.Abs(direction) <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        float facing = Mathf.Sign(direction);
+        localScale = new Vector3(facing * Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+        transform.localScale = localScale;
+    }
+
     private void UpdateDecayingHorizontalMovementVelocities()
     {
         for (int i = extraHorizontalMovementVelocities.Count - 1; i >= 0; i--)
@@ -867,9 +1126,16 @@ public class JonCharacterController : MonoBehaviour
 
     private void PerformJump(bool usingGroundJump)
     {
-        float verticalSpeed = usingGroundJump || isSwimming
+        bool jumpingFromSwimming = isSwimming;
+        float verticalSpeed = usingGroundJump || jumpingFromSwimming
             ? jumpForce
             : jumpForce * doubleJumpSpeedMultiplier;
+
+        if (jumpingFromSwimming)
+        {
+            swimReentryDisabledUntil = Time.time + Mathf.Max(0f, swimJumpReentryDelay);
+            SetSwimming(false);
+        }
 
         rb.gravityScale = defaultGravityScale;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, verticalSpeed);

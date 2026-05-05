@@ -36,7 +36,15 @@ public class SwimmableWater : MonoBehaviour
         }
 
         swimmerContactCounts[playerController]++;
-        playerController.isSwimming = true;
+        playerController.SetSwimming(true);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        if (!swimmingColliders.TryGetValue(other, out JonCharacterController playerController))
+            return;
+
+        playerController.SetSwimming(true);
     }
 
     private void OnTriggerExit2D(Collider2D other)
@@ -56,7 +64,7 @@ public class SwimmableWater : MonoBehaviour
         }
 
         swimmerContactCounts.Remove(playerController);
-        playerController.isSwimming = false;
+        playerController.SetSwimming(false);
     }
 
     private void OnDisable()
@@ -65,7 +73,7 @@ public class SwimmableWater : MonoBehaviour
         {
             if (playerController != null)
             {
-                playerController.isSwimming = false;
+                playerController.SetSwimming(false);
             }
         }
 
