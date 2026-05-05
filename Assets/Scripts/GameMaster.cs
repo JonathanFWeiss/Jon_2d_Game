@@ -95,6 +95,7 @@ public class GameMaster : MonoBehaviour
 
     private void OnEnable()
     {
+        ResetPauseStateForPlayModeStart();
         SubscribePauseAction();
     }
 
@@ -110,13 +111,30 @@ public class GameMaster : MonoBehaviour
         if (isRespawningPlayer)
         {
             SetPlayerInputEnabled(true);
+            isRespawningPlayer = false;
         }
+    }
+
+    private void ResetPauseStateForPlayModeStart()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        isPaused = false;
+        isRespawningPlayer = false;
+        timeScaleBeforePause = 1f;
+        Time.timeScale = 1f;
+
+        ResolvePlayer();
+        ResolveUiDocument();
+        HidePauseMenu();
+        SetPlayerInputEnabled(true);
     }
 
     private void Update()
     {
         if (pauseAction == null)
-        {Debug.LogWarning("Trying to pause.");
+        {
             SubscribePauseAction();
         }
 

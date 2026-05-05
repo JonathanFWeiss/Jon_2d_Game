@@ -249,7 +249,7 @@ public class JonCharacterController : MonoBehaviour
 
         if (attackLayerMask == 0)
         {
-            attackLayerMask = LayerMask.GetMask("Player", "NPCs", "Enemy");
+            attackLayerMask = LayerMask.GetMask("Player", "NPCs", "Enemy", "Boss");
         }
     }
 

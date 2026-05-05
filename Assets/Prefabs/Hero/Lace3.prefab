@@ -281,7 +281,7 @@ MonoBehaviour:
   attackBoxOffset: {x: 1.5, y: -0.4}
   attackLayerMask:
     serializedVersion: 2
-    m_Bits: 256
+    m_Bits: 4352
   attackDamage: 1
   energyGainPerSuccessfulHit: 1
   attackPushbackImpulse: {x: 10, y: 0}

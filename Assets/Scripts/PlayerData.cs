@@ -11,7 +11,9 @@ public static class PlayerData
     public const string WallJumpPickupItemName = "WallJumpPickup";
     public const string MaxHealthPickupItemName = "MaxHealthPickup";
     private const float RemoveHpCooldownSeconds = 1f;
-    private const float HpRemovalPhysicsPauseSeconds = 0.5f;
+    private const SimulationMode2D DefaultPhysics2DMode = SimulationMode2D.FixedUpdate;
+    private const SimulationMode DefaultPhysicsMode = SimulationMode.FixedUpdate;
+    private static readonly float HpRemovalPhysicsPauseSeconds = 0.5f;
 
     public static int Coins { get; private set; }
     public static int Energy { get; private set; }
@@ -138,6 +140,9 @@ public static class PlayerData
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitializeOnPlayModeStart()
     {
+        ReleasePhysicsPauseRunners();
+        RestoreDefaultPauseState();
+
         Coins = 0;
         Energy = 0;
         HP = DefaultHP;
@@ -146,6 +151,35 @@ public static class PlayerData
         nextAllowedHpRemovalTime = 0f;
         physicsPauseRunner = null;
         PlayerDied = null;
+    }
+
+    private static void RestoreDefaultPauseState()
+    {
+        Time.timeScale = 1f;
+        Physics2D.simulationMode = DefaultPhysics2DMode;
+        Physics.simulationMode = DefaultPhysicsMode;
+    }
+
+    private static void ReleasePhysicsPauseRunners()
+    {
+        foreach (PhysicsPauseRunner runner in UnityEngine.Object.FindObjectsByType<PhysicsPauseRunner>(
+            FindObjectsInactive.Include))
+        {
+            if (runner == null)
+                continue;
+
+            runner.CancelPause();
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(runner.gameObject);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(runner.gameObject);
+            }
+        }
+
+        physicsPauseRunner = null;
     }
 
     public static void RemoveHP(int amount = 1)
@@ -240,19 +274,40 @@ public static class PlayerData
         {
             yield return new WaitForSecondsRealtime(duration);
 
-            Physics2D.simulationMode = pausedPhysics2DMode;
-            Physics.simulationMode = pausedPhysicsMode;
-            isPhysicsPaused = false;
-            pauseCoroutine = null;
+            RestorePausedPhysicsMode();
         }
 
-        private void OnDestroy()
+        public void CancelPause()
+        {
+            if (pauseCoroutine != null)
+            {
+                StopCoroutine(pauseCoroutine);
+                pauseCoroutine = null;
+            }
+
+            isPhysicsPaused = false;
+        }
+
+        private void RestorePausedPhysicsMode()
         {
             if (isPhysicsPaused)
             {
                 Physics2D.simulationMode = pausedPhysics2DMode;
                 Physics.simulationMode = pausedPhysicsMode;
+                isPhysicsPaused = false;
             }
+
+            pauseCoroutine = null;
+        }
+
+        private void OnDisable()
+        {
+            RestorePausedPhysicsMode();
+        }
+
+        private void OnDestroy()
+        {
+            RestorePausedPhysicsMode();
 
             if (physicsPauseRunner == this)
             {

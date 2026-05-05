@@ -286,6 +286,7 @@ public class BossBase : EnemyBase
         ResolveAnimator();
         CachePhaseTintRenderers();
         SetAttackColliderActive(false);
+        gameObject.layer = LayerMask.NameToLayer("Boss");
     }
 
     protected virtual void Start()
@@ -1227,7 +1228,7 @@ public class BossBase : EnemyBase
         int effectIndex = Mathf.Abs(helperIndex) % helperSpawnEffects.Length;
         return helperSpawnEffects[effectIndex];
         Debug.Log($"Spawning helper effect {effectIndex} for helper {helperIndex}");
-        
+
     }
 
     private int GetAvailableHelperSpawnCount()

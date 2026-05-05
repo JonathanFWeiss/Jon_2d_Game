@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5377879185547667440}
   - component: {fileID: 8113280453154918103}
-  m_Layer: 8
+  m_Layer: 12
   m_Name: AttackCollider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -99,7 +99,7 @@ GameObject:
   - component: {fileID: 3268647683288801303}
   - component: {fileID: 2789439567168442427}
   - component: {fileID: 3469953027103181960}
-  m_Layer: 8
+  m_Layer: 12
   m_Name: StackWarrior
   m_TagString: Untagged
   m_Icon: {fileID: 0}
