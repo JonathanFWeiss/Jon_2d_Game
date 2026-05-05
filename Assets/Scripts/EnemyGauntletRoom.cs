@@ -469,11 +469,28 @@ public class EnemyGauntletRoom : MonoBehaviour
         {
             if (activeWaveEnemy != null)
             {
+                DestroyBossHelpers(activeWaveEnemy);
                 Destroy(activeWaveEnemy);
             }
         }
 
         activeWaveEnemies.Clear();
+    }
+
+    private void DestroyBossHelpers(GameObject activeWaveEnemy)
+    {
+        if (activeWaveEnemy == null)
+            return;
+
+        BossBase[] bosses = activeWaveEnemy.GetComponentsInChildren<BossBase>(true);
+
+        foreach (BossBase boss in bosses)
+        {
+            if (boss != null)
+            {
+                boss.DestroyActiveHelpers();
+            }
+        }
     }
 
     private void CheckActiveWaveEnemyBoundsPeriodically()

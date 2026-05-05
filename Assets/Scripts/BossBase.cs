@@ -699,6 +699,21 @@ public class BossBase : EnemyBase
         }
     }
 
+    public virtual void DestroyActiveHelpers()
+    {
+        for (int i = activeHelpers.Count - 1; i >= 0; i--)
+        {
+            GameObject helper = activeHelpers[i];
+
+            if (helper != null)
+            {
+                Destroy(helper);
+            }
+        }
+
+        activeHelpers.Clear();
+    }
+
     protected override void Die()
     {
         if (isDead)
@@ -707,6 +722,7 @@ public class BossBase : EnemyBase
         ExitCurrentState();
         currentState = BossBehaviorState.Dead;
         isBossActive = false;
+        DestroyActiveHelpers();
         base.Die();
     }
 
@@ -860,6 +876,11 @@ public class BossBase : EnemyBase
     private void OnDisable()
     {
         EndAttackColliderWindow();
+    }
+
+    private void OnDestroy()
+    {
+        DestroyActiveHelpers();
     }
 
     private bool ShouldAdvanceCurrentState()
