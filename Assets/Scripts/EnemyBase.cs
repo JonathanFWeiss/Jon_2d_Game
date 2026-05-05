@@ -32,6 +32,9 @@ public class EnemyBase : MonoBehaviour
     [Tooltip("Prefab to spawn when this enemy dies. Leave empty for no corpse.")]
     public GameObject CorpsePrefab;
 
+    [Tooltip("How many seconds spawned corpses stay in the scene. Set to 0 or lower to keep them forever.")]
+    public float corpseLifetime = 15f;
+
     [Tooltip("Prefab to spawn on death.")]
     public GameObject coinPrefab;
 
@@ -182,6 +185,11 @@ public class EnemyBase : MonoBehaviour
 
         GameObject corpse = Instantiate(CorpsePrefab, transform.position, transform.rotation);
         ApplyDeathDropMotion(corpse);
+
+        if (corpseLifetime > 0f)
+        {
+            Destroy(corpse, corpseLifetime);
+        }
     }
 
     protected virtual void DropCoins()
