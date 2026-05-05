@@ -277,10 +277,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   contactPushbackImpulse: {x: 6, y: 6}
-  CorpsePrefab: {fileID: 0}
+  CorpsePrefab: {fileID: 766049385705077599, guid: 04d01e5e6722f8a429608cf88c953341, type: 3}
   corpseLifetime: 15
-  coinPrefab: {fileID: 0}
-  coinDropCount: 0
+  coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
+  coinDropCount: 50
   deathDropHorizontalVelocity: 2
   deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
   deathDropAngularVelocity: 240
