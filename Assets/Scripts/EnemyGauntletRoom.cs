@@ -8,6 +8,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 {
     private const string DefaultCounterLabelName = "GauntletDefeatedCounter";
     private const string BannerLabelName = "GauntletBannerMessage";
+    private const float ActiveEnemySpawnSeparationScoreWeight = 2f;
     private const int ActiveEnemyBoundsCheckUpdateInterval = 10;
 
     [Serializable]
@@ -723,11 +724,20 @@ public class EnemyGauntletRoom : MonoBehaviour
         out Quaternion spawnRotation
     )
     {
-        if (TryGetRandomRoomPose(enemySpawn, out spawnPosition, out spawnRotation))
+        bool hasBackupRandomPose = TryGetRandomRoomPose(
+            enemySpawn,
+            out spawnPosition,
+            out spawnRotation,
+            out bool randomPoseMeetsPreferredDistances
+        );
+
+        if (hasBackupRandomPose && randomPoseMeetsPreferredDistances)
         {
             return;
         }
 
+        Vector3 backupRandomSpawnPosition = spawnPosition;
+        Quaternion backupRandomSpawnRotation = spawnRotation;
         Transform assignedSpawnPoint = enemySpawn.SpawnPoint;
 
         if (TryResolveFallbackSpawnPose(enemySpawn, assignedSpawnPoint, out spawnPosition, out spawnRotation))
@@ -736,11 +746,18 @@ public class EnemyGauntletRoom : MonoBehaviour
         if (TryGetNextFallbackSpawnPose(enemySpawn, out spawnPosition, out spawnRotation))
             return;
 
+        if (hasBackupRandomPose)
+        {
+            spawnPosition = backupRandomSpawnPosition;
+            spawnRotation = backupRandomSpawnRotation;
+            return;
+        }
+
         Vector3 preferredPosition = assignedSpawnPoint != null
             ? assignedSpawnPoint.position
             : transform.position;
 
-        spawnPosition = PushPositionAwayFromPlayer(preferredPosition);
+        spawnPosition = PushPositionAwayFromPlayerAndActiveEnemies(preferredPosition);
         spawnRotation = assignedSpawnPoint != null
             ? assignedSpawnPoint.rotation
             : enemySpawn.EnemyPrefab.transform.rotation;
@@ -764,7 +781,8 @@ public class EnemyGauntletRoom : MonoBehaviour
     private bool TryGetRandomRoomPose(
         EnemySpawn enemySpawn,
         out Vector3 spawnPosition,
-        out Quaternion spawnRotation
+        out Quaternion spawnRotation,
+        out bool spawnMeetsPreferredDistances
     )
     {
         ResolveSpawnArea();
@@ -773,12 +791,17 @@ public class EnemyGauntletRoom : MonoBehaviour
         {
             spawnPosition = Vector3.zero;
             spawnRotation = Quaternion.identity;
+            spawnMeetsPreferredDistances = false;
             return false;
         }
 
         Bounds bounds = spawnArea.bounds;
         int attempts = Mathf.Max(1, randomSpawnAttempts);
         spawnRotation = GetEnemySpawnRotation(enemySpawn);
+        bool hasBestCandidate = false;
+        bool bestCandidateMeetsPreferredDistances = false;
+        float bestCandidateScore = float.NegativeInfinity;
+        Vector3 bestSpawnPosition = Vector3.zero;
 
         for (int i = 0; i < attempts; i++)
         {
@@ -788,37 +811,40 @@ public class EnemyGauntletRoom : MonoBehaviour
                 transform.position.z
             );
 
-            if (!IsValidRandomSpawnPosition(candidatePosition))
+            if (!IsInsideSpawnArea(candidatePosition))
                 continue;
 
             if (!TryFindGroundClearSpawnPosition(
                 enemySpawn.EnemyPrefab,
                 candidatePosition,
                 spawnRotation,
-                IsValidRandomSpawnPosition,
-                out spawnPosition
+                IsInsideSpawnArea,
+                out Vector3 adjustedSpawnPosition
             ))
             {
                 continue;
             }
 
+            RecordBestSpawnCandidate(
+                adjustedSpawnPosition,
+                ref hasBestCandidate,
+                ref bestCandidateMeetsPreferredDistances,
+                ref bestCandidateScore,
+                ref bestSpawnPosition
+            );
+        }
+
+        if (hasBestCandidate)
+        {
+            spawnPosition = bestSpawnPosition;
+            spawnMeetsPreferredDistances = bestCandidateMeetsPreferredDistances;
             return true;
         }
 
         spawnPosition = Vector3.zero;
         spawnRotation = Quaternion.identity;
+        spawnMeetsPreferredDistances = false;
         return false;
-    }
-
-    private bool IsValidRandomSpawnPosition(Vector3 position)
-    {
-        if (!IsInsideSpawnArea(position))
-            return false;
-
-        if (!IsFarEnoughFromPlayer(position))
-            return false;
-
-        return IsFarEnoughFromOtherEnemies(position);
     }
 
     private bool IsInsideSpawnArea(Vector3 position)
@@ -861,19 +887,136 @@ public class EnemyGauntletRoom : MonoBehaviour
         if (spawnPoints == null || spawnPoints.Length == 0)
             return false;
 
+        bool hasBestCandidate = false;
+        bool bestCandidateMeetsPreferredDistances = false;
+        float bestCandidateScore = float.NegativeInfinity;
+        Vector3 bestSpawnPosition = Vector3.zero;
+        Quaternion bestSpawnRotation = Quaternion.identity;
+        int bestSpawnPointIndex = -1;
+
         for (int i = 0; i < spawnPoints.Length; i++)
         {
             int spawnPointIndex = (nextSpawnPointIndex + i) % spawnPoints.Length;
             Transform spawnPoint = spawnPoints[spawnPointIndex];
 
-            if (!TryResolveFallbackSpawnPose(enemySpawn, spawnPoint, out spawnPosition, out spawnRotation))
+            if (!TryResolveFallbackSpawnPose(
+                enemySpawn,
+                spawnPoint,
+                out Vector3 candidateSpawnPosition,
+                out Quaternion candidateSpawnRotation
+            ))
+            {
                 continue;
+            }
 
-            nextSpawnPointIndex = (spawnPointIndex + 1) % spawnPoints.Length;
+            bool updatedBestCandidate = RecordBestSpawnCandidate(
+                candidateSpawnPosition,
+                ref hasBestCandidate,
+                ref bestCandidateMeetsPreferredDistances,
+                ref bestCandidateScore,
+                ref bestSpawnPosition
+            );
+
+            if (updatedBestCandidate)
+            {
+                bestSpawnRotation = candidateSpawnRotation;
+                bestSpawnPointIndex = spawnPointIndex;
+            }
+        }
+
+        if (hasBestCandidate)
+        {
+            spawnPosition = bestSpawnPosition;
+            spawnRotation = bestSpawnRotation;
+            nextSpawnPointIndex = (bestSpawnPointIndex + 1) % spawnPoints.Length;
             return true;
         }
 
         return false;
+    }
+
+    private bool RecordBestSpawnCandidate(
+        Vector3 candidatePosition,
+        ref bool hasBestCandidate,
+        ref bool bestCandidateMeetsPreferredDistances,
+        ref float bestCandidateScore,
+        ref Vector3 bestSpawnPosition
+    )
+    {
+        bool candidateMeetsPreferredDistances = IsPreferredSpawnPosition(candidatePosition);
+        float candidateScore = GetSpawnPreferenceScore(candidatePosition);
+
+        if (hasBestCandidate &&
+            !IsBetterSpawnCandidate(
+                candidateMeetsPreferredDistances,
+                candidateScore,
+                bestCandidateMeetsPreferredDistances,
+                bestCandidateScore
+            ))
+        {
+            return false;
+        }
+
+        hasBestCandidate = true;
+        bestCandidateMeetsPreferredDistances = candidateMeetsPreferredDistances;
+        bestCandidateScore = candidateScore;
+        bestSpawnPosition = candidatePosition;
+        return true;
+    }
+
+    private static bool IsBetterSpawnCandidate(
+        bool candidateMeetsPreferredDistances,
+        float candidateScore,
+        bool bestCandidateMeetsPreferredDistances,
+        float bestCandidateScore
+    )
+    {
+        if (candidateMeetsPreferredDistances != bestCandidateMeetsPreferredDistances)
+            return candidateMeetsPreferredDistances;
+
+        return candidateScore > bestCandidateScore;
+    }
+
+    private bool IsPreferredSpawnPosition(Vector3 position)
+    {
+        return IsFarEnoughFromPlayer(position) && IsFarEnoughFromOtherEnemies(position);
+    }
+
+    private float GetSpawnPreferenceScore(Vector3 position)
+    {
+        float score = 0f;
+
+        if (playerTransform != null)
+        {
+            Vector2 playerPosition = playerTransform.position;
+            Vector2 candidatePosition = position;
+            score += Vector2.Distance(candidatePosition, playerPosition);
+        }
+
+        if (activeWaveEnemies.Count > 0)
+        {
+            score += GetNearestActiveEnemyDistance(position) * ActiveEnemySpawnSeparationScoreWeight;
+        }
+
+        return score;
+    }
+
+    private float GetNearestActiveEnemyDistance(Vector3 position)
+    {
+        float nearestDistance = float.PositiveInfinity;
+        Vector2 candidatePosition = position;
+
+        foreach (GameObject activeWaveEnemy in activeWaveEnemies)
+        {
+            if (activeWaveEnemy == null)
+                continue;
+
+            Vector2 activeEnemyPosition = activeWaveEnemy.transform.position;
+            float distance = Vector2.Distance(candidatePosition, activeEnemyPosition);
+            nearestDistance = Mathf.Min(nearestDistance, distance);
+        }
+
+        return float.IsPositiveInfinity(nearestDistance) ? 0f : nearestDistance;
     }
 
     private bool TryResolveFallbackSpawnPose(
@@ -909,10 +1052,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private bool IsValidFallbackSpawnPosition(Vector3 position)
     {
-        if (!IsFarEnoughFromPlayer(position))
-            return false;
-
-        return IsFarEnoughFromOtherEnemies(position);
+        return IsPreferredSpawnPosition(position);
     }
 
     private Quaternion GetEnemySpawnRotation(EnemySpawn enemySpawn)
@@ -1184,6 +1324,72 @@ public class EnemyGauntletRoom : MonoBehaviour
             playerPosition + offsetFromPlayer.normalized * minimumSpawnDistanceFromPlayer;
 
         return new Vector3(adjustedPosition.x, adjustedPosition.y, preferredPosition.z);
+    }
+
+    private Vector3 PushPositionAwayFromPlayerAndActiveEnemies(Vector3 preferredPosition)
+    {
+        Vector3 adjustedPosition = PushPositionAwayFromPlayer(preferredPosition);
+        return PushPositionAwayFromActiveEnemies(adjustedPosition);
+    }
+
+    private Vector3 PushPositionAwayFromActiveEnemies(Vector3 preferredPosition)
+    {
+        if (minimumSpawnDistanceFromOtherEnemies <= 0f || activeWaveEnemies.Count == 0)
+            return preferredPosition;
+
+        Vector2 adjustedPosition = preferredPosition;
+        float minimumDistanceSqr =
+            minimumSpawnDistanceFromOtherEnemies * minimumSpawnDistanceFromOtherEnemies;
+        int maxPasses = Mathf.Max(1, activeWaveEnemies.Count);
+
+        for (int pass = 0; pass < maxPasses; pass++)
+        {
+            bool moved = false;
+
+            for (int enemyIndex = 0; enemyIndex < activeWaveEnemies.Count; enemyIndex++)
+            {
+                GameObject activeWaveEnemy = activeWaveEnemies[enemyIndex];
+                if (activeWaveEnemy == null)
+                    continue;
+
+                Vector2 activeEnemyPosition = activeWaveEnemy.transform.position;
+                Vector2 offsetFromEnemy = adjustedPosition - activeEnemyPosition;
+
+                if (offsetFromEnemy.sqrMagnitude >= minimumDistanceSqr)
+                    continue;
+
+                if (offsetFromEnemy.sqrMagnitude <= Mathf.Epsilon)
+                {
+                    offsetFromEnemy = GetFallbackSeparationDirection(
+                        preferredPosition,
+                        pass + enemyIndex
+                    );
+                }
+
+                adjustedPosition =
+                    activeEnemyPosition +
+                    offsetFromEnemy.normalized * minimumSpawnDistanceFromOtherEnemies;
+                moved = true;
+            }
+
+            if (!moved)
+                break;
+        }
+
+        return new Vector3(adjustedPosition.x, adjustedPosition.y, preferredPosition.z);
+    }
+
+    private Vector2 GetFallbackSeparationDirection(Vector3 preferredPosition, int directionIndex)
+    {
+        if (playerTransform != null)
+        {
+            Vector2 awayFromPlayer = (Vector2)preferredPosition - (Vector2)playerTransform.position;
+            if (awayFromPlayer.sqrMagnitude > Mathf.Epsilon)
+                return awayFromPlayer.normalized;
+        }
+
+        float angle = directionIndex * 2.399963f;
+        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
     }
 
     private void ShowCounterLabel()
