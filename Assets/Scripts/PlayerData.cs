@@ -10,6 +10,7 @@ public static class PlayerData
     public const string DoubleJumpPickupItemName = "DoubleJumpPickup";
     public const string WallJumpPickupItemName = "WallJumpPickup";
     public const string MaxHealthPickupItemName = "MaxHealthPickup";
+    public const int MaxEnergy = 20;
     private const float RemoveHpCooldownSeconds = 1f;
     private const SimulationMode2D DefaultPhysics2DMode = SimulationMode2D.FixedUpdate;
     private const SimulationMode DefaultPhysicsMode = SimulationMode.FixedUpdate;
@@ -41,7 +42,7 @@ public static class PlayerData
         if (amount <= 0)
             return;
 
-        Energy += amount;
+        Energy = Mathf.Min(Energy + amount, MaxEnergy);
     }
 
     public static void RemoveEnergy(int amount = 1)

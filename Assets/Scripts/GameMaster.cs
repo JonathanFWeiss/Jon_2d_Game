@@ -14,7 +14,21 @@ public class GameMaster : MonoBehaviour
     private const string PauseMenuRootName = "PauseMenu";
     private const string PauseMenuLabelName = "PauseMenuLabel";
     private const string HeartIconsRootName = "HeartIcons";
+    private const string EnergyBarRootName = "EnergyBar";
+    private const string EnergyBarBackgroundName = "EnergyBarBackground";
+    private const string EnergyBarFillName = "EnergyBarFill";
     private const float HeartIconSpacing = 1f;
+    private const int LowEnergyThreshold = 4;
+    private const float EnergyBarWidth = 3.2f;
+    private const float EnergyBarHeight = 0.22f;
+    private const float EnergyBarPadding = 0.05f;
+    private const float EnergyBarVerticalGap = 0.18f;
+
+    private static readonly Color EnergyBarBackgroundColor = new Color(0f, 0f, 0f, 0.72f);
+    private static readonly Color LowEnergyColor = new Color(0.62f, 0.22f, 1f, 1f);
+    private static readonly Color PartialEnergyColor = new Color(0.12f, 0.55f, 1f, 1f);
+    private static readonly Color FullEnergyColor = new Color(0.22f, 0.9f, 0.32f, 1f);
+    private static Sprite energyBarSprite;
 
     private static readonly BindingFlags PlayerStateBindingFlags =
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -80,6 +94,9 @@ public class GameMaster : MonoBehaviour
     private Vector3 fallbackRespawnPosition;
     private bool hasFallbackRespawnPosition;
     private Transform heartIconsRoot;
+    private Transform energyBarRoot;
+    private SpriteRenderer energyBarBackgroundRenderer;
+    private SpriteRenderer energyBarFillRenderer;
     private InputAction pauseAction;
     public Animator transitionAnim;
 
@@ -370,7 +387,7 @@ public class GameMaster : MonoBehaviour
 
     private void RefreshCounters(bool forceRefresh = false)
     {
-        RefreshHeartIcons();
+        RefreshPlayerHud();
 
         if (uiCountersText == null)
             return;
@@ -397,7 +414,25 @@ public class GameMaster : MonoBehaviour
         PlayerData.RestoreFullHP();
     }
 
-    private void RefreshHeartIcons()
+    private void RefreshPlayerHud()
+    {
+        Camera activeCamera = Camera.main;
+        if (activeCamera == null)
+        {
+            if (!warnedMissingMainCamera)
+            {
+                warnedMissingMainCamera = true;
+                Debug.LogWarning("GameMaster could not find a Main Camera to position the player HUD.");
+            }
+
+            return;
+        }
+
+        RefreshHeartIcons(activeCamera);
+        RefreshEnergyBar(activeCamera);
+    }
+
+    private void RefreshHeartIcons(Camera activeCamera)
     {
         if (heartIconPrefab == null)
         {
@@ -410,22 +445,18 @@ public class GameMaster : MonoBehaviour
             return;
         }
 
-        Camera activeCamera = Camera.main;
-        if (activeCamera == null)
-        {
-            if (!warnedMissingMainCamera)
-            {
-                warnedMissingMainCamera = true;
-                Debug.LogWarning("GameMaster could not find a Main Camera to position HeartIcons.");
-            }
-
-            return;
-        }
-
         EnsureHeartIconsRoot();
         PruneMissingHeartIcons();
         EnsureHeartIconCount(Mathf.Max(PlayerData.HP, 0));
         LayoutHeartIcons(activeCamera);
+    }
+
+    private void RefreshEnergyBar(Camera activeCamera)
+    {
+        EnsureEnergyBarRoot();
+        UpdateEnergyBarSorting();
+        LayoutEnergyBar(activeCamera);
+        UpdateEnergyBarFill();
     }
 
     private void EnsureHeartIconsRoot()
@@ -489,22 +520,7 @@ public class GameMaster : MonoBehaviour
 
     private void LayoutHeartIcons(Camera activeCamera)
     {
-        float worldDepth = Mathf.Abs(activeCamera.transform.position.z);
-        Vector3 upperLeftCorner = activeCamera.ViewportToWorldPoint(new Vector3(0f, 1f, worldDepth));
-        Vector3 firstHeartPosition = upperLeftCorner;
-
-        if (heartIcons.Count > 0)
-        {
-            SpriteRenderer firstHeartRenderer = heartIcons[0].GetComponent<SpriteRenderer>();
-            if (firstHeartRenderer != null)
-            {
-                Vector3 heartExtents = firstHeartRenderer.bounds.extents;
-                firstHeartPosition.x += heartExtents.x;
-                firstHeartPosition.y -= heartExtents.y;
-            }
-        }
-
-        firstHeartPosition.z = 0f;
+        GetHeartLayoutMetrics(activeCamera, out Vector3 firstHeartPosition, out _);
 
         for (int i = 0; i < heartIcons.Count; i++)
         {
@@ -514,6 +530,211 @@ public class GameMaster : MonoBehaviour
 
             heartIcon.transform.position = firstHeartPosition + (Vector3.right * (i * HeartIconSpacing));
         }
+    }
+
+    private void EnsureEnergyBarRoot()
+    {
+        if (energyBarRoot == null)
+        {
+            Transform existingRoot = transform.Find(EnergyBarRootName);
+            if (existingRoot != null)
+            {
+                energyBarRoot = existingRoot;
+            }
+            else
+            {
+                GameObject energyBarRootObject = new GameObject(EnergyBarRootName);
+                energyBarRoot = energyBarRootObject.transform;
+                energyBarRoot.SetParent(transform);
+                energyBarRoot.localPosition = Vector3.zero;
+                energyBarRoot.localRotation = Quaternion.identity;
+                energyBarRoot.localScale = Vector3.one;
+            }
+        }
+
+        energyBarBackgroundRenderer = EnsureEnergyBarRenderer(
+            energyBarBackgroundRenderer,
+            EnergyBarBackgroundName,
+            EnergyBarBackgroundColor
+        );
+        energyBarFillRenderer = EnsureEnergyBarRenderer(
+            energyBarFillRenderer,
+            EnergyBarFillName,
+            GetEnergyBarColor(PlayerData.Energy)
+        );
+    }
+
+    private SpriteRenderer EnsureEnergyBarRenderer(SpriteRenderer renderer, string childName, Color color)
+    {
+        if (renderer != null)
+        {
+            renderer.sprite = GetEnergyBarSprite();
+            renderer.color = color;
+            return renderer;
+        }
+
+        Transform existingChild = energyBarRoot.Find(childName);
+        GameObject childObject = existingChild != null
+            ? existingChild.gameObject
+            : new GameObject(childName);
+
+        if (existingChild == null)
+        {
+            childObject.transform.SetParent(energyBarRoot);
+            childObject.transform.localRotation = Quaternion.identity;
+        }
+
+        childObject.layer = heartIconPrefab != null ? heartIconPrefab.layer : gameObject.layer;
+        renderer = childObject.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            renderer = childObject.AddComponent<SpriteRenderer>();
+        }
+
+        renderer.sprite = GetEnergyBarSprite();
+        renderer.color = color;
+        return renderer;
+    }
+
+    private void UpdateEnergyBarSorting()
+    {
+        SpriteRenderer referenceRenderer = GetHeartSortingReferenceRenderer();
+
+        int sortingLayerId = referenceRenderer != null ? referenceRenderer.sortingLayerID : 0;
+        int sortingOrder = referenceRenderer != null ? referenceRenderer.sortingOrder : 0;
+
+        if (energyBarBackgroundRenderer != null)
+        {
+            energyBarBackgroundRenderer.sortingLayerID = sortingLayerId;
+            energyBarBackgroundRenderer.sortingOrder = sortingOrder;
+        }
+
+        if (energyBarFillRenderer != null)
+        {
+            energyBarFillRenderer.sortingLayerID = sortingLayerId;
+            energyBarFillRenderer.sortingOrder = sortingOrder + 1;
+        }
+    }
+
+    private SpriteRenderer GetHeartSortingReferenceRenderer()
+    {
+        for (int i = 0; i < heartIcons.Count; i++)
+        {
+            if (heartIcons[i] == null)
+                continue;
+
+            SpriteRenderer renderer = heartIcons[i].GetComponent<SpriteRenderer>();
+            if (renderer != null)
+                return renderer;
+        }
+
+        return heartIconPrefab != null ? heartIconPrefab.GetComponent<SpriteRenderer>() : null;
+    }
+
+    private void LayoutEnergyBar(Camera activeCamera)
+    {
+        if (energyBarBackgroundRenderer == null || energyBarFillRenderer == null)
+            return;
+
+        GetHeartLayoutMetrics(activeCamera, out Vector3 firstHeartPosition, out Vector2 heartExtents);
+
+        float barLeftEdge = firstHeartPosition.x - heartExtents.x;
+        float barCenterY = firstHeartPosition.y - heartExtents.y - EnergyBarVerticalGap - (EnergyBarHeight * 0.5f);
+        float fillPercent = Mathf.Clamp01(PlayerData.Energy / (float)PlayerData.MaxEnergy);
+        float fillWidth = EnergyBarWidth * fillPercent;
+
+        Transform backgroundTransform = energyBarBackgroundRenderer.transform;
+        backgroundTransform.position = new Vector3(barLeftEdge + (EnergyBarWidth * 0.5f), barCenterY, 0f);
+        backgroundTransform.localRotation = Quaternion.identity;
+        backgroundTransform.localScale = new Vector3(
+            EnergyBarWidth + (EnergyBarPadding * 2f),
+            EnergyBarHeight + (EnergyBarPadding * 2f),
+            1f
+        );
+
+        Transform fillTransform = energyBarFillRenderer.transform;
+        fillTransform.position = new Vector3(barLeftEdge + (fillWidth * 0.5f), barCenterY, 0f);
+        fillTransform.localRotation = Quaternion.identity;
+        fillTransform.localScale = new Vector3(fillWidth, EnergyBarHeight, 1f);
+    }
+
+    private void UpdateEnergyBarFill()
+    {
+        if (energyBarFillRenderer == null)
+            return;
+
+        energyBarFillRenderer.color = GetEnergyBarColor(PlayerData.Energy);
+    }
+
+    private void GetHeartLayoutMetrics(Camera activeCamera, out Vector3 firstHeartPosition, out Vector2 heartExtents)
+    {
+        float worldDepth = Mathf.Abs(activeCamera.transform.position.z);
+        Vector3 upperLeftCorner = activeCamera.ViewportToWorldPoint(new Vector3(0f, 1f, worldDepth));
+        heartExtents = GetHeartIconExtents();
+
+        firstHeartPosition = upperLeftCorner;
+        firstHeartPosition.x += heartExtents.x;
+        firstHeartPosition.y -= heartExtents.y;
+        firstHeartPosition.z = 0f;
+    }
+
+    private Vector2 GetHeartIconExtents()
+    {
+        for (int i = 0; i < heartIcons.Count; i++)
+        {
+            if (heartIcons[i] == null)
+                continue;
+
+            SpriteRenderer renderer = heartIcons[i].GetComponent<SpriteRenderer>();
+            if (renderer != null)
+                return renderer.bounds.extents;
+        }
+
+        if (heartIconPrefab != null)
+        {
+            SpriteRenderer prefabRenderer = heartIconPrefab.GetComponent<SpriteRenderer>();
+            if (prefabRenderer != null && prefabRenderer.sprite != null)
+            {
+                Vector3 localScale = prefabRenderer.transform.localScale;
+                Vector3 spriteExtents = prefabRenderer.sprite.bounds.extents;
+                return new Vector2(
+                    spriteExtents.x * Mathf.Abs(localScale.x),
+                    spriteExtents.y * Mathf.Abs(localScale.y)
+                );
+            }
+        }
+
+        return new Vector2(0.5f, 0.5f);
+    }
+
+    private static Color GetEnergyBarColor(int energy)
+    {
+        if (energy >= PlayerData.MaxEnergy)
+            return FullEnergyColor;
+
+        if (energy <= LowEnergyThreshold)
+            return LowEnergyColor;
+
+        return PartialEnergyColor;
+    }
+
+    private static Sprite GetEnergyBarSprite()
+    {
+        if (energyBarSprite != null)
+            return energyBarSprite;
+
+        Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+
+        energyBarSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
+        energyBarSprite.hideFlags = HideFlags.HideAndDontSave;
+        return energyBarSprite;
     }
 
     private void ShowDeathMessage()
