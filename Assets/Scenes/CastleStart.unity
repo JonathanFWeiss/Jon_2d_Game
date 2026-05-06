@@ -285,11 +285,11 @@ PolygonCollider2D:
       - {x: -124.00757, y: 11.078678}
       - {x: -141.84009, y: 11.42164}
       - {x: -141.9631, y: -8.001562}
-      - {x: 117.101006, y: -6.3329296}
-      - {x: 116.61537, y: 11.029505}
-      - {x: 51.640194, y: 10.461224}
-      - {x: 51.675434, y: 13.054336}
-      - {x: 25.400951, y: 13.388477}
+      - {x: 26.819378, y: -4.980693}
+      - {x: 28.913937, y: 9.513193}
+      - {x: 28.015827, y: 10.063507}
+      - {x: 27.494267, y: 10.668036}
+      - {x: 26.765888, y: 10.647898}
       - {x: 24.58157, y: 10.421054}
   m_UseDelaunayMesh: 1
 --- !u!4 &116926439
@@ -16790,6 +16790,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: gauntletMusicClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: waves.Array.data[1].enemies.Array.size
       value: 0
       objectReference: {fileID: 0}
@@ -18163,6 +18167,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.x
       value: 11.4722
       objectReference: {fileID: 0}
+    - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
+      propertyPath: gauntletMusicClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 2d8e43793c854f44c863622c1e221ead, type: 3}
     - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: waves.Array.data[0].enemies.Array.data[0].enemyPrefab
       value: 
