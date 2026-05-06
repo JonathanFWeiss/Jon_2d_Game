@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 public class GameMaster : MonoBehaviour
@@ -13,6 +14,7 @@ public class GameMaster : MonoBehaviour
     private const string PauseMenuText = "paused";
     private const string PauseMenuRootName = "PauseMenu";
     private const string PauseMenuLabelName = "PauseMenuLabel";
+    private const string MapActionName = "Menu";
     private const string HeartIconsRootName = "HeartIcons";
     private const string EnergyBarRootName = "EnergyBar";
     private const string EnergyBarBackgroundName = "EnergyBarBackground";
@@ -85,10 +87,14 @@ public class GameMaster : MonoBehaviour
     private bool warnedMissingHeartIconPrefab;
     private bool warnedMissingMainCamera;
     private bool warnedMissingPauseAction;
+    private bool warnedMissingMapAction;
     private bool isRespawningPlayer;
     private bool isPaused;
+    private bool isSceneMapVisible;
     private bool pauseActionEnabledByGameMaster;
+    private bool mapActionEnabledByGameMaster;
     private float timeScaleBeforePause = 1f;
+    private float timeScaleBeforeMap = 1f;
     private Vector3 checkpointRespawnPosition;
     private bool hasCheckpointRespawnPosition;
     private Vector3 fallbackRespawnPosition;
@@ -98,6 +104,7 @@ public class GameMaster : MonoBehaviour
     private SpriteRenderer energyBarBackgroundRenderer;
     private SpriteRenderer energyBarFillRenderer;
     private InputAction pauseAction;
+    private InputAction mapAction;
     public Animator transitionAnim;
 
     private void Awake()
@@ -114,11 +121,14 @@ public class GameMaster : MonoBehaviour
     {
         ResetPauseStateForPlayModeStart();
         SubscribePauseAction();
+        SubscribeMapAction();
     }
 
     private void OnDisable()
     {
         UnsubscribePauseAction();
+        UnsubscribeMapAction();
+        HideSceneMap();
 
         if (isPaused)
         {
@@ -138,13 +148,16 @@ public class GameMaster : MonoBehaviour
             return;
 
         isPaused = false;
+        isSceneMapVisible = false;
         isRespawningPlayer = false;
         timeScaleBeforePause = 1f;
+        timeScaleBeforeMap = 1f;
         Time.timeScale = 1f;
 
         ResolvePlayer();
         ResolveUiDocument();
         HidePauseMenu();
+        SceneMapOverlay.Hide(uiDocument);
         SetPlayerInputEnabled(true);
     }
 
@@ -154,6 +167,11 @@ public class GameMaster : MonoBehaviour
         {
             SubscribePauseAction();
             Debug.Log("GameMaster subscribed to Pause action in Update because it was missing during OnEnable.");
+        }
+
+        if (mapAction == null)
+        {
+            SubscribeMapAction();
         }
 
         ResolvePlayer();
@@ -219,6 +237,50 @@ public class GameMaster : MonoBehaviour
         pauseActionEnabledByGameMaster = false;
     }
 
+    private void SubscribeMapAction()
+    {
+        if (mapAction != null)
+            return;
+
+        InputActionAsset inputActions = InputSystem.actions;
+        if (inputActions == null)
+        {
+            WarnMissingMapAction();
+            return;
+        }
+
+        mapAction = inputActions.FindAction(MapActionName, throwIfNotFound: false);
+        if (mapAction == null)
+        {
+            WarnMissingMapAction();
+            return;
+        }
+
+        mapAction.performed += OnMapPerformed;
+
+        mapActionEnabledByGameMaster = !mapAction.enabled;
+        if (mapActionEnabledByGameMaster)
+        {
+            mapAction.Enable();
+        }
+    }
+
+    private void UnsubscribeMapAction()
+    {
+        if (mapAction == null)
+            return;
+
+        mapAction.performed -= OnMapPerformed;
+
+        if (mapActionEnabledByGameMaster)
+        {
+            mapAction.Disable();
+        }
+
+        mapAction = null;
+        mapActionEnabledByGameMaster = false;
+    }
+
     private void WarnMissingPauseAction()
     {
         if (warnedMissingPauseAction)
@@ -228,17 +290,46 @@ public class GameMaster : MonoBehaviour
         Debug.LogWarning("GameMaster could not find an Input Action named 'Pause' in InputSystem.actions.");
     }
 
+    private void WarnMissingMapAction()
+    {
+        if (warnedMissingMapAction)
+            return;
+
+        warnedMissingMapAction = true;
+        Debug.LogWarning($"GameMaster could not find an Input Action named '{MapActionName}' in InputSystem.actions.");
+    }
+
     private void OnPausePerformed(InputAction.CallbackContext context)
     {
         Debug.Log(
             $"Pause pressed. isPaused={isPaused}, isRespawningPlayer={isRespawningPlayer}, HP={PlayerData.HP}, timeScale={Time.timeScale}, actionEnabled={(pauseAction != null && pauseAction.enabled)}"
         );
 
+        if (isSceneMapVisible)
+        {
+            HideSceneMap();
+            return;
+        }
+
         if (isRespawningPlayer || PlayerData.HP <= 0)
             return;
 
         SetPaused(!isPaused);
         Debug.Log($"GameMaster {(isPaused ? "paused" : "unpaused")} the game in response to Pause action.");
+    }
+
+    private void OnMapPerformed(InputAction.CallbackContext context)
+    {
+        if (isSceneMapVisible)
+        {
+            HideSceneMap();
+            return;
+        }
+
+        if (isRespawningPlayer || PlayerData.HP <= 0)
+            return;
+
+        ShowSceneMap();
     }
 
     private void SetPaused(bool shouldPause)
@@ -253,6 +344,7 @@ public class GameMaster : MonoBehaviour
             timeScaleBeforePause = Time.timeScale > 0f ? Time.timeScale : 1f;
             Time.timeScale = 0f;
             SetPlayerInputEnabled(false);
+            HideSceneMap();
             ShowPauseMenu();
             return;
         }
@@ -262,6 +354,38 @@ public class GameMaster : MonoBehaviour
 
         if (!isRespawningPlayer)
         {
+            SetPlayerInputEnabled(true);
+        }
+    }
+
+    private void ShowSceneMap()
+    {
+        ResolveUiDocument();
+        if (uiDocument == null)
+            return;
+
+        SceneMapGraph mapGraph = SceneMapDataLoader.Load();
+        if (!SceneMapOverlay.Show(uiDocument, mapGraph, SceneManager.GetActiveScene().name))
+            return;
+
+        isSceneMapVisible = true;
+        timeScaleBeforeMap = Time.timeScale > 0f ? Time.timeScale : 1f;
+        Time.timeScale = 0f;
+        SetPlayerInputEnabled(false);
+    }
+
+    private void HideSceneMap()
+    {
+        SceneMapOverlay.Hide(uiDocument);
+
+        if (!isSceneMapVisible)
+            return;
+
+        isSceneMapVisible = false;
+
+        if (!isPaused && !isRespawningPlayer)
+        {
+            Time.timeScale = timeScaleBeforeMap > 0f ? timeScaleBeforeMap : 1f;
             SetPlayerInputEnabled(true);
         }
     }

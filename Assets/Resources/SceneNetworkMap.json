@@ -1,0 +1,21 @@
+{
+    "startSceneName": "CastleStart",
+    "connections": [
+        {
+            "fromScene": "CastleStart",
+            "toScene": "Castle2"
+        },
+        {
+            "fromScene": "Castle2",
+            "toScene": "Castle3"
+        },
+        {
+            "fromScene": "Castle2",
+            "toScene": "CastleStart"
+        },
+        {
+            "fromScene": "Castle3",
+            "toScene": "Castle2"
+        }
+    ]
+}
