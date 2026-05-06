@@ -9,7 +9,12 @@ public class EnemyGauntletRoom : MonoBehaviour
     private const string DefaultCounterLabelName = "GauntletDefeatedCounter";
     private const string BannerLabelName = "GauntletBannerMessage";
     private const float ActiveEnemySpawnSeparationScoreWeight = 2f;
+    private const float GauntletLabelFontSize = 22f;
+    private const float BannerFontSizeMultiplier = 3f;
     private const int ActiveEnemyBoundsCheckUpdateInterval = 10;
+    private static readonly string[] TrajanFontNames = { "Trajan Pro", "Trajan", "TrajanPro-Regular" };
+    private static Font cachedInstalledTrajanFont;
+    private static bool checkedInstalledTrajanFont;
 
     [Serializable]
     public class EnemyWave
@@ -90,6 +95,8 @@ public class EnemyGauntletRoom : MonoBehaviour
     [SerializeField] private UIDocument uiDocument;
     [Tooltip("Optional banner text shown briefly when the gauntlet starts. Leave empty to disable.")]
     [SerializeField] private string bannerText;
+    [Tooltip("Optional font for the banner text. Assign a Trajan font asset here; if empty, an installed Trajan font is used when available.")]
+    [SerializeField] private Font bannerFont;
     [SerializeField] private float bannerDuration = 1.5f;
     [SerializeField] private float bannerTopOffset = 86f;
     [SerializeField] private string counterLabelName = DefaultCounterLabelName;
@@ -115,6 +122,7 @@ public class EnemyGauntletRoom : MonoBehaviour
     private bool previousMusicWasPlaying;
     private bool gauntletMusicActive;
     private bool warnedMissingGauntletMusicAudioSource;
+    private bool warnedMissingBannerFont;
     private bool warnedMissingGroundSpawnBlockerLayer;
     private bool warnedUnclearableGroundSpawn;
     private int activeEnemyBoundsCheckUpdateCounter;
@@ -1547,10 +1555,77 @@ public class EnemyGauntletRoom : MonoBehaviour
             pickingMode = PickingMode.Ignore
         };
 
-        ApplyGauntletLabelStyle(bannerLabel, bannerTopOffset);
+        ApplyGauntletBannerLabelStyle(bannerLabel, bannerTopOffset);
 
         root.Add(bannerLabel);
         ScheduleBannerRemoval(root, bannerLabel);
+    }
+
+    private void ApplyGauntletBannerLabelStyle(Label label, float topOffset)
+    {
+        ApplyGauntletLabelStyle(label, topOffset);
+
+        if (label == null)
+            return;
+
+        label.style.fontSize = GauntletLabelFontSize * BannerFontSizeMultiplier;
+        label.style.unityFontStyleAndWeight = FontStyle.Normal;
+
+        Font resolvedBannerFont = ResolveBannerFont();
+        if (resolvedBannerFont != null)
+        {
+            label.style.unityFont = resolvedBannerFont;
+            label.style.unityFontDefinition = new StyleFontDefinition(
+                FontDefinition.FromFont(resolvedBannerFont)
+            );
+        }
+    }
+
+    private Font ResolveBannerFont()
+    {
+        if (bannerFont != null)
+            return bannerFont;
+
+        Font installedTrajanFont = ResolveInstalledTrajanFont();
+        if (installedTrajanFont != null)
+            return installedTrajanFont;
+
+        if (!warnedMissingBannerFont)
+        {
+            warnedMissingBannerFont = true;
+            Debug.LogWarning(
+                "EnemyGauntletRoom could not find a Trajan font. Assign a Trajan Font asset to Banner Font.",
+                this
+            );
+        }
+
+        return null;
+    }
+
+    private static Font ResolveInstalledTrajanFont()
+    {
+        if (checkedInstalledTrajanFont)
+            return cachedInstalledTrajanFont;
+
+        checkedInstalledTrajanFont = true;
+        string[] installedFontNames = Font.GetOSInstalledFontNames();
+
+        foreach (string trajanFontName in TrajanFontNames)
+        {
+            foreach (string installedFontName in installedFontNames)
+            {
+                if (!string.Equals(installedFontName, trajanFontName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                cachedInstalledTrajanFont = Font.CreateDynamicFontFromOSFont(
+                    installedFontName,
+                    Mathf.RoundToInt(GauntletLabelFontSize * BannerFontSizeMultiplier)
+                );
+                return cachedInstalledTrajanFont;
+            }
+        }
+
+        return null;
     }
 
     private static void ApplyGauntletLabelStyle(Label label, float topOffset)
@@ -1570,7 +1645,7 @@ public class EnemyGauntletRoom : MonoBehaviour
         label.style.paddingBottom = 8f;
         label.style.backgroundColor = new Color(0f, 0f, 0f, 0.65f);
         label.style.color = Color.white;
-        label.style.fontSize = 22f;
+        label.style.fontSize = GauntletLabelFontSize;
         label.style.unityFontStyleAndWeight = FontStyle.Bold;
         label.style.unityTextAlign = TextAnchor.MiddleCenter;
         label.style.borderTopLeftRadius = 8f;

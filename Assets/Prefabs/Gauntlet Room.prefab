@@ -414,7 +414,8 @@ MonoBehaviour:
   gauntletMusicClip: {fileID: 0}
   uiDocument: {fileID: 0}
   bannerText: 
-  bannerDuration: 1.5
-  bannerTopOffset: 40
+  bannerFont: {fileID: 12800000, guid: de3b6cd751dca51478f36bf3368581b0, type: 3}
+  bannerDuration: 4
+  bannerTopOffset: 120
   counterLabelName: GauntletDefeatedCounter
   counterTopOffset: 86
