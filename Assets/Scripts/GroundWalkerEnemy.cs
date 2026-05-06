@@ -55,12 +55,12 @@ public class GroundWalkerEnemy : EnemyBase
         if (isDead) return;
 
         bool shouldTurnAround = turnAtWalls && IsWallAhead();
-        string turnAroundReason = "wall";
+        //string turnAroundReason = "wall";
 
         if (!shouldTurnAround && turnAtLedges && IsLedgeAhead())
         {
             shouldTurnAround = true;
-            turnAroundReason = "ledge";
+            //turnAroundReason = "ledge";
         }
 
         if (shouldTurnAround)

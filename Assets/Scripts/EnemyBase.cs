@@ -64,6 +64,7 @@ public class EnemyBase : MonoBehaviour
     protected bool isDead = false;
     protected float lastContactDamageTime = -Mathf.Infinity;
     protected SpriteRenderer[] hitFlashRenderers;
+    protected SpriteRenderer[] hitFlashOriginalRenderers;
     protected Material[] hitFlashOriginalMaterials;
     protected Coroutine hitFlashCoroutine;
     protected float hitFlashEndTime = -Mathf.Infinity;
@@ -426,6 +427,7 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void CacheHitFlashOriginalMaterials()
     {
+        hitFlashOriginalRenderers = hitFlashRenderers;
         hitFlashOriginalMaterials = new Material[hitFlashRenderers.Length];
 
         for (int i = 0; i < hitFlashRenderers.Length; i++)
@@ -464,18 +466,21 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void RestoreHitFlashMaterials()
     {
-        if (hitFlashRenderers == null || hitFlashOriginalMaterials == null)
+        if (hitFlashOriginalRenderers == null || hitFlashOriginalMaterials == null)
             return;
 
-        for (int i = 0; i < hitFlashRenderers.Length; i++)
+        int restoreCount = Mathf.Min(hitFlashOriginalRenderers.Length, hitFlashOriginalMaterials.Length);
+
+        for (int i = 0; i < restoreCount; i++)
         {
-            SpriteRenderer spriteRenderer = hitFlashRenderers[i];
+            SpriteRenderer spriteRenderer = hitFlashOriginalRenderers[i];
             if (spriteRenderer != null)
             {
                 spriteRenderer.sharedMaterial = hitFlashOriginalMaterials[i];
             }
         }
 
+        hitFlashOriginalRenderers = null;
         hitFlashOriginalMaterials = null;
     }
 }

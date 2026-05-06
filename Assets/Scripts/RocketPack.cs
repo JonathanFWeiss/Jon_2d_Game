@@ -189,8 +189,9 @@ public class RocketPack : FlyingEnemy
         }
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         StopRocketTrailEffect();
     }
 

@@ -144,7 +144,7 @@ public class FallingRock : GroundStationaryEnemy
         }
     }
 
-    protected virtual void OnDisable()
+    protected override void OnDisable()
     {
         if (preFallVibrateCoroutine != null)
         {

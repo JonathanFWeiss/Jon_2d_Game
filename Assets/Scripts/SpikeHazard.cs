@@ -18,6 +18,11 @@ public class SpikeHazard : FixedPositionEnemy
         EnsureSolidCollider();
     }
 
+    protected override void Die()
+    {
+        hp = Mathf.Max(hp, 1);
+    }
+
     protected override void Awake()
     {
         base.Awake();

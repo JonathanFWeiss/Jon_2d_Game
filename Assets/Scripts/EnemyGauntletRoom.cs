@@ -81,6 +81,10 @@ public class EnemyGauntletRoom : MonoBehaviour
     [Tooltip("Optional stable completion key. If left empty, scene, bounds, and object hierarchy keys are used.")]
     [SerializeField] private string completionLogKey;
 
+    [Header("Audio")]
+    [Tooltip("Optional music clip that temporarily replaces the Main Camera AudioSource while the gauntlet is active.")]
+    [SerializeField] private AudioClip gauntletMusicClip;
+
     [Header("UI")]
     [Tooltip("If left empty, the first UIDocument in the scene is used.")]
     [SerializeField] private UIDocument uiDocument;
@@ -104,6 +108,13 @@ public class EnemyGauntletRoom : MonoBehaviour
     private bool isComplete;
     private bool warnedMissingUiDocument;
     private DoorStartState[] doorStatesBeforeGauntlet;
+    private AudioSource gauntletMusicAudioSource;
+    private AudioClip previousMusicClip;
+    private float previousMusicTime;
+    private bool previousMusicLoop;
+    private bool previousMusicWasPlaying;
+    private bool gauntletMusicActive;
+    private bool warnedMissingGauntletMusicAudioSource;
     private bool warnedMissingGroundSpawnBlockerLayer;
     private bool warnedUnclearableGroundSpawn;
     private int activeEnemyBoundsCheckUpdateCounter;
@@ -136,6 +147,7 @@ public class EnemyGauntletRoom : MonoBehaviour
     private void OnDisable()
     {
         PlayerData.PlayerDied -= HandlePlayerDied;
+        StopGauntletMusic();
     }
 
     private void Update()
@@ -158,6 +170,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void OnDestroy()
     {
+        StopGauntletMusic();
         RemoveBannerLabel();
         RemoveCounterLabel();
     }
@@ -188,6 +201,7 @@ public class EnemyGauntletRoom : MonoBehaviour
         activeEnemyBoundsCheckUpdateCounter = 0;
 
         ActivateDoors();
+        PlayGauntletMusic();
         ShowCounterLabel();
         RefreshCounterLabel();
         ShowBannerMessage();
@@ -204,6 +218,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 
     private void ResetGauntletAfterPlayerDeath()
     {
+        StopGauntletMusic();
         DestroyActiveWaveEnemies();
         RestoreDoorsToPreGauntletState();
         RemoveBannerLabel();
@@ -323,6 +338,7 @@ public class EnemyGauntletRoom : MonoBehaviour
 
         LogGauntletCompletion();
         DestroyDoors();
+        StopGauntletMusic();
         RemoveCounterLabel();
     }
 
@@ -1390,6 +1406,91 @@ public class EnemyGauntletRoom : MonoBehaviour
 
         float angle = directionIndex * 2.399963f;
         return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+    }
+
+    private void PlayGauntletMusic()
+    {
+        if (gauntletMusicClip == null || gauntletMusicActive)
+            return;
+
+        AudioSource cameraAudioSource = ResolveMainCameraAudioSource();
+        if (cameraAudioSource == null)
+            return;
+
+        gauntletMusicAudioSource = cameraAudioSource;
+        previousMusicClip = cameraAudioSource.clip;
+        previousMusicLoop = cameraAudioSource.loop;
+        previousMusicWasPlaying = cameraAudioSource.isPlaying;
+        previousMusicTime = cameraAudioSource.time;
+
+        cameraAudioSource.Stop();
+        cameraAudioSource.clip = gauntletMusicClip;
+        cameraAudioSource.loop = true;
+        SetAudioSourceTime(cameraAudioSource, 0f);
+        cameraAudioSource.Play();
+
+        gauntletMusicActive = true;
+    }
+
+    private AudioSource ResolveMainCameraAudioSource()
+    {
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            AudioSource cameraAudioSource = mainCamera.GetComponent<AudioSource>();
+            if (cameraAudioSource != null)
+                return cameraAudioSource;
+        }
+
+        if (!warnedMissingGauntletMusicAudioSource)
+        {
+            warnedMissingGauntletMusicAudioSource = true;
+            Debug.LogWarning(
+                "EnemyGauntletRoom could not find a Main Camera AudioSource for gauntlet music.",
+                this
+            );
+        }
+
+        return null;
+    }
+
+    private void StopGauntletMusic()
+    {
+        if (!gauntletMusicActive)
+            return;
+
+        AudioSource audioSource = gauntletMusicAudioSource;
+        gauntletMusicActive = false;
+        gauntletMusicAudioSource = null;
+
+        if (audioSource == null)
+            return;
+
+        audioSource.Stop();
+        audioSource.clip = previousMusicClip;
+        audioSource.loop = previousMusicLoop;
+
+        if (previousMusicClip != null)
+        {
+            SetAudioSourceTime(audioSource, previousMusicTime);
+        }
+
+        if (previousMusicWasPlaying && previousMusicClip != null)
+        {
+            audioSource.Play();
+        }
+    }
+
+    private static void SetAudioSourceTime(AudioSource audioSource, float time)
+    {
+        if (audioSource == null || audioSource.clip == null)
+            return;
+
+        float clipLength = audioSource.clip.length;
+        if (clipLength <= 0f)
+            return;
+
+        audioSource.time = Mathf.Clamp(time, 0f, Mathf.Max(0f, clipLength - 0.01f));
     }
 
     private void ShowCounterLabel()

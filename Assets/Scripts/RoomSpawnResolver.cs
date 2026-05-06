@@ -48,7 +48,7 @@ public static class RoomSpawnResolver
 
     private static RoomEntryPoint FindEntryPoint(string targetEntryId, Scene scene)
     {
-        RoomEntryPoint[] entryPoints = Object.FindObjectsByType<RoomEntryPoint>(FindObjectsSortMode.None);
+        RoomEntryPoint[] entryPoints = Object.FindObjectsByType<RoomEntryPoint>();
 
         foreach (RoomEntryPoint entryPoint in entryPoints)
         {

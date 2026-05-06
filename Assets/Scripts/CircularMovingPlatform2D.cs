@@ -33,11 +33,21 @@ public class CircularMovingPlatform2D : MonoBehaviour
     private const int CircleGizmoSegments = 64;
 
     private readonly HashSet<Rigidbody2D> passengerRigidbodies = new HashSet<Rigidbody2D>();
+    private readonly HashSet<Rigidbody2D> fullDeltaPassengerRigidbodies = new HashSet<Rigidbody2D>();
     private readonly List<Rigidbody2D> passengerRemovalBuffer = new List<Rigidbody2D>();
     private Rigidbody2D rb2d;
     private Vector2 cachedCenterPosition;
     private bool hasCachedCenterPosition;
     private float currentAngleRadians;
+
+    public Vector2 CurrentPosition
+    {
+        get
+        {
+            Rigidbody2D platformRigidbody = rb2d != null ? rb2d : GetComponent<Rigidbody2D>();
+            return platformRigidbody != null ? platformRigidbody.position : (Vector2)transform.position;
+        }
+    }
 
     private void Awake()
     {
@@ -157,24 +167,45 @@ public class CircularMovingPlatform2D : MonoBehaviour
                 continue;
             }
 
-            passengerRigidbody.position = new Vector2(
-                passengerRigidbody.position.x + platformDelta.x,
-                passengerRigidbody.position.y
-            );
+            Vector2 passengerDelta = fullDeltaPassengerRigidbodies.Contains(passengerRigidbody)
+                ? platformDelta
+                : new Vector2(platformDelta.x, 0f);
+
+            passengerRigidbody.position += passengerDelta;
         }
 
         foreach (Rigidbody2D passengerRigidbody in passengerRemovalBuffer)
         {
             passengerRigidbodies.Remove(passengerRigidbody);
+            fullDeltaPassengerRigidbodies.Remove(passengerRigidbody);
         }
+    }
+
+    public bool AddPassenger(Rigidbody2D passengerRigidbody, bool carryFullDelta = false)
+    {
+        if (passengerRigidbody == null || passengerRigidbody == rb2d)
+            return false;
+
+        if (carryFullDelta)
+        {
+            fullDeltaPassengerRigidbodies.Add(passengerRigidbody);
+        }
+
+        return passengerRigidbodies.Add(passengerRigidbody);
+    }
+
+    public void RemovePassenger(Rigidbody2D passengerRigidbody)
+    {
+        if (passengerRigidbody == null)
+            return;
+
+        passengerRigidbodies.Remove(passengerRigidbody);
+        fullDeltaPassengerRigidbodies.Remove(passengerRigidbody);
     }
 
     private void TrackPassenger(Collision2D collision)
     {
-        if (collision.rigidbody == null || collision.rigidbody == rb2d)
-            return;
-
-        passengerRigidbodies.Add(collision.rigidbody);
+        AddPassenger(collision.rigidbody);
     }
 
     private void OnDrawGizmosSelected()
@@ -222,6 +253,9 @@ public class CircularMovingPlatform2D : MonoBehaviour
         if (collision.rigidbody == null)
             return;
 
-        passengerRigidbodies.Remove(collision.rigidbody);
+        if (!fullDeltaPassengerRigidbodies.Contains(collision.rigidbody))
+        {
+            passengerRigidbodies.Remove(collision.rigidbody);
+        }
     }
 }

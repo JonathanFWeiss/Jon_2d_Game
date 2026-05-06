@@ -21,7 +21,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float dashAirCarryDecay = 4f;
     [SerializeField] private float dashHeldSpeedMultiplier = 2f;
     [SerializeField][Range(0f, 1f)] private float dashHeldInputThreshold = 0.5f;
-    [SerializeField] private float dashHeldGroundedCarryTime = 0.25f;
+    //[SerializeField] private float dashHeldGroundedCarryTime = 0.25f;
     [SerializeField] private float jumpCutMultiplier = .5f;
     [SerializeField] private float maxFallSpeed = 20f;
     [SerializeField] private float coyoteTime = 0.3f;
@@ -154,7 +154,7 @@ public class JonCharacterController : MonoBehaviour
     private bool isDashSpeedBoostArmed;
     private float dashDirection = 1f;
     private float dashSpeedBoostDirection = 1f;
-    private bool dashSpeedBoostWentAirborne;
+    //private bool dashSpeedBoostWentAirborne;
     private float dashSpeedBoostGroundedSince = float.NegativeInfinity;
     private float nextDashTime;
     private float jumpBufferExpireTime = float.NegativeInfinity;
@@ -185,6 +185,9 @@ public class JonCharacterController : MonoBehaviour
     private float ledgeGrabDisabledUntil = float.NegativeInfinity;
     private Coroutine dashCoroutine;
     private Coroutine ledgePullUpCoroutine;
+    private MovingPlatform2D ledgePassengerMovingPlatform;
+    private CircularMovingPlatform2D ledgePassengerCircularMovingPlatform;
+    private Vector2 ledgePassengerPlatformPosition;
 
 
     private Vector2 movementVector;
@@ -217,7 +220,7 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private float sprintEndSwimAcceleration = 18f;
     [SerializeField][Range(0f, 1f)] private float swimInputThreshold = 0.1f;
     [SerializeField] private float swimJumpReentryDelay = 0.08f;
-    [SerializeField] private float buoyancy = 6f;
+   // [SerializeField] private float buoyancy = 6f;
     [SerializeField] private float waterDrag = 3f;
     public bool isSwimming;
     private float normalDrag;
@@ -457,6 +460,8 @@ public class JonCharacterController : MonoBehaviour
     private void OnDisable()
     {
         StopRunDustEffect();
+        DetachFromLedgePassengerPlatform();
+
         if (rb != null && wasSwimming)
         {
             isSwimming = false;
@@ -718,7 +723,7 @@ public class JonCharacterController : MonoBehaviour
     private void StartDashSpeedBoost()
     {
         dashSpeedBoostDirection = GetDashBoostDirection();
-        dashSpeedBoostWentAirborne = false;
+        //dashSpeedBoostWentAirborne = false;
         dashSpeedBoostGroundedSince = isGrounded
             ? Time.time
             : float.NegativeInfinity;
@@ -729,7 +734,7 @@ public class JonCharacterController : MonoBehaviour
     private void StopDashSpeedBoost()
     {
         isDashSpeedBoostActive = false;
-        dashSpeedBoostWentAirborne = false;
+        //dashSpeedBoostWentAirborne = false;
         dashSpeedBoostGroundedSince = float.NegativeInfinity;
     }
 
@@ -1529,6 +1534,7 @@ public class JonCharacterController : MonoBehaviour
         }
 
         CancelDashSpeedBoost();
+        ApplyLedgePassengerPlatformMotion();
         rb.gravityScale = 0f;
         rb.linearVelocity = Vector2.zero;
         rb.angularVelocity = 0f;
@@ -1685,16 +1691,27 @@ public class JonCharacterController : MonoBehaviour
 
         Vector2 hangPosition = hangCenter - colliderCenterOffset;
         Vector2 climbPosition = climbCenter - colliderCenterOffset;
-        if (!IsBodyClearAt(climbPosition, bounds, ledgeMask))
+        LayerMask pullUpObstacleMask = GetLedgePullUpObstacleMask();
+        if (!IsBodyClearAt(climbPosition, bounds, pullUpObstacleMask))
         {
             return false;
         }
+
+        FindLedgePassengerPlatform(
+            wallHit.collider,
+            topHit.collider,
+            secondTopHit.collider,
+            out MovingPlatform2D movingPlatform,
+            out CircularMovingPlatform2D circularMovingPlatform
+        );
 
         ledgeGrabInfo = new LedgeGrabInfo
         {
             Direction = direction,
             HangPosition = hangPosition,
-            ClimbPosition = climbPosition
+            ClimbPosition = climbPosition,
+            MovingPlatform = movingPlatform,
+            CircularMovingPlatform = circularMovingPlatform
         };
         return true;
     }
@@ -1714,6 +1731,7 @@ public class JonCharacterController : MonoBehaviour
         ledgeGrabDirection = ledgeGrabInfo.Direction;
         ledgeHangPosition = ledgeGrabInfo.HangPosition;
         ledgeClimbTargetPosition = ledgeGrabInfo.ClimbPosition;
+        AttachToLedgePassengerPlatform(ledgeGrabInfo.MovingPlatform, ledgeGrabInfo.CircularMovingPlatform);
         ledgeGrabStartedTime = Time.time;
         lastWallContactTime = Time.time;
         lastWallContactDirection = ledgeGrabDirection;
@@ -1730,7 +1748,7 @@ public class JonCharacterController : MonoBehaviour
         transform.localScale = localScale;
     }
 
-    private void EndLedgeGrab(bool applyCooldown)
+    private void EndLedgeGrab(bool applyCooldown, bool detachFromPlatform = true)
     {
         if (!isLedgeGrabbing)
         {
@@ -1739,6 +1757,10 @@ public class JonCharacterController : MonoBehaviour
 
         isLedgeGrabbing = false;
         isWallSliding = false;
+        if (detachFromPlatform)
+        {
+            DetachFromLedgePassengerPlatform();
+        }
         ledgeGrabStartedTime = float.NegativeInfinity;
         rb.gravityScale = defaultGravityScale;
 
@@ -1755,7 +1777,7 @@ public class JonCharacterController : MonoBehaviour
             return;
         }
 
-        EndLedgeGrab(false);
+        EndLedgeGrab(false, false);
         ledgePullUpCoroutine = StartCoroutine(LedgePullUpCoroutine(ledgeClimbTargetPosition, ledgePullUpDuration));
     }
 
@@ -1774,6 +1796,13 @@ public class JonCharacterController : MonoBehaviour
         rb.angularVelocity = 0f;
 
         Vector2 startPosition = rb.position;
+        Collider2D collider = GetBodyCollider();
+        Bounds pullUpBounds = collider != null ? collider.bounds : new Bounds(transform.position, Vector3.one);
+        Vector2 colliderCenterOffset = (Vector2)pullUpBounds.center - (Vector2)transform.position;
+        Vector2 bodySize = new Vector2(pullUpBounds.size.x, pullUpBounds.size.y);
+        LayerMask pullUpObstacleMask = GetLedgePullUpObstacleMask();
+        Vector2 lastClearPosition = startPosition;
+        bool pullUpBlocked = false;
         float elapsed = 0f;
         float duration = Mathf.Max(0.01f, seconds);
 
@@ -1784,16 +1813,41 @@ public class JonCharacterController : MonoBehaviour
                 break;
             }
 
+            Vector2 platformDelta = ApplyLedgePassengerPlatformMotion();
+            if (platformDelta != Vector2.zero)
+            {
+                startPosition += platformDelta;
+                targetPosition = ledgeClimbTargetPosition;
+                lastClearPosition += platformDelta;
+            }
+
             float progress = Mathf.Clamp01(elapsed / duration);
-            float smoothedProgress = progress * progress * (3f - 2f * progress);
-            Vector2 nextPosition = Vector2.Lerp(startPosition, targetPosition, smoothedProgress);
+            Vector2 nextPosition = GetLedgePullUpPosition(startPosition, targetPosition, progress);
+
+            if (!IsBodyClearAt(nextPosition, colliderCenterOffset, bodySize, pullUpObstacleMask))
+            {
+                pullUpBlocked = true;
+                break;
+            }
+
             rb.position = nextPosition;
             transform.position = nextPosition;
+            lastClearPosition = nextPosition;
             elapsed += Time.fixedDeltaTime;
             yield return new WaitForFixedUpdate();
         }
 
-        if (!isGettingHit && !isSwimming)
+        Vector2 finalPlatformDelta = ApplyLedgePassengerPlatformMotion();
+        if (finalPlatformDelta != Vector2.zero)
+        {
+            targetPosition = ledgeClimbTargetPosition;
+            lastClearPosition += finalPlatformDelta;
+        }
+
+        if (!pullUpBlocked &&
+            !isGettingHit &&
+            !isSwimming &&
+            IsBodyClearAt(targetPosition, colliderCenterOffset, bodySize, pullUpObstacleMask))
         {
             rb.position = targetPosition;
             transform.position = targetPosition;
@@ -1808,10 +1862,17 @@ public class JonCharacterController : MonoBehaviour
             doubleJumpAvailable = canDoubleJump;
             airDashAvailable = canDash;
         }
+        else if (pullUpBlocked)
+        {
+            rb.position = lastClearPosition;
+            transform.position = lastClearPosition;
+            rb.linearVelocity = Vector2.zero;
+        }
 
         rb.gravityScale = defaultGravityScale;
         isLedgePullingUp = false;
         ledgePullUpCoroutine = null;
+        DetachFromLedgePassengerPlatform();
         ledgeGrabDisabledUntil = Time.time + ledgeRegrabCooldown;
     }
 
@@ -1856,6 +1917,7 @@ public class JonCharacterController : MonoBehaviour
         isLedgeGrabbing = false;
         ledgeGrabDirection = 0;
         ledgeGrabStartedTime = float.NegativeInfinity;
+        DetachFromLedgePassengerPlatform();
         isWallSliding = false;
         isJumpSustaining = false;
         didAirHang = false;
@@ -1885,14 +1947,238 @@ public class JonCharacterController : MonoBehaviour
     private bool IsBodyClearAt(Vector2 targetPosition, Bounds currentBounds, LayerMask obstacleMask)
     {
         Vector2 colliderCenterOffset = (Vector2)currentBounds.center - (Vector2)transform.position;
+        Vector2 bodySize = new Vector2(currentBounds.size.x, currentBounds.size.y);
+        //Debug.Log($"Checking body clearance at {targetPosition} with offset {colliderCenterOffset} and size {bodySize}");
+        //Debug.DrawLine(targetPosition - bodySize * 0.5f, targetPosition + bodySize * 0.5f, Color.red, 1f);
+        return IsBodyClearAt(targetPosition, colliderCenterOffset, bodySize, obstacleMask);
+    }
+
+    private bool IsBodyClearAt(
+        Vector2 targetPosition,
+        Vector2 colliderCenterOffset,
+        Vector2 bodySize,
+        LayerMask obstacleMask
+    )
+    {
+        if (obstacleMask.value == 0)
+        {
+            return true;
+        }
+
         Vector2 targetCenter = targetPosition + colliderCenterOffset;
         float skin = Mathf.Max(0f, ledgeClearanceSkin);
         Vector2 checkSize = new Vector2(
-            Mathf.Max(0.01f, currentBounds.size.x - skin * 2f),
-            Mathf.Max(0.01f, currentBounds.size.y - skin * 2f)
+            Mathf.Max(0.01f, bodySize.x - skin * 2f),
+            Mathf.Max(0.01f, bodySize.y - skin * 2f)
         );
+        Collider2D blockingCollider = Physics2D.OverlapBox(targetCenter, checkSize, 0f, obstacleMask);
+        bool isClear = blockingCollider == null;
+        Debug.Log($"Checking {isClear} body clearance at {targetPosition} with center {targetCenter} and size {checkSize}");
 
-        return Physics2D.OverlapBox(targetCenter, checkSize, 0f, obstacleMask) == null;
+        Vector2 halfSize = checkSize * 0.5f;
+        Vector2 bottomLeft = targetCenter + new Vector2(-halfSize.x, -halfSize.y);
+        Vector2 bottomRight = targetCenter + new Vector2(halfSize.x, -halfSize.y);
+        Vector2 topRight = targetCenter + new Vector2(halfSize.x, halfSize.y);
+        Vector2 topLeft = targetCenter + new Vector2(-halfSize.x, halfSize.y);
+        Color clearanceColor = isClear ? Color.blue : Color.red;
+
+        Debug.DrawLine(bottomLeft, bottomRight, clearanceColor, 1f);
+        Debug.DrawLine(bottomRight, topRight, clearanceColor, 1f);
+        Debug.DrawLine(topRight, topLeft, clearanceColor, 1f);
+        Debug.DrawLine(topLeft, bottomLeft, clearanceColor, 1f);
+
+        return isClear;
+    }
+
+    private Vector2 GetLedgePullUpPosition(Vector2 startPosition, Vector2 targetPosition, float progress)
+    {
+        float clampedProgress = Mathf.Clamp01(progress);
+        const float verticalPhaseDuration = 0.55f;
+
+        if (clampedProgress < verticalPhaseDuration)
+        {
+            float verticalProgress = SmoothStep01(clampedProgress / verticalPhaseDuration);
+            return new Vector2(
+                startPosition.x,
+                Mathf.Lerp(startPosition.y, targetPosition.y, verticalProgress)
+            );
+        }
+
+        float horizontalProgress = SmoothStep01(
+            (clampedProgress - verticalPhaseDuration) / (1f - verticalPhaseDuration)
+        );
+        return new Vector2(
+            Mathf.Lerp(startPosition.x, targetPosition.x, horizontalProgress),
+            targetPosition.y
+        );
+    }
+
+    private float SmoothStep01(float progress)
+    {
+        float clampedProgress = Mathf.Clamp01(progress);
+        return clampedProgress * clampedProgress * (3f - 2f * clampedProgress);
+    }
+
+    private LayerMask GetLedgePullUpObstacleMask()
+    {
+        LayerMask obstacleMask = default(LayerMask);
+        obstacleMask.value = GetLedgeGrabMask().value | groundLayer.value;
+        return obstacleMask;
+    }
+
+    private void AttachToLedgePassengerPlatform(
+        MovingPlatform2D movingPlatform,
+        CircularMovingPlatform2D circularMovingPlatform
+    )
+    {
+        DetachFromLedgePassengerPlatform();
+
+        if (rb == null)
+        {
+            return;
+        }
+
+        if (movingPlatform != null)
+        {
+            ledgePassengerMovingPlatform = movingPlatform;
+            ledgePassengerMovingPlatform.AddPassenger(rb, true);
+            ledgePassengerPlatformPosition = ledgePassengerMovingPlatform.CurrentPosition;
+            return;
+        }
+
+        if (circularMovingPlatform != null)
+        {
+            ledgePassengerCircularMovingPlatform = circularMovingPlatform;
+            ledgePassengerCircularMovingPlatform.AddPassenger(rb, true);
+            ledgePassengerPlatformPosition = ledgePassengerCircularMovingPlatform.CurrentPosition;
+        }
+    }
+
+    private void DetachFromLedgePassengerPlatform()
+    {
+        if (rb != null)
+        {
+            if (ledgePassengerMovingPlatform != null)
+            {
+                ledgePassengerMovingPlatform.RemovePassenger(rb);
+            }
+
+            if (ledgePassengerCircularMovingPlatform != null)
+            {
+                ledgePassengerCircularMovingPlatform.RemovePassenger(rb);
+            }
+        }
+
+        ledgePassengerMovingPlatform = null;
+        ledgePassengerCircularMovingPlatform = null;
+        ledgePassengerPlatformPosition = Vector2.zero;
+    }
+
+    private Vector2 ApplyLedgePassengerPlatformMotion()
+    {
+        if (ledgePassengerMovingPlatform == null && ledgePassengerCircularMovingPlatform == null)
+        {
+            return Vector2.zero;
+        }
+
+        if (!TryGetLedgePassengerPlatformPosition(out Vector2 currentPlatformPosition))
+        {
+            DetachFromLedgePassengerPlatform();
+            return Vector2.zero;
+        }
+
+        Vector2 platformDelta = currentPlatformPosition - ledgePassengerPlatformPosition;
+        ledgePassengerPlatformPosition = currentPlatformPosition;
+
+        if (platformDelta == Vector2.zero)
+        {
+            return Vector2.zero;
+        }
+
+        ledgeHangPosition += platformDelta;
+        ledgeClimbTargetPosition += platformDelta;
+        return platformDelta;
+    }
+
+    private bool TryGetLedgePassengerPlatformPosition(out Vector2 platformPosition)
+    {
+        if (ledgePassengerMovingPlatform != null)
+        {
+            platformPosition = ledgePassengerMovingPlatform.CurrentPosition;
+            return true;
+        }
+
+        if (ledgePassengerCircularMovingPlatform != null)
+        {
+            platformPosition = ledgePassengerCircularMovingPlatform.CurrentPosition;
+            return true;
+        }
+
+        platformPosition = Vector2.zero;
+        return false;
+    }
+
+    private static void FindLedgePassengerPlatform(
+        Collider2D wallCollider,
+        Collider2D topCollider,
+        Collider2D secondTopCollider,
+        out MovingPlatform2D movingPlatform,
+        out CircularMovingPlatform2D circularMovingPlatform
+    )
+    {
+        movingPlatform =
+            GetMovingPlatform(wallCollider) ??
+            GetMovingPlatform(topCollider) ??
+            GetMovingPlatform(secondTopCollider);
+
+        if (movingPlatform != null)
+        {
+            circularMovingPlatform = null;
+            return;
+        }
+
+        circularMovingPlatform =
+            GetCircularMovingPlatform(wallCollider) ??
+            GetCircularMovingPlatform(topCollider) ??
+            GetCircularMovingPlatform(secondTopCollider);
+    }
+
+    private static MovingPlatform2D GetMovingPlatform(Collider2D collider)
+    {
+        if (collider == null)
+        {
+            return null;
+        }
+
+        if (collider.attachedRigidbody != null)
+        {
+            MovingPlatform2D platform = collider.attachedRigidbody.GetComponent<MovingPlatform2D>();
+            if (platform != null)
+            {
+                return platform;
+            }
+        }
+
+        return collider.GetComponentInParent<MovingPlatform2D>();
+    }
+
+    private static CircularMovingPlatform2D GetCircularMovingPlatform(Collider2D collider)
+    {
+        if (collider == null)
+        {
+            return null;
+        }
+
+        if (collider.attachedRigidbody != null)
+        {
+            CircularMovingPlatform2D platform = collider.attachedRigidbody.GetComponent<CircularMovingPlatform2D>();
+            if (platform != null)
+            {
+                return platform;
+            }
+        }
+
+        return collider.GetComponentInParent<CircularMovingPlatform2D>();
     }
 
     private int GetLedgeGrabCheckDirection()
@@ -1927,6 +2213,8 @@ public class JonCharacterController : MonoBehaviour
         public int Direction;
         public Vector2 HangPosition;
         public Vector2 ClimbPosition;
+        public MovingPlatform2D MovingPlatform;
+        public CircularMovingPlatform2D CircularMovingPlatform;
     }
 
     private struct DecayingMovementVelocity

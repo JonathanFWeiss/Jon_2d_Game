@@ -874,8 +874,9 @@ public class BossBase : EnemyBase
         OnBossStateExited(currentState);
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
         EndAttackColliderWindow();
     }
 
@@ -1226,8 +1227,9 @@ public class BossBase : EnemyBase
             return null;
 
         int effectIndex = Mathf.Abs(helperIndex) % helperSpawnEffects.Length;
-        return helperSpawnEffects[effectIndex];
         Debug.Log($"Spawning helper effect {effectIndex} for helper {helperIndex}");
+        return helperSpawnEffects[effectIndex];
+        
 
     }
 
