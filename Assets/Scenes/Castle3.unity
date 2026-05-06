@@ -833,7 +833,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: bannerText
-      value: Boss Fight
+      value: The First Stack
       objectReference: {fileID: 0}
     - target: {fileID: 1625740464542595468, guid: ba55782ed1af1be418b80f878da280e3, type: 3}
       propertyPath: bannerTopOffset

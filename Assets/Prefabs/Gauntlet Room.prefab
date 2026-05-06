@@ -404,6 +404,17 @@ MonoBehaviour:
   minimumSpawnDistanceFromOtherEnemies: 1.5
   randomSpawnAttempts: 30
   spawnedEnemiesParent: {fileID: 4790960796474854463}
+  spawnBlockerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  fallbackSpawnBlockerProbeSize: {x: 1, y: 1}
+  spawnBlockerAdjustmentAttempts: 8
+  spawnBlockerPadding: 0.05
+  completionLogKey: 
+  gauntletMusicClip: {fileID: 0}
   uiDocument: {fileID: 0}
+  bannerText: 
+  bannerDuration: 1.5
+  bannerTopOffset: 40
   counterLabelName: GauntletDefeatedCounter
   counterTopOffset: 86
