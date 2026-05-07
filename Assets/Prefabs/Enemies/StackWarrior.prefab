@@ -78,12 +78,14 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 2.306312, y: 2.2801974}
+    - - {x: 6.585257, y: 1.0360637}
+      - {x: 2.306312, y: 2.2801974}
       - {x: 0.25595474, y: 3.115794}
       - {x: 2.311612, y: -0.334326}
       - {x: 2.0315385, y: -3.4053655}
       - {x: 3.0922294, y: -2.2565389}
-      - {x: 5.7072015, y: -0.49516106}
+      - {x: 6.4703584, y: -1.659201}
+      - {x: 6.9328027, y: -0.49516106}
   m_UseDelaunayMesh: 1
 --- !u!1 &4088856215554375809
 GameObject:
@@ -275,8 +277,8 @@ MonoBehaviour:
   contactDamageCooldown: 1
   playerLayerMask:
     serializedVersion: 2
-    m_Bits: 0
-  contactPushbackImpulse: {x: 6, y: 6}
+    m_Bits: 64
+  contactPushbackImpulse: {x: 12, y: 12}
   CorpsePrefab: {fileID: 766049385705077599, guid: 04d01e5e6722f8a429608cf88c953341, type: 3}
   corpseLifetime: 15
   coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
@@ -320,8 +322,8 @@ MonoBehaviour:
     selectionMode: 0
     avoidRandomRepeats: 1
     behaviorLoop:
-    - state: 3
-      duration: 1
+    - state: 10
+      duration: 3
       facePlayerOnEnter: 1
       animatorTrigger: 
     - state: 4
@@ -343,10 +345,10 @@ MonoBehaviour:
   - phaseName: Phase 3
     enterAtHealthPercent: 0.33
     phaseTint: {r: 0.96981126, g: 0.2470273, b: 0.2470273, a: 1}
-    selectionMode: 1
+    selectionMode: 0
     avoidRandomRepeats: 1
     behaviorLoop:
-    - state: 3
+    - state: 10
       duration: 0.85
       facePlayerOnEnter: 1
       animatorTrigger: 
@@ -370,6 +372,7 @@ MonoBehaviour:
   idleTrigger: Idle
   attackTrigger: Attack
   jumpAttackTrigger: JumpAttack
+  groundChargeTrigger: GroundCharge
   recoveryTrigger: Recovery
   summonHelpersTrigger: SummonHelpers
   phaseTransitionTrigger: PhaseTransition
@@ -381,6 +384,15 @@ MonoBehaviour:
   useDefaultJumpAttackImpulse: 1
   jumpAttackImpulse: {x: 8, y: 30}
   resetVelocityBeforeJumpAttack: 1
+  useDefaultGroundCharge: 1
+  groundChargeAcceleration: 40
+  groundChargeMaxSpeed: 12
+  resetHorizontalVelocityBeforeGroundCharge: 1
+  stopHorizontalVelocityAfterGroundCharge: 0
+  groundChargeStopMask:
+    serializedVersion: 2
+    m_Bits: 72
+  groundChargeStopsOnTriggers: 0
   helperPrefabs:
   - {fileID: 4059959933960952876, guid: c3a72547a10d1c44ea5cf4478197e8e5, type: 3}
   helperSpawnEffects:

@@ -14,7 +14,8 @@ public class BossBase : EnemyBase
         SummonHelpers,
         PhaseTransition,
         Stunned,
-        Dead
+        Dead,
+        GroundCharge
     }
 
     public enum BossPhaseSelectionMode
@@ -192,6 +193,7 @@ public class BossBase : EnemyBase
     [SerializeField] private string idleTrigger = "Idle";
     [SerializeField] private string attackTrigger = "Attack";
     [SerializeField] private string jumpAttackTrigger = "JumpAttack";
+    [SerializeField] private string groundChargeTrigger = "GroundCharge";
     [SerializeField] private string recoveryTrigger = "Recovery";
     [SerializeField] private string summonHelpersTrigger = "SummonHelpers";
     [SerializeField] private string phaseTransitionTrigger = "PhaseTransition";
@@ -220,6 +222,28 @@ public class BossBase : EnemyBase
 
     [Tooltip("Clear current velocity before the default JumpAttack impulse.")]
     [SerializeField] private bool resetVelocityBeforeJumpAttack = true;
+
+    [Header("Ground Charge")]
+    [Tooltip("Use this generic ground charge movement when entering GroundCharge. Override the GroundCharge state hooks for custom charges.")]
+    [SerializeField] private bool useDefaultGroundCharge = true;
+
+    [Tooltip("How quickly GroundCharge accelerates toward its locked charge speed.")]
+    [SerializeField] private float groundChargeAcceleration = 40f;
+
+    [Tooltip("Maximum horizontal speed during GroundCharge.")]
+    [SerializeField] private float groundChargeMaxSpeed = 12f;
+
+    [Tooltip("Clear horizontal velocity before GroundCharge begins.")]
+    [SerializeField] private bool resetHorizontalVelocityBeforeGroundCharge = true;
+
+    [Tooltip("Stop horizontal movement when GroundCharge ends or hits a stopping collider.")]
+    [SerializeField] private bool stopHorizontalVelocityAfterGroundCharge = true;
+
+    [Tooltip("Layers that stop GroundCharge. Leave empty to stop on any non-child collider.")]
+    [SerializeField] private LayerMask groundChargeStopMask = 0;
+
+    [Tooltip("Allow trigger contacts to complete GroundCharge.")]
+    [SerializeField] private bool groundChargeStopsOnTriggers = true;
 
     [Header("Helper Summons")]
     [Tooltip("Helper prefabs spawned by the default SummonHelpers state.")]
@@ -262,6 +286,8 @@ public class BossBase : EnemyBase
     private Color[] phaseTintBaseColors;
     private float attackColliderActivationTime = float.PositiveInfinity;
     private bool attackColliderIsActive;
+    private float groundChargeDirection = 1f;
+    private bool groundChargeIsActive;
     private bool isBossActive;
     private bool currentStateCompleted;
     private BossBehaviorState currentState = BossBehaviorState.Inactive;
@@ -403,6 +429,30 @@ public class BossBase : EnemyBase
             return;
 
         UpdatePhaseFromHealth();
+    }
+
+    protected override void OnCollisionEnter2D(Collision2D collision)
+    {
+        base.OnCollisionEnter2D(collision);
+        TryCompleteGroundChargeFromCollision(collision);
+    }
+
+    protected override void OnCollisionStay2D(Collision2D collision)
+    {
+        base.OnCollisionStay2D(collision);
+        TryCompleteGroundChargeFromCollision(collision);
+    }
+
+    protected override void OnTriggerEnter2D(Collider2D other)
+    {
+        base.OnTriggerEnter2D(other);
+        TryCompleteGroundChargeFromTrigger(other);
+    }
+
+    protected override void OnTriggerStay2D(Collider2D other)
+    {
+        base.OnTriggerStay2D(other);
+        TryCompleteGroundChargeFromTrigger(other);
     }
 
     protected void CompleteCurrentState()
@@ -594,6 +644,25 @@ public class BossBase : EnemyBase
 
     protected virtual void OnJumpAttackStateExited()
     {
+    }
+
+    protected virtual void OnGroundChargeStateEntered()
+    {
+        BeginGroundCharge();
+    }
+
+    protected virtual void OnGroundChargeStateUpdated(float deltaTime)
+    {
+    }
+
+    protected virtual void OnGroundChargeStateFixedUpdated(float fixedDeltaTime)
+    {
+        UpdateGroundChargeMovement(fixedDeltaTime);
+    }
+
+    protected virtual void OnGroundChargeStateExited()
+    {
+        EndGroundCharge();
     }
 
     protected virtual void OnRecoveryStateEntered()
@@ -878,6 +947,7 @@ public class BossBase : EnemyBase
     {
         base.OnDisable();
         EndAttackColliderWindow();
+        EndGroundCharge();
     }
 
     private void OnDestroy()
@@ -1034,6 +1104,8 @@ public class BossBase : EnemyBase
                 return attackTrigger;
             case BossBehaviorState.JumpAttack:
                 return jumpAttackTrigger;
+            case BossBehaviorState.GroundCharge:
+                return groundChargeTrigger;
             case BossBehaviorState.Recovery:
                 return recoveryTrigger;
             case BossBehaviorState.SummonHelpers:
@@ -1172,6 +1244,113 @@ public class BossBase : EnemyBase
         rb2d.linearVelocity = new Vector2(0f, rb2d.linearVelocity.y);
     }
 
+    private void BeginGroundCharge()
+    {
+        groundChargeIsActive = true;
+        ResolvePlayerTransform(true);
+        groundChargeDirection = GetDirectionToPlayerOrFacing();
+        FaceDirection(groundChargeDirection);
+
+        if (!useDefaultGroundCharge || rb2d == null)
+            return;
+
+        if (resetHorizontalVelocityBeforeGroundCharge)
+        {
+            rb2d.linearVelocity = new Vector2(0f, rb2d.linearVelocity.y);
+        }
+    }
+
+    private void UpdateGroundChargeMovement(float fixedDeltaTime)
+    {
+        if (!groundChargeIsActive || !useDefaultGroundCharge || rb2d == null)
+            return;
+
+        float targetVelocityX = groundChargeDirection * Mathf.Max(0f, groundChargeMaxSpeed);
+        float currentVelocityX = rb2d.linearVelocity.x;
+        float maxVelocityChange = Mathf.Max(0f, groundChargeAcceleration) * fixedDeltaTime;
+        float velocityChange = Mathf.Clamp(
+            targetVelocityX - currentVelocityX,
+            -maxVelocityChange,
+            maxVelocityChange
+        );
+
+        rb2d.linearVelocity = new Vector2(currentVelocityX + velocityChange, rb2d.linearVelocity.y);
+    }
+
+    private void EndGroundCharge()
+    {
+        bool shouldStopHorizontalVelocity = groundChargeIsActive || currentState == BossBehaviorState.GroundCharge;
+        groundChargeIsActive = false;
+
+        if (!shouldStopHorizontalVelocity || !stopHorizontalVelocityAfterGroundCharge || rb2d == null)
+            return;
+
+        rb2d.linearVelocity = new Vector2(0f, rb2d.linearVelocity.y);
+    }
+
+    private void TryCompleteGroundChargeFromCollision(Collision2D collision)
+    {
+        if (!groundChargeIsActive || collision == null)
+            return;
+
+        if (!CanGroundChargeStopOnObject(collision.gameObject))
+            return;
+
+        if (!IsGroundChargePlayerContact(collision.gameObject) && !HasGroundChargeStoppingContact(collision))
+            return;
+
+        CompleteGroundChargeFromContact();
+    }
+
+    private void TryCompleteGroundChargeFromTrigger(Collider2D other)
+    {
+        if (!groundChargeIsActive || !groundChargeStopsOnTriggers || other == null)
+            return;
+
+        if (!CanGroundChargeStopOnObject(other.gameObject))
+            return;
+
+        CompleteGroundChargeFromContact();
+    }
+
+    private void CompleteGroundChargeFromContact()
+    {
+        EndGroundCharge();
+        CompleteCurrentState();
+    }
+
+    private bool HasGroundChargeStoppingContact(Collision2D collision)
+    {
+        for (int i = 0; i < collision.contactCount; i++)
+        {
+            ContactPoint2D contact = collision.GetContact(i);
+
+            if (Mathf.Abs(contact.normal.x) > 0.5f)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsGroundChargePlayerContact(GameObject hitObject)
+    {
+        if (hitObject == null)
+            return false;
+
+        return IsPlayerObject(hitObject.transform.root.gameObject);
+    }
+
+    private bool CanGroundChargeStopOnObject(GameObject hitObject)
+    {
+        if (hitObject == null || hitObject.transform.IsChildOf(transform))
+            return false;
+
+        return groundChargeStopMask == 0 ||
+            ((1 << hitObject.layer) & groundChargeStopMask.value) != 0;
+    }
+
     private void BeginAttackColliderWindow()
     {
         attackColliderIsActive = false;
@@ -1297,6 +1476,9 @@ public class BossBase : EnemyBase
             case BossBehaviorState.JumpAttack:
                 OnJumpAttackStateEntered();
                 break;
+            case BossBehaviorState.GroundCharge:
+                OnGroundChargeStateEntered();
+                break;
             case BossBehaviorState.Recovery:
                 OnRecoveryStateEntered();
                 break;
@@ -1327,6 +1509,9 @@ public class BossBase : EnemyBase
                 break;
             case BossBehaviorState.JumpAttack:
                 OnJumpAttackStateUpdated(deltaTime);
+                break;
+            case BossBehaviorState.GroundCharge:
+                OnGroundChargeStateUpdated(deltaTime);
                 break;
             case BossBehaviorState.Recovery:
                 OnRecoveryStateUpdated(deltaTime);
@@ -1359,6 +1544,9 @@ public class BossBase : EnemyBase
             case BossBehaviorState.JumpAttack:
                 OnJumpAttackStateFixedUpdated(fixedDeltaTime);
                 break;
+            case BossBehaviorState.GroundCharge:
+                OnGroundChargeStateFixedUpdated(fixedDeltaTime);
+                break;
             case BossBehaviorState.Recovery:
                 OnRecoveryStateFixedUpdated(fixedDeltaTime);
                 break;
@@ -1390,6 +1578,9 @@ public class BossBase : EnemyBase
             case BossBehaviorState.JumpAttack:
                 OnJumpAttackStateExited();
                 break;
+            case BossBehaviorState.GroundCharge:
+                OnGroundChargeStateExited();
+                break;
             case BossBehaviorState.Recovery:
                 OnRecoveryStateExited();
                 break;
@@ -1411,6 +1602,8 @@ public class BossBase : EnemyBase
         activationRadius = Mathf.Max(0f, activationRadius);
         playerSearchInterval = Mathf.Max(0.05f, playerSearchInterval);
         attackColliderActivationDelay = Mathf.Max(0f, attackColliderActivationDelay);
+        groundChargeAcceleration = Mathf.Max(0f, groundChargeAcceleration);
+        groundChargeMaxSpeed = Mathf.Max(0f, groundChargeMaxSpeed);
         helpersPerSummon = Mathf.Max(0, helpersPerSummon);
         maxActiveHelpers = Mathf.Max(0, maxActiveHelpers);
 

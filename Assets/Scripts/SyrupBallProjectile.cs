@@ -2,24 +2,21 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
-public class SyrupBallProjectile : MonoBehaviour
+public class SyrupBallProjectile : EnemyBase
 {
-    private Rigidbody2D rb2d;
-    private LayerMask playerMask;
-    private int damageAmount;
-    private Vector2 pushbackImpulse;
     private GameObject ownerRoot;
     private bool hasHit;
 
-    private void Awake()
+    protected override void Awake()
     {
-        rb2d = GetComponent<Rigidbody2D>();
+        base.Awake();
+        moveSpeed = 0f;
     }
 
     public void Initialize(
         Collider2D[] ownerColliders,
         LayerMask playerLayerMask,
-        int contactDamage,
+        int contactDamageAmount,
         Vector2 contactPushback,
         float lifetime,
         Vector2 launchVelocity,
@@ -27,10 +24,14 @@ public class SyrupBallProjectile : MonoBehaviour
     )
     {
         rb2d = rb2d != null ? rb2d : GetComponent<Rigidbody2D>();
-        playerMask = playerLayerMask;
-        damageAmount = contactDamage;
-        pushbackImpulse = contactPushback;
+        this.contactDamage = contactDamageAmount;
+        contactPushbackImpulse = contactPushback;
         ownerRoot = owner;
+
+        if (playerLayerMask.value != 0)
+        {
+            this.playerLayerMask = playerLayerMask;
+        }
 
         Collider2D projectileCollider = GetComponent<Collider2D>();
 
@@ -57,23 +58,27 @@ public class SyrupBallProjectile : MonoBehaviour
         Destroy(gameObject, Mathf.Max(0.25f, lifetime));
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    protected override void FixedUpdate()
+    {
+    }
+
+    protected override void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision == null)
             return;
 
-        HandleHit(collision.gameObject, collision.rigidbody, collision.collider);
+        HandleHit(collision.gameObject);
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    protected override void OnTriggerEnter2D(Collider2D other)
     {
         if (other == null)
             return;
 
-        HandleHit(other.gameObject, other.attachedRigidbody, other);
+        HandleHit(other.gameObject);
     }
 
-    private void HandleHit(GameObject hitObject, Rigidbody2D hitRigidbody, Collider2D hitCollider)
+    private void HandleHit(GameObject hitObject)
     {
         if (hasHit)
             return;
@@ -84,28 +89,15 @@ public class SyrupBallProjectile : MonoBehaviour
             return;
         }
 
-        GameObject rootObject = hitObject.transform.root.gameObject;
-
-        if (ownerRoot != null && (hitObject == ownerRoot || hitObject.transform.IsChildOf(ownerRoot.transform)))
+        if (IsOwnerObject(hitObject))
         {
             Debug.Log($"{gameObject.name} ignored owner hit with {GetDebugObjectName(hitObject)}.");
             return;
         }
 
-        if (IsPlayerObject(rootObject))
-        {
-            hasHit = true;
-            Debug.Log($"{gameObject.name} hit player object {GetDebugObjectName(hitObject)}.");
-
-            if (damageAmount > 0)
-            {
-                PlayerData.RemoveHP(damageAmount);
-            }
-
-            ApplyPushback(hitRigidbody, hitCollider);
-            Destroy(gameObject);
+        TryDamagePlayer(hitObject);
+        if (hasHit)
             return;
-        }
 
         if (!hitObject.transform.IsChildOf(transform))
         {
@@ -115,64 +107,38 @@ public class SyrupBallProjectile : MonoBehaviour
         }
     }
 
-    private string GetDebugObjectName(GameObject obj)
+    protected override void TryDamagePlayer(GameObject hitObject)
     {
-        return obj != null ? obj.name : "null";
-    }
-
-    private bool IsPlayerObject(GameObject obj)
-    {
-        if (obj == null)
-            return false;
-
-        if (obj.CompareTag("Player"))
-            return true;
-
-        return ((1 << obj.layer) & playerMask.value) != 0;
-    }
-
-    private void ApplyPushback(Rigidbody2D hitRigidbody, Collider2D hitCollider)
-    {
-        Rigidbody2D playerRb = hitRigidbody;
-
-        if (playerRb == null && hitCollider != null)
-        {
-            playerRb = hitCollider.GetComponentInParent<Rigidbody2D>();
-        }
-
-        if (playerRb == null || rb2d == null)
+        if (isDead || hasHit || hitObject == null || IsOwnerObject(hitObject))
             return;
 
-        Vector2 direction = playerRb.worldCenterOfMass - rb2d.worldCenterOfMass;
-        float horizontalDirection = Mathf.Sign(direction.x);
+        GameObject rootObject = hitObject.transform.root.gameObject;
 
-        if (Mathf.Approximately(horizontalDirection, 0f))
+        if (!IsPlayerObject(rootObject))
+            return;
+
+        hasHit = true;
+        lastContactDamageTime = Time.time;
+        Debug.Log($"{gameObject.name} hit player object {GetDebugObjectName(hitObject)}.");
+
+        if (contactDamage > 0)
         {
-            horizontalDirection = Mathf.Sign(rb2d.linearVelocity.x);
-
-            if (Mathf.Approximately(horizontalDirection, 0f))
-            {
-                horizontalDirection = 1f;
-            }
+            PlayerData.RemoveHP(contactDamage);
         }
 
-        Vector2 impulse = new Vector2(
-            horizontalDirection * pushbackImpulse.x,
-            pushbackImpulse.y
-        );
-        playerRb.linearVelocity = Vector2.zero;
-        playerRb.AddForce(impulse, ForceMode2D.Impulse);
+        ApplyContactPushback(hitObject, rootObject);
+        Destroy(gameObject);
+    }
 
-        JonCharacterController playerController = playerRb.GetComponent<JonCharacterController>();
+    private bool IsOwnerObject(GameObject hitObject)
+    {
+        return ownerRoot != null &&
+            hitObject != null &&
+            (hitObject == ownerRoot || hitObject.transform.IsChildOf(ownerRoot.transform));
+    }
 
-        if (playerController == null)
-        {
-            playerController = playerRb.GetComponentInParent<JonCharacterController>();
-        }
-
-        if (playerController != null)
-        {
-            playerController.StartGettingHit();
-        }
+    private static string GetDebugObjectName(GameObject obj)
+    {
+        return obj != null ? obj.name : "null";
     }
 }

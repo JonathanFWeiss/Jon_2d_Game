@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,7 +13,6 @@ public static class PlayerData
     private const float RemoveHpCooldownSeconds = 1f;
     private const SimulationMode2D DefaultPhysics2DMode = SimulationMode2D.FixedUpdate;
     private const SimulationMode DefaultPhysicsMode = SimulationMode.FixedUpdate;
-    private static readonly float HpRemovalPhysicsPauseSeconds = 0.5f;
 
     public static int Coins { get; private set; }
     public static int Energy { get; private set; }
@@ -27,7 +25,6 @@ public static class PlayerData
     private static readonly Dictionary<string, int> inventoryItems = new Dictionary<string, int>();
     private static readonly HashSet<string> completedGauntletKeys = new HashSet<string>();
     private static float nextAllowedHpRemovalTime = 0f;
-    private static PhysicsPauseRunner physicsPauseRunner;
 
     public static void AddCoins(int amount = 1)
     {
@@ -141,7 +138,6 @@ public static class PlayerData
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void InitializeOnPlayModeStart()
     {
-        ReleasePhysicsPauseRunners();
         RestoreDefaultPauseState();
 
         Coins = 0;
@@ -150,7 +146,6 @@ public static class PlayerData
         inventoryItems.Clear();
         completedGauntletKeys.Clear();
         nextAllowedHpRemovalTime = 0f;
-        physicsPauseRunner = null;
         PlayerDied = null;
     }
 
@@ -159,28 +154,6 @@ public static class PlayerData
         Time.timeScale = 1f;
         Physics2D.simulationMode = DefaultPhysics2DMode;
         Physics.simulationMode = DefaultPhysicsMode;
-    }
-
-    private static void ReleasePhysicsPauseRunners()
-    {
-        foreach (PhysicsPauseRunner runner in UnityEngine.Object.FindObjectsByType<PhysicsPauseRunner>(
-            FindObjectsInactive.Include))
-        {
-            if (runner == null)
-                continue;
-
-            runner.CancelPause();
-            if (Application.isPlaying)
-            {
-                UnityEngine.Object.Destroy(runner.gameObject);
-            }
-            else
-            {
-                UnityEngine.Object.DestroyImmediate(runner.gameObject);
-            }
-        }
-
-        physicsPauseRunner = null;
     }
 
     public static void RemoveHP(int amount = 1)
@@ -194,7 +167,6 @@ public static class PlayerData
         int previousHp = HP;
         HP -= amount;
         HP = Mathf.Max(HP, 0);
-        PausePhysicsAfterHpRemoval();
         if (previousHp > 0 && HP <= 0)
         {
             PlayerDied?.Invoke();
@@ -223,97 +195,5 @@ public static class PlayerData
     public static void ResetEnergy()
     {
         Energy = 0;
-    }
-
-    private static void PausePhysicsAfterHpRemoval()
-    {
-        if (HpRemovalPhysicsPauseSeconds <= 0f)
-            return;
-
-        GetOrCreatePhysicsPauseRunner().PauseForSeconds(HpRemovalPhysicsPauseSeconds);
-    }
-
-    private static PhysicsPauseRunner GetOrCreatePhysicsPauseRunner()
-    {
-        if (physicsPauseRunner != null)
-            return physicsPauseRunner;
-
-        GameObject runnerObject = new GameObject("PlayerDataPhysicsPauseRunner");
-        runnerObject.hideFlags = HideFlags.HideInHierarchy;
-        UnityEngine.Object.DontDestroyOnLoad(runnerObject);
-        physicsPauseRunner = runnerObject.AddComponent<PhysicsPauseRunner>();
-        return physicsPauseRunner;
-    }
-
-    private sealed class PhysicsPauseRunner : MonoBehaviour
-    {
-        private Coroutine pauseCoroutine;
-        private bool isPhysicsPaused;
-        private SimulationMode2D pausedPhysics2DMode;
-        private SimulationMode pausedPhysicsMode;
-
-        public void PauseForSeconds(float duration)
-        {
-            if (!isPhysicsPaused)
-            {
-                pausedPhysics2DMode = Physics2D.simulationMode;
-                pausedPhysicsMode = Physics.simulationMode;
-                Physics2D.simulationMode = SimulationMode2D.Script;
-                Physics.simulationMode = SimulationMode.Script;
-                isPhysicsPaused = true;
-            }
-
-            if (pauseCoroutine != null)
-            {
-                StopCoroutine(pauseCoroutine);
-            }
-
-            pauseCoroutine = StartCoroutine(PauseRoutine(duration));
-        }
-
-        private IEnumerator PauseRoutine(float duration)
-        {
-            yield return new WaitForSecondsRealtime(duration);
-
-            RestorePausedPhysicsMode();
-        }
-
-        public void CancelPause()
-        {
-            if (pauseCoroutine != null)
-            {
-                StopCoroutine(pauseCoroutine);
-                pauseCoroutine = null;
-            }
-
-            isPhysicsPaused = false;
-        }
-
-        private void RestorePausedPhysicsMode()
-        {
-            if (isPhysicsPaused)
-            {
-                Physics2D.simulationMode = pausedPhysics2DMode;
-                Physics.simulationMode = pausedPhysicsMode;
-                isPhysicsPaused = false;
-            }
-
-            pauseCoroutine = null;
-        }
-
-        private void OnDisable()
-        {
-            RestorePausedPhysicsMode();
-        }
-
-        private void OnDestroy()
-        {
-            RestorePausedPhysicsMode();
-
-            if (physicsPauseRunner == this)
-            {
-                physicsPauseRunner = null;
-            }
-        }
     }
 }

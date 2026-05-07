@@ -272,20 +272,22 @@ public class StackWarrior : GroundWalkerEnemy
             float horizontalOffset = (i - (projectileCount - 1) * 0.5f) * syrupBallSpacing;
             Vector3 spawnPosition = spawnBasePosition + new Vector3(horizontalOffset, 0f, 0f);
             GameObject syrupBall = Instantiate(syrupBallPrefab, spawnPosition, Quaternion.identity);
-            EnemyBase projectileEnemy = syrupBall.GetComponent<EnemyBase>();
-
-            if (projectileEnemy != null)
-            {
-                projectileEnemy.enabled = false;
-            }
-
             SyrupBallProjectile projectile = syrupBall.GetComponent<SyrupBallProjectile>();
+
+            foreach (EnemyBase projectileEnemy in syrupBall.GetComponentsInChildren<EnemyBase>(true))
+            {
+                if (projectileEnemy != null && !(projectileEnemy is SyrupBallProjectile))
+                {
+                    projectileEnemy.enabled = false;
+                }
+            }
 
             if (projectile == null)
             {
                 projectile = syrupBall.AddComponent<SyrupBallProjectile>();
             }
 
+            projectile.enabled = true;
             projectile.Initialize(
                 ownerColliders,
                 playerLayerMask,

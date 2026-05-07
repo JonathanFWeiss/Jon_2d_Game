@@ -231,7 +231,7 @@ public class Thrower : GroundStationaryEnemy
 
         foreach (EnemyBase projectileEnemy in projectile.GetComponentsInChildren<EnemyBase>(true))
         {
-            if (projectileEnemy != null)
+            if (projectileEnemy != null && !(projectileEnemy is SyrupBallProjectile))
             {
                 projectileEnemy.enabled = false;
             }
@@ -275,6 +275,7 @@ public class Thrower : GroundStationaryEnemy
             projectileDamage = projectile.AddComponent<SyrupBallProjectile>();
         }
 
+        projectileDamage.enabled = true;
         projectileDamage.Initialize(
             ownerColliders,
             playerLayerMask,

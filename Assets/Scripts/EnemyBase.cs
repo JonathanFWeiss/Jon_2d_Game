@@ -323,20 +323,27 @@ public class EnemyBase : MonoBehaviour
         if (hitObject == null && playerObject == null)
             return;
 
-        Rigidbody2D playerRb = null;
+        JonCharacterController playerController = GetPlayerController(hitObject, playerObject);
+        Rigidbody2D playerRb = playerController != null
+            ? playerController.GetComponent<Rigidbody2D>()
+            : null;
 
-        if (hitObject != null)
+        if (playerRb == null)
         {
-            playerRb = hitObject.GetComponentInParent<Rigidbody2D>();
+            playerRb = GetPlayerRigidbody(hitObject, playerObject);
         }
 
         if (playerRb == null)
         {
-            playerRb = playerObject.GetComponent<Rigidbody2D>();
-        }
-
-        if (playerRb == null)
+            Debug.LogWarning(
+                $"{gameObject.name} could not apply contact pushback. " +
+                $"Hit object: {(hitObject != null ? hitObject.name : "null")}, " +
+                $"player object: {(playerObject != null ? playerObject.name : "null")}. " +
+                "No player Rigidbody2D was found.",
+                this
+            );
             return;
+        }
 
         Vector2 direction = playerRb.worldCenterOfMass - rb2d.worldCenterOfMass;
         float horizontalDirection = Mathf.Sign(direction.x);
@@ -350,20 +357,72 @@ public class EnemyBase : MonoBehaviour
             horizontalDirection * contactPushbackImpulse.x,
             contactPushbackImpulse.y
         );
-        playerRb.linearVelocity = Vector2.zero;
-        playerRb.AddForce(impulse, ForceMode2D.Impulse);
-        JonCharacterController playerController = playerRb.GetComponent<JonCharacterController>();
-        if (playerController == null)
-        {
-            playerController = playerRb.GetComponentInParent<JonCharacterController>();
-        }
 
         if (playerController != null)
         {
-            playerController.StartGettingHit();
+            Debug.Log(
+                $"{gameObject.name} applying contact pushback through {playerController.name}. " +
+                $"Hit object: {(hitObject != null ? hitObject.name : "null")}, impulse: {impulse}, " +
+                $"direction: {direction}, player velocity before: {playerRb.linearVelocity}, " +
+                $"simulationMode: {Physics2D.simulationMode}.",
+                this
+            );
+            playerController.ApplyKnockback(impulse);
+            return;
         }
 
-//        Debug.Log($"Applying pushback impulse {impulse} to player from {gameObject.name}");
+        Debug.Log(
+            $"{gameObject.name} applying fallback Rigidbody2D contact pushback to {playerRb.name}. " +
+            $"Hit object: {(hitObject != null ? hitObject.name : "null")}, impulse: {impulse}, " +
+            $"direction: {direction}, velocity before reset: {playerRb.linearVelocity}, " +
+            $"simulationMode: {Physics2D.simulationMode}.",
+            this
+        );
+        playerRb.linearVelocity = Vector2.zero;
+        playerRb.AddForce(impulse, ForceMode2D.Impulse);
+        Debug.Log(
+            $"{gameObject.name} fallback contact pushback applied to {playerRb.name}. " +
+            $"Velocity after AddForce: {playerRb.linearVelocity}, simulationMode: {Physics2D.simulationMode}.",
+            this
+        );
+    }
+
+    protected static Rigidbody2D GetPlayerRigidbody(GameObject hitObject, GameObject playerObject)
+    {
+        if (hitObject != null)
+        {
+            Rigidbody2D hitRigidbody = hitObject.GetComponentInParent<Rigidbody2D>();
+            if (hitRigidbody != null)
+                return hitRigidbody;
+        }
+
+        if (playerObject == null)
+            return null;
+
+        Rigidbody2D playerRigidbody = playerObject.GetComponent<Rigidbody2D>();
+        if (playerRigidbody != null)
+            return playerRigidbody;
+
+        return playerObject.GetComponentInChildren<Rigidbody2D>();
+    }
+
+    protected static JonCharacterController GetPlayerController(GameObject hitObject, GameObject playerObject)
+    {
+        if (hitObject != null)
+        {
+            JonCharacterController hitController = hitObject.GetComponentInParent<JonCharacterController>();
+            if (hitController != null)
+                return hitController;
+        }
+
+        if (playerObject == null)
+            return null;
+
+        JonCharacterController playerController = playerObject.GetComponent<JonCharacterController>();
+        if (playerController != null)
+            return playerController;
+
+        return playerObject.GetComponentInChildren<JonCharacterController>();
     }
 
     protected virtual void UpdateSpriteDirection()

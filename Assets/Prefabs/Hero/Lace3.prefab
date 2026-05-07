@@ -262,7 +262,6 @@ MonoBehaviour:
   dashAirCarryDecay: 4
   dashHeldSpeedMultiplier: 1.4
   dashHeldInputThreshold: 0.5
-  dashHeldGroundedCarryTime: 0.25
   jumpCutMultiplier: 0.5
   maxFallSpeed: 20
   coyoteTime: 0.2
@@ -306,7 +305,7 @@ MonoBehaviour:
   upSlashBoxSize: {x: 2.7, y: 3.3}
   upSlashBoxOffset: {x: 0, y: 1}
   upSlashEffect: {fileID: 4778142184335031937}
-  gettingHitDuration: 0.3
+  gettingHitDuration: 0.2
   groundCheckTransform: {fileID: 1961774856218215513}
   groundCheckRadius: 0.2
   groundLayer:
@@ -359,7 +358,6 @@ MonoBehaviour:
   sprintEndSwimAcceleration: 18
   swimInputThreshold: 0.1
   swimJumpReentryDelay: 0.08
-  buoyancy: 6
   waterDrag: 3
   isSwimming: 0
 --- !u!50 &8734763382801387636

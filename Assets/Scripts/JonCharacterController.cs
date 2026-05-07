@@ -578,7 +578,7 @@ public class JonCharacterController : MonoBehaviour
             ApplyHorizontalMovement();
         }
 
-        if (isSwimming)
+        if (isSwimming && !isGettingHit)
         {
             ApplySwimmingMovement();
         }
@@ -593,7 +593,7 @@ public class JonCharacterController : MonoBehaviour
         bool hasGroundJumpAvailable = HasGroundJumpAvailable();
         bool hasWallJumpAvailable = HasWallJumpAvailable();
 
-        if (hasBufferedJumpRequest && !isDashing && hasWallJumpAvailable)
+        if (hasBufferedJumpRequest && !isDashing && !isGettingHit && hasWallJumpAvailable)
         {
             PerformWallJump();
             ClearBufferedJump();
@@ -621,7 +621,7 @@ public class JonCharacterController : MonoBehaviour
         ClampFallSpeed();
 
 
-        if (dashRequested && !isSwimming)
+        if (dashRequested && !isSwimming && !isGettingHit)
         {
             // Store current direction before starting dash
             if (movementVector.x != 0)
@@ -665,6 +665,11 @@ public class JonCharacterController : MonoBehaviour
 
     public void Dash()
     {
+        if (isGettingHit)
+        {
+            return;
+        }
+
         if (!canDash)
         {
             return;
@@ -748,6 +753,12 @@ public class JonCharacterController : MonoBehaviour
 
     private void UpdateDashSpeedBoost()
     {
+        if (isGettingHit)
+        {
+            CancelDashSpeedBoost();
+            return;
+        }
+
         if (!isDashButtonHeld)
         {
             StopDashSpeedBoost();
@@ -835,7 +846,7 @@ public class JonCharacterController : MonoBehaviour
     {
         Vector2 velocity = rb.linearVelocity;
 
-        if (!isWallSliding)
+        if (!isWallSliding && !isGettingHit)
         {
             velocity.x = movementVector.x * GetCurrentMovementSpeed();
         }
@@ -871,6 +882,11 @@ public class JonCharacterController : MonoBehaviour
 
     private void SyncSwimmingState()
     {
+        if (isGettingHit)
+        {
+            return;
+        }
+
         if (isSwimming == wasSwimming)
         {
             return;
@@ -1378,9 +1394,16 @@ public class JonCharacterController : MonoBehaviour
 
     public void StartGettingHit()
     {
+        CancelDash();
         CancelDashSpeedBoost();
         CancelLedgeGrabAndPullUp(true);
         isJumpSustaining = false;
+        isWallSliding = false;
+        dashRequested = false;
+        swimSprintRequested = false;
+        isSwimSprinting = false;
+        decelerateFromSwimSprint = false;
+        currentSwimSpeed = 0f;
         ClearExtraHorizontalMovementVelocities();
 
         if (gettingHitCoroutine != null)
@@ -1388,7 +1411,41 @@ public class JonCharacterController : MonoBehaviour
             StopCoroutine(gettingHitCoroutine);
         }
 
+        isGettingHit = true;
         gettingHitCoroutine = StartCoroutine(GettingHitCoroutine(gettingHitDuration));
+    }
+
+    public void ApplyKnockback(Vector2 impulse)
+    {
+        StartGettingHit();
+
+        if (rb == null)
+        {
+            Debug.LogWarning(
+                $"{gameObject.name} could not apply knockback impulse {impulse} because Rigidbody2D is missing.",
+                this
+            );
+            return;
+        }
+
+        Vector2 velocityBeforeReset = rb.linearVelocity;
+        Debug.Log(
+            $"{gameObject.name} received knockback impulse {impulse}. " +
+            $"Velocity before reset: {velocityBeforeReset}, grounded: {isGrounded}, " +
+            $"swimming: {isSwimming}, dashing: {isDashing}, gettingHit: {isGettingHit}, " +
+            $"simulationMode: {Physics2D.simulationMode}.",
+            this
+        );
+        rb.gravityScale = defaultGravityScale;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+        rb.AddForce(impulse, ForceMode2D.Impulse);
+        Debug.Log(
+            $"{gameObject.name} applied knockback impulse {impulse}. " +
+            $"Velocity after AddForce: {rb.linearVelocity}, gravityScale: {rb.gravityScale}, " +
+            $"gettingHit: {isGettingHit}, simulationMode: {Physics2D.simulationMode}.",
+            this
+        );
     }
 
     public void TeleportToLastGroundedPosition(Vector2 offset)
