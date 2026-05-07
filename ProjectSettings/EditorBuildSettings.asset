@@ -26,5 +26,14 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Castle3.unity
     guid: 557a62e0a8529574b90d0d7a40e545bd
+  - enabled: 1
+    path: Assets/Scenes/Castle4.unity
+    guid: 5bc4510c1d0a1854fb09212dec10d464
+  - enabled: 1
+    path: Assets/Scenes/Castle5.unity
+    guid: 343054a7abd7cb248aec03338fed224c
+  - enabled: 1
+    path: Assets/Scenes/Castle6.unity
+    guid: 9880ceb19c82f1a46bf885a1041bafda
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

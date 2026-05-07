@@ -1218,6 +1218,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 6130228378664164081, guid: 5e3c9f938f7500d4886debf041c47b81, type: 3}
+      propertyPath: sceneToLoad
+      value: Castle6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6130228378664164081, guid: 5e3c9f938f7500d4886debf041c47b81, type: 3}
+      propertyPath: targetEntryId
+      value: CastleStartToCastle6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6130228378664164081, guid: 5e3c9f938f7500d4886debf041c47b81, type: 3}
       propertyPath: transitionAnim
       value: 
       objectReference: {fileID: 433542473}

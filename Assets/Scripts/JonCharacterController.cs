@@ -58,6 +58,8 @@ public class JonCharacterController : MonoBehaviour
         set => canWallJump = value;
     }
 
+    public bool IsDashing => isDashing;
+
     public bool isGrounded { get; private set; }
     private float canBeGroundedTime = 0f;
     //private float delayBeforeGrounded = 0.2f;
@@ -1278,6 +1280,7 @@ public class JonCharacterController : MonoBehaviour
             yield break;
         }
         isDashing = true;
+        BeamHazard.IgnorePlayerCollisionsForDash(this);
         isJumpSustaining = false;
         didAirHang = false;
         rb.gravityScale = 0; // Disable gravity

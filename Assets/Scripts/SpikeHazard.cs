@@ -32,12 +32,23 @@ public class SpikeHazard : FixedPositionEnemy
 
     protected override void OnCollisionEnter2D(Collision2D collision)
     {
+        if (ShouldIgnoreCollision(collision))
+            return;
+
         HandleCollision(collision);
     }
 
     protected override void OnCollisionStay2D(Collision2D collision)
     {
+        if (ShouldIgnoreCollision(collision))
+            return;
+
         HandleCollision(collision);
+    }
+
+    protected virtual bool ShouldIgnoreCollision(Collision2D collision)
+    {
+        return false;
     }
 
     private void HandleCollision(Collision2D collision)
@@ -72,7 +83,7 @@ public class SpikeHazard : FixedPositionEnemy
         }
     }
 
-    private static JonCharacterController GetPlayerController(Collision2D collision)
+    protected static JonCharacterController GetPlayerController(Collision2D collision)
     {
         if (collision == null)
             return null;
