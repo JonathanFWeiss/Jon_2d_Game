@@ -3,7 +3,19 @@
     "connections": [
         {
             "fromScene": "CastleStart",
+            "toScene": "Mario1-1"
+        },
+        {
+            "fromScene": "CastleStart",
             "toScene": "Castle2"
+        },
+        {
+            "fromScene": "Mario1-1",
+            "toScene": "AllTheMechanics"
+        },
+        {
+            "fromScene": "Castle2",
+            "toScene": "CastleStart"
         },
         {
             "fromScene": "Castle2",
@@ -11,11 +23,23 @@
         },
         {
             "fromScene": "Castle2",
-            "toScene": "CastleStart"
+            "toScene": "Mario1-1"
+        },
+        {
+            "fromScene": "AllTheMechanics",
+            "toScene": "Mario1-1"
         },
         {
             "fromScene": "Castle3",
             "toScene": "Castle2"
+        },
+        {
+            "fromScene": "Castle3",
+            "toScene": "Castle4"
+        },
+        {
+            "fromScene": "Castle4",
+            "toScene": "Castle3"
         }
     ]
 }
