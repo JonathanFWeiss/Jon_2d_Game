@@ -349,15 +349,15 @@ MonoBehaviour:
     avoidRandomRepeats: 1
     behaviorLoop:
     - state: 10
-      duration: 0.85
+      duration: 3
       facePlayerOnEnter: 1
+      animatorTrigger: 
+    - state: 5
+      duration: 0.1
+      facePlayerOnEnter: 0
       animatorTrigger: 
     - state: 4
-      duration: 0.9
-      facePlayerOnEnter: 1
-      animatorTrigger: 
-    - state: 6
-      duration: 0.65
+      duration: 1
       facePlayerOnEnter: 1
       animatorTrigger: 
     - state: 5
