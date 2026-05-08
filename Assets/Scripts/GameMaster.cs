@@ -1230,12 +1230,12 @@ public class GameMaster : MonoBehaviour
             ShowDeathMessage();
             PlayDeathCrossfadeAnimation();
 
-            //yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(1f);
             SetPlayerActive(false);
 
             if (deathRespawnDelay > 0f)
             {
-                yield return new WaitForSeconds(0f);
+                yield return new WaitForSeconds(deathRespawnDelay);
             }
 
             SetPlayerActive(true);
