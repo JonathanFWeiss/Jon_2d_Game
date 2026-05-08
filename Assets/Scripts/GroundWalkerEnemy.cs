@@ -34,7 +34,7 @@ public class GroundWalkerEnemy : EnemyBase
     protected float nextTurnAroundTime = float.NegativeInfinity;
     
 
-    [SerializeField] private float ledgeCheckDistance = 1f;
+    [SerializeField] private float ledgeCheckDistance = 2f;
     [Tooltip("Horizontal spacing between the two ledge-check rays.")]
     [SerializeField] private float ledgeCheckRaySpacing = 0.25f;
     [SerializeField] private float wallCheckDistance = 0.25f;

@@ -171,20 +171,31 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   contactPushbackImpulse: {x: 5, y: 5}
+  CorpsePrefab: {fileID: 0}
+  corpseLifetime: 15
   coinPrefab: {fileID: 4870944765083343985, guid: 632f0ce83ad4a1c46953c7c56be607d7, type: 3}
   coinDropCount: 0
+  deathDropHorizontalVelocity: 2
+  deathDropUpwardVelocityRange: {x: 1.5, y: 3.5}
+  deathDropAngularVelocity: 240
   hitFlashDuration: 0.1
   hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
   obstacleMask:
     serializedVersion: 2
     m_Bits: 328
-  ledgeCheck: {fileID: 0}
-  ledgeCheckX: 2
   ledgeCheckY: -2
-  ledgeCheckRadius: 0.5
+  ledgeCheckX: 2
+  wallCheckX: 0.05
+  wallCheckY: 0
   turnAtLedges: 1
   turnAtWalls: 1
   turnAroundCooldown: 1
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 0
+  ledgeCheckDistance: 2
+  ledgeCheckRaySpacing: 0.25
+  wallCheckDistance: 0.25
 --- !u!212 &5074523630458625808
 SpriteRenderer:
   serializedVersion: 2

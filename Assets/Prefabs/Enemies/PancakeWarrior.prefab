@@ -234,6 +234,6 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 0
-  ledgeCheckDistance: 1
+  ledgeCheckDistance: 2
   ledgeCheckRaySpacing: 0.25
   wallCheckDistance: 0.25
