@@ -203,6 +203,23 @@ public class JonCharacterController : MonoBehaviour
     private Coroutine gettingHitCoroutine;
 
     public Animator animator;
+    [Header("Animation")]
+    [SerializeField] private float animationCrossFadeDuration = 0.08f;
+    [SerializeField] private float idleWalkAnimationThreshold = 0.03f;
+    [SerializeField] private float walkRunAnimationThreshold = 0.5f;
+    [SerializeField] private float jumpStallAnimationVelocityThreshold = 3f;
+    [SerializeField] private string idleAnimationState = "idle";
+    [SerializeField] private string walkAnimationState = "Walk";
+    [SerializeField] private string runAnimationState = "Run";
+    [SerializeField] private string jumpUpAnimationState = "JumpUp";
+    [SerializeField] private string jumpStallAnimationState = "JumpStall";
+    [SerializeField] private string jumpFallAnimationState = "JumpFall";
+    [SerializeField] private string attackAnimationState = "Attack";
+    [SerializeField] private string pogoAnimationState = "Pogo";
+    [SerializeField] private string takingDamageAnimationState = "TakingDamage";
+    [SerializeField] private string ledgeHangAnimationState = "LedgeHang";
+    [SerializeField] private string spellCastAnimationState = "Spellcast";
+    private string currentAnimationState;
     private bool isSpellCasting;
     private bool SpellCastRequested;
 
@@ -484,6 +501,14 @@ public class JonCharacterController : MonoBehaviour
             ? Mathf.Abs(rb.linearVelocity.x) / Mathf.Max(0.01f, swimSpeed)
             : Mathf.Abs(movementVector.x);
 
+        SyncAnimatorParameters(xSpeedAbs);
+        CrossFadeToAnimatorState(GetTargetAnimationState(xSpeedAbs));
+
+    }
+
+
+    private void SyncAnimatorParameters(float xSpeedAbs)
+    {
         animator.SetFloat("xSpeedABS", xSpeedAbs);
         animator.SetFloat("ySpeed", rb.linearVelocity.y);
         animator.SetBool("isGrounded", isGrounded);
@@ -496,9 +521,78 @@ public class JonCharacterController : MonoBehaviour
         animator.SetBool("isLedgePullingUp", isLedgePullingUp);
         animator.SetBool("isSwimming", isSwimming);
         animator.SetBool("isSpellCasting", isSpellCasting);
-
     }
 
+    private string GetTargetAnimationState(float xSpeedAbs)
+    {
+        if (isGettingHit)
+        {
+            return takingDamageAnimationState;
+        }
+
+        if (isPogoing)
+        {
+            return pogoAnimationState;
+        }
+
+        if (isAttacking)
+        {
+            return attackAnimationState;
+        }
+
+        if (isLedgeGrabbing)
+        {
+            return ledgeHangAnimationState;
+        }
+
+        if (isSpellCasting)
+        {
+            return spellCastAnimationState;
+        }
+
+        if (!isGrounded)
+        {
+            if (rb.linearVelocity.y > jumpStallAnimationVelocityThreshold)
+            {
+                return jumpUpAnimationState;
+            }
+
+            if (rb.linearVelocity.y < -jumpStallAnimationVelocityThreshold)
+            {
+                return jumpFallAnimationState;
+            }
+
+            return jumpStallAnimationState;
+        }
+
+        if (xSpeedAbs > walkRunAnimationThreshold)
+        {
+            return runAnimationState;
+        }
+
+        if (xSpeedAbs > idleWalkAnimationThreshold)
+        {
+            return walkAnimationState;
+        }
+
+        return idleAnimationState;
+    }
+
+    private void CrossFadeToAnimatorState(string animationState)
+    {
+        if (string.IsNullOrEmpty(animationState))
+        {
+            animationState = idleAnimationState;
+        }
+
+        if (string.IsNullOrEmpty(animationState) || animationState == currentAnimationState)
+        {
+            return;
+        }
+
+        animator.CrossFade(animationState, Mathf.Max(0f, animationCrossFadeDuration), 0);
+        currentAnimationState = animationState;
+    }
 
 
 
