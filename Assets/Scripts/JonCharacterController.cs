@@ -198,13 +198,14 @@ public class JonCharacterController : MonoBehaviour
     private bool isPogoing;
     private bool isJumping = false;
     private bool isAttackHitActive;
+    public bool isDead;
     public bool isGettingHit { get; private set; }
     private bool isUpSlashing;
     private Coroutine gettingHitCoroutine;
 
     public Animator animator;
     [Header("Animation")]
-    [SerializeField] private float animationCrossFadeDuration = 0.08f;
+    [SerializeField] private float animationCrossFadeDuration = 0f;
     [SerializeField] private float idleWalkAnimationThreshold = 0.03f;
     [SerializeField] private float walkRunAnimationThreshold = 0.5f;
     [SerializeField] private float jumpStallAnimationVelocityThreshold = 3f;
@@ -216,9 +217,11 @@ public class JonCharacterController : MonoBehaviour
     [SerializeField] private string jumpFallAnimationState = "JumpFall";
     [SerializeField] private string attackAnimationState = "Attack";
     [SerializeField] private string pogoAnimationState = "Pogo";
+    [SerializeField] private string upSlashAnimationState = "Attack";
     [SerializeField] private string takingDamageAnimationState = "TakingDamage";
     [SerializeField] private string ledgeHangAnimationState = "LedgeHang";
     [SerializeField] private string spellCastAnimationState = "Spellcast";
+    [SerializeField] private string deathAnimationState = "Death";
     private string currentAnimationState;
     private bool isSpellCasting;
     private bool SpellCastRequested;
@@ -525,6 +528,10 @@ public class JonCharacterController : MonoBehaviour
 
     private string GetTargetAnimationState(float xSpeedAbs)
     {
+        if (isDead)
+        {
+            return deathAnimationState;
+        }
         if (isGettingHit)
         {
             return takingDamageAnimationState;
@@ -539,6 +546,13 @@ public class JonCharacterController : MonoBehaviour
         {
             return attackAnimationState;
         }
+
+        if (isUpSlashing)
+        {
+            return upSlashAnimationState;
+        }
+
+
 
         if (isLedgeGrabbing)
         {

@@ -1256,7 +1256,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_42
+      name: death1
       rect:
         serializedVersion: 2
         x: 0
@@ -1278,7 +1278,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_43
+      name: death2
       rect:
         serializedVersion: 2
         x: 56
@@ -1300,7 +1300,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_44
+      name: death3
       rect:
         serializedVersion: 2
         x: 112
@@ -1322,7 +1322,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_45
+      name: death4
       rect:
         serializedVersion: 2
         x: 168
@@ -1344,7 +1344,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_46
+      name: death5
       rect:
         serializedVersion: 2
         x: 224
@@ -1366,7 +1366,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_47
+      name: death6
       rect:
         serializedVersion: 2
         x: 280
@@ -1388,7 +1388,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_48
+      name: death7
       rect:
         serializedVersion: 2
         x: 336
@@ -1410,7 +1410,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_49
+      name: death8
       rect:
         serializedVersion: 2
         x: 392
@@ -1432,7 +1432,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_50
+      name: death9
       rect:
         serializedVersion: 2
         x: 0
@@ -1454,7 +1454,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_51
+      name: death10
       rect:
         serializedVersion: 2
         x: 56
@@ -1476,7 +1476,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_52
+      name: death11
       rect:
         serializedVersion: 2
         x: 112
@@ -1498,7 +1498,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: char_red_1_53
+      name: death12
       rect:
         serializedVersion: 2
         x: 168
@@ -1860,24 +1860,24 @@ TextureImporter:
       char_red_1_35: 109170590052363270
       char_red_1_36: 4148430928412355243
       char_red_1_37: 2229452728156350442
-      char_red_1_42: -4010610446114769769
-      char_red_1_43: -885702635809259931
-      char_red_1_44: -598101099211396344
-      char_red_1_45: 2133234106456465928
-      char_red_1_46: 5922785176134403007
-      char_red_1_47: -3056067478714188564
-      char_red_1_48: 8255734850300583940
-      char_red_1_49: -8421993493603574625
-      char_red_1_50: 7593580062047509591
-      char_red_1_51: -8223432550376248560
-      char_red_1_52: -4295774819993255050
-      char_red_1_53: 3358898119214813805
       char_red_1_62: -7129802907820426984
       char_red_1_63: -5327570704780418886
       char_red_1_64: -1614409928816144380
       char_red_1_65: 6248888487687991014
       char_red_1_66: -8594966910719959752
       char_red_1_67: -1000285343028949368
+      death1: -4010610446114769769
+      death10: -8223432550376248560
+      death11: -4295774819993255050
+      death12: 3358898119214813805
+      death2: -885702635809259931
+      death3: -598101099211396344
+      death4: 2133234106456465928
+      death5: 5922785176134403007
+      death6: -3056067478714188564
+      death7: 8255734850300583940
+      death8: -8421993493603574625
+      death9: 7593580062047509591
       idle1: 1684256597749961581
       idle2: -4264497638767173755
       idle3: 1334582614908416109

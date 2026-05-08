@@ -15,6 +15,8 @@ public class GameMaster : MonoBehaviour
     private const string PauseMenuRootName = "PauseMenu";
     private const string PauseMenuLabelName = "PauseMenuLabel";
     private const string MapActionName = "Menu";
+    private const string CrossfadeObjectName = "Crossfade";
+    private const string CrossfadeAnimationName = "CrossfadeInAndOut";
     private const string HeartIconsRootName = "HeartIcons";
     private const string EnergyBarRootName = "EnergyBar";
     private const string EnergyBarBackgroundName = "EnergyBarBackground";
@@ -64,7 +66,7 @@ public class GameMaster : MonoBehaviour
 
     [Min(0f)]
     [Tooltip("How long to wait after death before respawning the player.")]
-    public float deathRespawnDelay = 2f;
+    public float deathRespawnDelay = 3f;
 
     [Header("UI")]
     [Tooltip("UI Toolkit document that contains the Counters label.")]
@@ -88,6 +90,7 @@ public class GameMaster : MonoBehaviour
     private bool warnedMissingMainCamera;
     private bool warnedMissingPauseAction;
     private bool warnedMissingMapAction;
+    private bool warnedMissingCrossfadeAnimator;
     private bool isRespawningPlayer;
     private bool isPaused;
     private bool isSceneMapVisible;
@@ -178,10 +181,8 @@ public class GameMaster : MonoBehaviour
 
         if (!isRespawningPlayer && PlayerData.HP <= 0)
         {
+            SetPlayerDeathAnimationState(true);
             StartCoroutine(RespawnPlayerAfterDelay());
-            ResetPlayerIsStateFlags();
-            ResetPlayerStatsAfterDeath();
-            
         }
 
         if (uiCountersText == null)
@@ -1030,6 +1031,19 @@ public class GameMaster : MonoBehaviour
         return playerTransform;
     }
 
+    private void SetPlayerDeathAnimationState(bool isDead)
+    {
+        Transform playerRoot = GetPlayerStateRoot();
+        if (playerRoot == null)
+            return;
+
+        JonCharacterController jonCharacter = playerRoot.GetComponentInChildren<JonCharacterController>(true);
+        if (jonCharacter != null)
+        {
+            jonCharacter.isDead = isDead;
+        }
+    }
+
     private static void ResetBoolMembersWithIsPrefix(MonoBehaviour behaviour)
     {
         Type behaviourType = behaviour.GetType();
@@ -1171,6 +1185,42 @@ public class GameMaster : MonoBehaviour
         playerRoot.gameObject.SetActive(isActive);
     }
 
+    private void PlayDeathCrossfadeAnimation()
+    {
+        ResolveCrossfadeAnimator();
+
+        if (transitionAnim == null)
+        {
+            WarnMissingCrossfadeAnimator();
+            return;
+        }
+
+        transitionAnim.Play(CrossfadeAnimationName, 0, 0f);
+    }
+
+    private void ResolveCrossfadeAnimator()
+    {
+        if (transitionAnim != null)
+            return;
+
+        GameObject crossfadeObject = GameObject.Find(CrossfadeObjectName);
+        if (crossfadeObject == null)
+            return;
+
+        transitionAnim = crossfadeObject.GetComponent<Animator>();
+    }
+
+    private void WarnMissingCrossfadeAnimator()
+    {
+        if (warnedMissingCrossfadeAnimator)
+            return;
+
+        warnedMissingCrossfadeAnimator = true;
+        Debug.LogWarning(
+            $"GameMaster could not find an Animator on a GameObject named '{CrossfadeObjectName}' to play '{CrossfadeAnimationName}'."
+        );
+    }
+
     private IEnumerator RespawnPlayerAfterDelay()
     {
         isRespawningPlayer = true;
@@ -1178,13 +1228,9 @@ public class GameMaster : MonoBehaviour
         try
         {
             ShowDeathMessage();
+            PlayDeathCrossfadeAnimation();
 
-            if (transitionAnim != null)
-            {
-                transitionAnim.SetTrigger("RespawnStart");
-            }
-
-            yield return new WaitForSeconds(1f);
+            //yield return new WaitForSeconds(1f);
             SetPlayerActive(false);
 
             if (deathRespawnDelay > 0f)

@@ -46,6 +46,10 @@
             "toScene": "Castle2"
         },
         {
+            "fromScene": "Castle5",
+            "toScene": "Castle8"
+        },
+        {
             "fromScene": "Castle4",
             "toScene": "Castle3"
         }
