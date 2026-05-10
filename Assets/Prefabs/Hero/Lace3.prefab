@@ -311,7 +311,7 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  wallCheckDistance: 0.1
+  wallCheckDistance: 0.5
   wallCheckHeightMultiplier: 0.8
   wallContactGraceTime: 0.15
   wallJumpImpulse: {x: 10, y: 15}
@@ -344,7 +344,25 @@ MonoBehaviour:
   ledgeGrabMaxUpwardSpeed: 0.75
   ledgeTopNormalMinY: 0.65
   ledgeClearanceSkin: 0.04
+  isDead: 0
   animator: {fileID: 0}
+  animationCrossFadeDuration: 0
+  idleWalkAnimationThreshold: 0.03
+  walkRunAnimationThreshold: 0.5
+  jumpStallAnimationVelocityThreshold: 3
+  idleAnimationState: idle
+  walkAnimationState: Walk
+  runAnimationState: Run
+  jumpUpAnimationState: JumpUp
+  jumpStallAnimationState: JumpStall
+  jumpFallAnimationState: JumpFall
+  attackAnimationState: Attack
+  pogoAnimationState: Pogo
+  upSlashAnimationState: Attack
+  takingDamageAnimationState: TakingDamage
+  ledgeHangAnimationState: LedgeHang
+  spellCastAnimationState: Spellcast
+  deathAnimationState: Death
   spellEnergyCost: 5
   insufficientSpellEnergyClip: {fileID: 8300000, guid: d641206ba0efa41c2b13aeb52a842fae, type: 3}
   SpellPrefab: {fileID: 5751419703586308306, guid: 4bf03d83a697c884aac52e36949bec86, type: 3}
