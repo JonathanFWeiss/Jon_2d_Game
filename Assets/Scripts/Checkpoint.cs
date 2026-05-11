@@ -16,6 +16,7 @@ public class Checkpoint : MonoBehaviour
     private GameMaster gameMaster;
     private bool warnedMissingGameMaster;
     private bool warnedMissingUiDocument;
+    private bool warnedMissingActiveSaveSlot;
 
     private void Reset()
     {
@@ -44,8 +45,27 @@ public class Checkpoint : MonoBehaviour
 
         if (checkpointActivated)
         {
+            AutoSaveActiveSlot();
             ShowCheckpointMessage();
         }
+    }
+
+    private void AutoSaveActiveSlot()
+    {
+        if (!PlayerSaveSystem.HasActiveSlot)
+        {
+            if (!warnedMissingActiveSaveSlot)
+            {
+                warnedMissingActiveSaveSlot = true;
+                Debug.LogWarning(
+                    "Checkpoint activated, but no PlayerData save slot is active. Start or load through the main menu to enable checkpoint auto-save."
+                );
+            }
+
+            return;
+        }
+
+        PlayerSaveSystem.TrySaveActiveSlot();
     }
 
     private bool ResolveGameMaster()

@@ -11,9 +11,13 @@ public class GameMaster : MonoBehaviour
 {
     private const string DeathMessageText = "Try Again!";
     private const string DeathMessageLabelName = "DeathMessage";
+    private const string DefaultBeginningSceneName = SceneMapDataLoader.DefaultStartSceneName;
+    private const string MainMenuSceneName = "MainMenu";
     private const string PauseMenuText = "paused";
     private const string PauseMenuRootName = "PauseMenu";
     private const string PauseMenuLabelName = "PauseMenuLabel";
+    private const string PauseMenuSaveAndQuitButtonName = "PauseMenuSaveAndQuitButton";
+    private const string PauseMenuSaveAndQuitText = "save and quit";
     private const string MapActionName = "Menu";
     private const string CrossfadeObjectName = "Crossfade";
     private const string CrossfadeAnimationName = "CrossfadeInAndOut";
@@ -68,6 +72,10 @@ public class GameMaster : MonoBehaviour
     [Tooltip("How long to wait after death before respawning the player.")]
     public float deathRespawnDelay = 3f;
 
+    [SerializeField]
+    [Tooltip("Scene to load after dying before any checkpoint has been activated.")]
+    private string beginningSceneName = DefaultBeginningSceneName;
+
     [Header("UI")]
     [Tooltip("UI Toolkit document that contains the Counters label.")]
     public UIDocument uiDocument;
@@ -94,12 +102,18 @@ public class GameMaster : MonoBehaviour
     private bool isRespawningPlayer;
     private bool isPaused;
     private bool isSceneMapVisible;
+    private bool isSavingAndQuittingToMainMenu;
     private bool pauseActionEnabledByGameMaster;
     private bool mapActionEnabledByGameMaster;
     private float timeScaleBeforePause = 1f;
     private float timeScaleBeforeMap = 1f;
-    private Vector3 checkpointRespawnPosition;
-    private bool hasCheckpointRespawnPosition;
+    private static Vector3 checkpointRespawnPosition;
+    private static string checkpointRespawnSceneName;
+    private static bool hasCheckpointRespawnPosition;
+    private static Vector3 pendingSceneRespawnPosition;
+    private static string pendingSceneRespawnName;
+    private static bool hasPendingSceneRespawnPosition;
+    private static bool pendingSceneRespawnRestoresStats;
     private Vector3 fallbackRespawnPosition;
     private bool hasFallbackRespawnPosition;
     private Transform heartIconsRoot;
@@ -114,10 +128,20 @@ public class GameMaster : MonoBehaviour
     {
         ResolvePlayer();
         CacheFallbackRespawnPosition();
+        ApplyPendingSceneRespawn();
         ResolveUiDocument();
         CacheUiReferences();
         RefreshCounters(forceRefresh: true);
         Application.targetFrameRate = 60;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetRespawnSceneStateOnPlayModeStart()
+    {
+        checkpointRespawnPosition = Vector3.zero;
+        checkpointRespawnSceneName = null;
+        hasCheckpointRespawnPosition = false;
+        ClearPendingSceneRespawn();
     }
 
     private void OnEnable()
@@ -153,9 +177,10 @@ public class GameMaster : MonoBehaviour
         isPaused = false;
         isSceneMapVisible = false;
         isRespawningPlayer = false;
+        isSavingAndQuittingToMainMenu = false;
         timeScaleBeforePause = 1f;
         timeScaleBeforeMap = 1f;
-        Time.timeScale = 1f;
+        PlayerData.RestoreDefaultPauseState();
 
         ResolvePlayer();
         ResolveUiDocument();
@@ -444,7 +469,7 @@ public class GameMaster : MonoBehaviour
 
     public bool TryGetCurrentRespawnPosition(out Vector3 respawnPosition)
     {
-        if (hasCheckpointRespawnPosition)
+        if (hasCheckpointRespawnPosition && IsCheckpointInActiveScene())
         {
             respawnPosition = checkpointRespawnPosition;
             return true;
@@ -490,8 +515,105 @@ public class GameMaster : MonoBehaviour
         }
 
         checkpointRespawnPosition = newRespawnPosition;
+        checkpointRespawnSceneName = SceneManager.GetActiveScene().name;
         hasCheckpointRespawnPosition = true;
         return true;
+    }
+
+    public static void WriteCheckpointSaveData(PlayerSaveData saveData)
+    {
+        if (saveData == null)
+            return;
+
+        if (!hasCheckpointRespawnPosition || string.IsNullOrWhiteSpace(checkpointRespawnSceneName))
+            return;
+
+        saveData.hasCheckpointRespawnPosition = true;
+        saveData.checkpointRespawnSceneName = checkpointRespawnSceneName;
+        saveData.checkpointRespawnPosition = checkpointRespawnPosition;
+    }
+
+    public static void ApplyCheckpointSaveData(PlayerSaveData saveData)
+    {
+        if (saveData == null ||
+            !saveData.hasCheckpointRespawnPosition ||
+            string.IsNullOrWhiteSpace(saveData.checkpointRespawnSceneName))
+        {
+            checkpointRespawnPosition = Vector3.zero;
+            checkpointRespawnSceneName = null;
+            hasCheckpointRespawnPosition = false;
+            ClearPendingSceneRespawn();
+            return;
+        }
+
+        checkpointRespawnSceneName = saveData.checkpointRespawnSceneName.Trim();
+        checkpointRespawnPosition = saveData.checkpointRespawnPosition;
+        hasCheckpointRespawnPosition = true;
+        QueuePendingSceneRespawn(checkpointRespawnSceneName, checkpointRespawnPosition, restoreStatsAfterApply: false);
+    }
+
+    private void ApplyPendingSceneRespawn()
+    {
+        if (!hasPendingSceneRespawnPosition || !IsPendingRespawnForActiveScene())
+            return;
+
+        ResolvePlayer();
+        if (playerTransform == null)
+            return;
+
+        playerTransform.position = pendingSceneRespawnPosition;
+        ResetPlayerVelocity(playerTransform);
+        SetPlayerDeathAnimationState(false);
+        ResetPlayerIsStateFlags();
+        if (pendingSceneRespawnRestoresStats)
+        {
+            ResetPlayerStatsAfterDeath();
+        }
+
+        ClearPendingSceneRespawn();
+    }
+
+    private static bool IsCheckpointInActiveScene()
+    {
+        if (string.IsNullOrWhiteSpace(checkpointRespawnSceneName))
+            return true;
+
+        return string.Equals(
+            checkpointRespawnSceneName,
+            SceneManager.GetActiveScene().name,
+            StringComparison.Ordinal
+        );
+    }
+
+    private static bool IsPendingRespawnForActiveScene()
+    {
+        if (string.IsNullOrWhiteSpace(pendingSceneRespawnName))
+            return false;
+
+        return string.Equals(
+            pendingSceneRespawnName,
+            SceneManager.GetActiveScene().name,
+            StringComparison.Ordinal
+        );
+    }
+
+    private static void QueuePendingSceneRespawn(
+        string sceneName,
+        Vector3 respawnPosition,
+        bool restoreStatsAfterApply = true)
+    {
+        pendingSceneRespawnName = sceneName;
+        pendingSceneRespawnPosition = respawnPosition;
+        hasPendingSceneRespawnPosition = true;
+        pendingSceneRespawnRestoresStats = restoreStatsAfterApply;
+    }
+
+    private static void ClearPendingSceneRespawn()
+    {
+        pendingSceneRespawnPosition = Vector3.zero;
+        pendingSceneRespawnName = null;
+        hasPendingSceneRespawnPosition = false;
+        pendingSceneRespawnRestoresStats = false;
     }
 
     private void CacheUiReferences()
@@ -927,7 +1049,7 @@ public class GameMaster : MonoBehaviour
         VisualElement pauseMenu = new VisualElement
         {
             name = PauseMenuRootName,
-            pickingMode = PickingMode.Ignore
+            pickingMode = PickingMode.Position
         };
 
         pauseMenu.style.position = Position.Absolute;
@@ -937,6 +1059,24 @@ public class GameMaster : MonoBehaviour
         pauseMenu.style.bottom = 0f;
         pauseMenu.style.alignItems = Align.Center;
         pauseMenu.style.justifyContent = Justify.Center;
+        pauseMenu.style.backgroundColor = new Color(0f, 0f, 0f, 0.28f);
+
+        VisualElement pausePanel = new VisualElement
+        {
+            name = "PauseMenuPanel",
+            pickingMode = PickingMode.Position
+        };
+
+        pausePanel.style.alignItems = Align.Center;
+        pausePanel.style.paddingLeft = 18f;
+        pausePanel.style.paddingRight = 18f;
+        pausePanel.style.paddingTop = 12f;
+        pausePanel.style.paddingBottom = 14f;
+        pausePanel.style.backgroundColor = new Color(0f, 0f, 0f, 0.72f);
+        pausePanel.style.borderTopLeftRadius = 8f;
+        pausePanel.style.borderTopRightRadius = 8f;
+        pausePanel.style.borderBottomLeftRadius = 8f;
+        pausePanel.style.borderBottomRightRadius = 8f;
 
         Label pausedLabel = new Label(PauseMenuText)
         {
@@ -944,22 +1084,70 @@ public class GameMaster : MonoBehaviour
             pickingMode = PickingMode.Ignore
         };
 
-        pausedLabel.style.paddingLeft = 18f;
-        pausedLabel.style.paddingRight = 18f;
-        pausedLabel.style.paddingTop = 10f;
-        pausedLabel.style.paddingBottom = 10f;
-        pausedLabel.style.backgroundColor = new Color(0f, 0f, 0f, 0.72f);
+        pausedLabel.style.marginBottom = 10f;
         pausedLabel.style.color = Color.white;
         pausedLabel.style.fontSize = 22f;
         pausedLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
         pausedLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-        pausedLabel.style.borderTopLeftRadius = 8f;
-        pausedLabel.style.borderTopRightRadius = 8f;
-        pausedLabel.style.borderBottomLeftRadius = 8f;
-        pausedLabel.style.borderBottomRightRadius = 8f;
 
-        pauseMenu.Add(pausedLabel);
+        Button saveAndQuitButton = new Button(SaveAndQuitToMainMenu)
+        {
+            name = PauseMenuSaveAndQuitButtonName,
+            text = PauseMenuSaveAndQuitText
+        };
+
+        saveAndQuitButton.style.minWidth = 180f;
+        saveAndQuitButton.style.height = 38f;
+        saveAndQuitButton.style.paddingLeft = 14f;
+        saveAndQuitButton.style.paddingRight = 14f;
+        saveAndQuitButton.style.backgroundColor = new Color(0.74f, 0.17f, 0.16f, 0.92f);
+        saveAndQuitButton.style.color = Color.white;
+        saveAndQuitButton.style.fontSize = 18f;
+        saveAndQuitButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+        saveAndQuitButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+        saveAndQuitButton.style.borderTopLeftRadius = 6f;
+        saveAndQuitButton.style.borderTopRightRadius = 6f;
+        saveAndQuitButton.style.borderBottomLeftRadius = 6f;
+        saveAndQuitButton.style.borderBottomRightRadius = 6f;
+
+        pausePanel.Add(pausedLabel);
+        pausePanel.Add(saveAndQuitButton);
+        pauseMenu.Add(pausePanel);
         root.Add(pauseMenu);
+    }
+
+    private void SaveAndQuitToMainMenu()
+    {
+        if (isSavingAndQuittingToMainMenu)
+            return;
+
+        isSavingAndQuittingToMainMenu = true;
+        PlayerSaveSystem.TrySaveActiveSlot();
+
+        if (isPaused)
+        {
+            SetPaused(false);
+            Debug.Log("GameMaster unpaused the game before saving and quitting to the main menu.");
+        }
+
+        PrepareForMainMenuSceneLoad();
+        SceneManager.LoadScene(MainMenuSceneName);
+    }
+
+    private void PrepareForMainMenuSceneLoad()
+    {
+        isPaused = false;
+        isSceneMapVisible = false;
+        isRespawningPlayer = false;
+        timeScaleBeforePause = 1f;
+        timeScaleBeforeMap = 1f;
+        PlayerData.RestoreDefaultPauseState();
+
+        ResolveUiDocument();
+        SceneMapOverlay.Hide(uiDocument);
+        HidePauseMenu();
+        HideDeathMessage();
+        SetPlayerInputEnabled(true);
     }
 
     private void HideDeathMessage()
@@ -1238,17 +1426,48 @@ public class GameMaster : MonoBehaviour
                 yield return new WaitForSeconds(deathRespawnDelay);
             }
 
-            SetPlayerActive(true);
-            RespawnPlayer();
-            HideDeathMessage();
-            ResetPlayerIsStateFlags();
             ResetPlayerStatsAfterDeath();
+            LoadRespawnSceneAfterDeath();
         }
         finally
         {
             SetPlayerInputEnabled(true);
             isRespawningPlayer = false;
         }
+    }
+
+    private void LoadRespawnSceneAfterDeath()
+    {
+        if (TryGetCheckpointRespawnTarget(out string respawnSceneName, out Vector3 respawnPosition))
+        {
+            QueuePendingSceneRespawn(respawnSceneName, respawnPosition);
+            SceneManager.LoadScene(respawnSceneName);
+            return;
+        }
+
+        ClearPendingSceneRespawn();
+        SceneManager.LoadScene(GetBeginningSceneName());
+    }
+
+    private static bool TryGetCheckpointRespawnTarget(out string respawnSceneName, out Vector3 respawnPosition)
+    {
+        if (!hasCheckpointRespawnPosition || string.IsNullOrWhiteSpace(checkpointRespawnSceneName))
+        {
+            respawnSceneName = null;
+            respawnPosition = Vector3.zero;
+            return false;
+        }
+
+        respawnSceneName = checkpointRespawnSceneName;
+        respawnPosition = checkpointRespawnPosition;
+        return true;
+    }
+
+    private string GetBeginningSceneName()
+    {
+        return string.IsNullOrWhiteSpace(beginningSceneName)
+            ? DefaultBeginningSceneName
+            : beginningSceneName.Trim();
     }
 
     private void RespawnPlayer()
@@ -1264,20 +1483,28 @@ public class GameMaster : MonoBehaviour
 
         playerTransform.position = respawnPosition;
 
+        ResetPlayerVelocity(playerTransform);
+
+        ResetPlayerIsStateFlags();
+        ResetPlayerStatsAfterDeath();
+        RefreshCounters(forceRefresh: true);
+    }
+
+    private static void ResetPlayerVelocity(Transform playerTransform)
+    {
+        if (playerTransform == null)
+            return;
+
         Rigidbody2D playerRigidbody = playerTransform.GetComponent<Rigidbody2D>();
         if (playerRigidbody == null)
         {
             playerRigidbody = playerTransform.GetComponentInParent<Rigidbody2D>();
         }
 
-        if (playerRigidbody != null)
-        {
-            playerRigidbody.linearVelocity = Vector2.zero;
-            playerRigidbody.angularVelocity = 0f;
-        }
+        if (playerRigidbody == null)
+            return;
 
-        ResetPlayerIsStateFlags();
-        ResetPlayerStatsAfterDeath();
-        RefreshCounters(forceRefresh: true);
+        playerRigidbody.linearVelocity = Vector2.zero;
+        playerRigidbody.angularVelocity = 0f;
     }
 }

@@ -20,10 +20,12 @@ public static class PlayerData
     public static int MaxHP => DefaultHP + GetInventoryItemCount(MaxHealthPickupItemName);
     public static IReadOnlyDictionary<string, int> InventoryItems => inventoryItems;
     public static IReadOnlyCollection<string> CompletedGauntletKeys => completedGauntletKeys;
+    public static IReadOnlyCollection<string> TriggeredDiscoverableVisibilityKeys => triggeredDiscoverableVisibilityKeys;
     public static event Action PlayerDied;
 
     private static readonly Dictionary<string, int> inventoryItems = new Dictionary<string, int>();
     private static readonly HashSet<string> completedGauntletKeys = new HashSet<string>();
+    private static readonly HashSet<string> triggeredDiscoverableVisibilityKeys = new HashSet<string>();
     private static float nextAllowedHpRemovalTime = 0f;
 
     public static void AddCoins(int amount = 1)
@@ -128,11 +130,116 @@ public static class PlayerData
         MarkGauntletCompleted(gauntletKeys);
     }
 
+    public static PlayerSaveData CreateSaveData()
+    {
+        PlayerSaveData saveData = new PlayerSaveData
+        {
+            coins = Coins,
+            energy = Energy,
+            hp = HP
+        };
+
+        List<string> inventoryItemNames = new List<string>(inventoryItems.Keys);
+        inventoryItemNames.Sort(StringComparer.Ordinal);
+        foreach (string itemName in inventoryItemNames)
+        {
+            saveData.inventoryItems.Add(new PlayerInventorySaveItem
+            {
+                itemName = itemName,
+                count = inventoryItems[itemName]
+            });
+        }
+
+        List<string> gauntletKeys = new List<string>(completedGauntletKeys);
+        gauntletKeys.Sort(StringComparer.Ordinal);
+        saveData.completedGauntletKeys.AddRange(gauntletKeys);
+
+        List<string> triggerKeys = new List<string>(triggeredDiscoverableVisibilityKeys);
+        triggerKeys.Sort(StringComparer.Ordinal);
+        saveData.triggeredDiscoverableVisibilityKeys.AddRange(triggerKeys);
+
+        return saveData;
+    }
+
+    public static void ApplySaveData(PlayerSaveData saveData)
+    {
+        if (saveData == null)
+        {
+            Debug.LogWarning("PlayerData could not apply a null save data payload.");
+            return;
+        }
+
+        Coins = Mathf.Max(0, saveData.coins);
+        Energy = Mathf.Clamp(saveData.energy, 0, MaxEnergy);
+
+        inventoryItems.Clear();
+        if (saveData.inventoryItems != null)
+        {
+            foreach (PlayerInventorySaveItem inventoryItem in saveData.inventoryItems)
+            {
+                if (inventoryItem == null)
+                    continue;
+
+                AddInventoryItem(inventoryItem.itemName, inventoryItem.count);
+            }
+        }
+
+        completedGauntletKeys.Clear();
+        MarkGauntletCompleted(saveData.completedGauntletKeys);
+
+        triggeredDiscoverableVisibilityKeys.Clear();
+        SetTriggeredDiscoverableVisibility(saveData.triggeredDiscoverableVisibilityKeys);
+
+        HP = Mathf.Clamp(saveData.hp, 0, MaxHP);
+        nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
+    }
+
+    public static bool HasTriggeredDiscoverableVisibility(string triggerKey)
+    {
+        string normalizedTriggerKey = NormalizeTriggerKey(triggerKey);
+        return normalizedTriggerKey != null &&
+            triggeredDiscoverableVisibilityKeys.Contains(normalizedTriggerKey);
+    }
+
+    public static bool MarkDiscoverableVisibilityTriggered(string triggerKey)
+    {
+        string normalizedTriggerKey = NormalizeTriggerKey(triggerKey);
+        return normalizedTriggerKey != null &&
+            triggeredDiscoverableVisibilityKeys.Add(normalizedTriggerKey);
+    }
+
+    public static bool ClearDiscoverableVisibilityTriggered(string triggerKey)
+    {
+        string normalizedTriggerKey = NormalizeTriggerKey(triggerKey);
+        return normalizedTriggerKey != null &&
+            triggeredDiscoverableVisibilityKeys.Remove(normalizedTriggerKey);
+    }
+
+    public static void SetTriggeredDiscoverableVisibility(IEnumerable<string> triggerKeys)
+    {
+        triggeredDiscoverableVisibilityKeys.Clear();
+
+        if (triggerKeys == null)
+            return;
+
+        foreach (string triggerKey in triggerKeys)
+        {
+            MarkDiscoverableVisibilityTriggered(triggerKey);
+        }
+    }
+
     private static string NormalizeGauntletKey(string gauntletKey)
     {
         return string.IsNullOrWhiteSpace(gauntletKey)
             ? null
             : gauntletKey.Trim();
+    }
+
+    private static string NormalizeTriggerKey(string triggerKey)
+    {
+        return string.IsNullOrWhiteSpace(triggerKey)
+            ? null
+            : triggerKey.Trim();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -145,11 +252,12 @@ public static class PlayerData
         HP = DefaultHP;
         inventoryItems.Clear();
         completedGauntletKeys.Clear();
+        triggeredDiscoverableVisibilityKeys.Clear();
         nextAllowedHpRemovalTime = 0f;
         PlayerDied = null;
     }
 
-    private static void RestoreDefaultPauseState()
+    public static void RestoreDefaultPauseState()
     {
         Time.timeScale = 1f;
         Physics2D.simulationMode = DefaultPhysics2DMode;
@@ -189,6 +297,7 @@ public static class PlayerData
         HP = DefaultHP;
         inventoryItems.Clear();
         completedGauntletKeys.Clear();
+        triggeredDiscoverableVisibilityKeys.Clear();
         nextAllowedHpRemovalTime = Time.time + RemoveHpCooldownSeconds;
     }
 

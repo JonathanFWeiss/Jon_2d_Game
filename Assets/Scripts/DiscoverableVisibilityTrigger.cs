@@ -68,7 +68,7 @@ public abstract class DiscoverableVisibilityTrigger : MonoBehaviour
         ResolveTargets();
         CacheVisibleAlphas();
 
-        isActivated = rememberTriggered && PlayerPrefs.GetInt(GetStorageKey(), 0) == 1;
+        isActivated = rememberTriggered && PlayerData.HasTriggeredDiscoverableVisibility(GetStorageKey());
         ApplyHiddenProgress(isActivated ? TriggeredHiddenProgress : InitialHiddenProgress);
 
         if (isActivated)
@@ -94,8 +94,7 @@ public abstract class DiscoverableVisibilityTrigger : MonoBehaviour
 
         if (rememberTriggered)
         {
-            PlayerPrefs.SetInt(GetStorageKey(), 1);
-            PlayerPrefs.Save();
+            PlayerData.MarkDiscoverableVisibilityTriggered(GetStorageKey());
         }
 
         PlayDiscoverySound();
@@ -127,8 +126,7 @@ public abstract class DiscoverableVisibilityTrigger : MonoBehaviour
 
         if (rememberTriggered)
         {
-            PlayerPrefs.DeleteKey(GetStorageKey());
-            PlayerPrefs.Save();
+            PlayerData.ClearDiscoverableVisibilityTriggered(GetStorageKey());
         }
 
         ApplyHiddenProgress(InitialHiddenProgress);
