@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
@@ -47,9 +48,11 @@ public class MainMenu : MonoBehaviour
     private void Start()
     {
         RestoreMainMenuRuntimeState();
+        RestoreCanvasInteraction();
         CloseSaveMenu(restoreMainMenuSelection: false, restoreMainMenuButtons: true);
         RestoreFreshMainMenuButtons();
         RestoreMainMenuSelection();
+        StartCoroutine(RestoreMainMenuInteractionAfterSceneActivation());
     }
 
     public void PlayGame()
@@ -252,6 +255,15 @@ public class MainMenu : MonoBehaviour
         }
     }
 
+    private IEnumerator RestoreMainMenuInteractionAfterSceneActivation()
+    {
+        yield return null;
+        RestoreMainMenuRuntimeState();
+        RestoreCanvasInteraction();
+        RestoreFreshMainMenuButtons();
+        RestoreMainMenuSelection();
+    }
+
     private bool CreateMenuRoot(string title, out Transform contentRoot)
     {
         contentRoot = null;
@@ -400,11 +412,30 @@ public class MainMenu : MonoBehaviour
                 button.interactable = true;
             }
         }
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private void RestoreCanvasInteraction()
+    {
+        ResolveCanvas();
+        if (menuCanvas == null)
+            return;
+
+        menuCanvas.enabled = true;
+        foreach (GraphicRaycaster raycaster in menuCanvas.GetComponentsInChildren<GraphicRaycaster>(true))
+        {
+            if (raycaster != null)
+            {
+                raycaster.enabled = true;
+            }
+        }
     }
 
     private void RestoreMainMenuSelection()
     {
-        if (EventSystem.current == null)
+        EventSystem eventSystem = ResolveSceneEventSystem();
+        if (eventSystem == null)
             return;
 
         Button defaultButton = ResolveMainMenuDefaultButton();
@@ -414,15 +445,17 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        EventSystem.current.SetSelectedGameObject(defaultButton.gameObject);
+        eventSystem.SetSelectedGameObject(null);
+        eventSystem.SetSelectedGameObject(defaultButton.gameObject);
     }
 
     private void ClearCurrentSelection()
     {
-        if (EventSystem.current == null)
+        EventSystem eventSystem = ResolveSceneEventSystem();
+        if (eventSystem == null)
             return;
 
-        EventSystem.current.SetSelectedGameObject(null);
+        eventSystem.SetSelectedGameObject(null);
     }
 
     private Button ResolveMainMenuDefaultButton()
@@ -629,14 +662,18 @@ public class MainMenu : MonoBehaviour
 
     private static void SelectFirstButton(Button button)
     {
-        if (EventSystem.current == null ||
-            EventSystem.current.currentSelectedGameObject != null ||
+        EventSystem eventSystem = ResolveSceneEventSystem();
+        if (eventSystem == null ||
             button == null ||
             !button.interactable)
         {
             return;
         }
 
-        EventSystem.current.SetSelectedGameObject(button.gameObject);
+        GameObject selectedObject = eventSystem.currentSelectedGameObject;
+        if (selectedObject != null && selectedObject.scene == button.gameObject.scene)
+            return;
+
+        eventSystem.SetSelectedGameObject(button.gameObject);
     }
 }

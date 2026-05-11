@@ -1122,16 +1122,15 @@ public class GameMaster : MonoBehaviour
             return;
 
         isSavingAndQuittingToMainMenu = true;
+        StartCoroutine(SaveAndQuitToMainMenuAfterUiEvent());
+    }
+
+    private IEnumerator SaveAndQuitToMainMenuAfterUiEvent()
+    {
         PlayerSaveSystem.TrySaveActiveSlot();
-
-        if (isPaused)
-        {
-            SetPaused(false);
-            Debug.Log("GameMaster unpaused the game before saving and quitting to the main menu.");
-        }
-
+        yield return null;
         PrepareForMainMenuSceneLoad();
-        SceneManager.LoadScene(MainMenuSceneName);
+        SceneManager.LoadScene(MainMenuSceneName, LoadSceneMode.Single);
     }
 
     private void PrepareForMainMenuSceneLoad()
